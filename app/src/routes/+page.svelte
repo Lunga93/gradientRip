@@ -14,7 +14,7 @@
 	import { isMobileView } from '$lib/planner.svelte.js';
 	import { hideAcList } from '$lib/autocomplete.svelte.js';
 
-	let panelScrollEl: HTMLDivElement;
+	let panelScrollEl = $state<HTMLDivElement>();
 
 	let touchStartY: number | null = null;
 	const onTouchStart = (e: TouchEvent): void => {
@@ -71,7 +71,7 @@
 	});
 
 	$effect(() => {
-a		if (ui.activeTab === 'ride' && panelScrollEl && typeof panelScrollEl.scrollTo === 'function') {
+		if (ui.activeTab === 'ride' && panelScrollEl && typeof panelScrollEl.scrollTo === 'function') {
 			panelScrollEl.scrollTo({ top: 0 });
 		}
 	});
