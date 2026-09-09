@@ -3,7 +3,7 @@
 
 	let { board }: { board: { value: string; label: string } } = $props();
 
-	const active = $derived((domain.boardVal || domain.boards[0]?.value) === board.value);
+	const active = $derived(domain.boardVal === board.value);
 </script>
 
 <button

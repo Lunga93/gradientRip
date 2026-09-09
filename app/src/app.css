@@ -289,6 +289,9 @@ a {
 }
 /* gradient selected mode cards (radio peer) */
 .mode-pick svg {
+	width: 22px;
+	height: 22px;
+	flex: none;
 	fill: currentColor;
 }
 .peer:checked + .mode-pick {
@@ -429,9 +432,13 @@ a {
 	pointer-events: none;
 }
 
-/* autocomplete dropdown (rendered inside the plan view) */
+/* autocomplete dropdown — anchored to the searchbox (absolute, not fixed:
+   fixed breaks inside the transformed mobile sheet and was never positioned) */
 .ac-list {
-	position: fixed;
+	position: absolute;
+	top: calc(100% + 6px);
+	left: 0;
+	right: 0;
 	z-index: 40;
 	background: color-mix(in srgb, var(--color-base-100) 92%, transparent);
 	backdrop-filter: blur(12px);

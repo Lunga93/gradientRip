@@ -27,13 +27,17 @@ export const runPlan = async (): Promise<void> => {
 		return;
 	}
 	if (session.planning) return;
+	if (domain.stops.length < 2 || domain.stops.some((s) => !s.value.trim())) {
+		ui.setStatus('Every stop needs a place before you can plan the route.', true);
+		return;
+	}
 	session.planning = true;
 	domain.results = null;
 	ui.setStatus('Planning your ride…');
 	try {
 		const packet = await planRoute({
 			stops: domain.stops.map((s) => ({ value: s.value, coords: s.coords })),
-			boardVal: domain.boardVal,
+			boardVal: domain.boardVal || domain.boards[0].value,
 			modeId: domain.modeId,
 			country: geoState.country
 		});
@@ -107,7 +111,12 @@ export const loadTrip = (t: Trip): void => {
 		domain.activeStopIndex = 0;
 	}
 	if (MODES[t.modeId]) domain.selectMode(t.modeId);
-	domain.boardVal = t.boardVal;
+	// Trust the trip's board only if the mode still ships it — otherwise the
+	// chip row would highlight nothing while planning fell back silently.
+	domain.boardVal =
+		t.boardVal && (MODES[t.modeId]?.boards ?? domain.boards).some((b) => b.value === t.boardVal)
+			? t.boardVal
+			: domain.boards[0].value;
 
 	const line = t.line as LatLon[];
 	const pts = t.pts as LatLon[];

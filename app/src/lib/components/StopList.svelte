@@ -88,13 +88,12 @@
 					class="stopInput flex-1 min-w-0 border-none bg-transparent px-1 py-[13px] text-[0.95rem] text-base-content outline-none placeholder:text-base-content/40"
 					placeholder={stopPlaceholder(i, domain.stops.length)}
 					autocomplete="off"
-					required
 					role="combobox"
 					aria-expanded={session.acIdx === i && session.acResults.length > 0}
 					aria-controls="acList"
 					aria-autocomplete="list"
 					aria-activedescendant={session.acIdx === i && session.acActive >= 0 ? `ac-option-${session.acActive}` : undefined}
-					value={s.value}
+					bind:value={s.value}
 					oninput={(e) => onInput(i, e)}
 					onfocus={(e) => onFocus(i, e)}
 					onblur={onBlur}
