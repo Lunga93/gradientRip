@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { domain } from '$lib/state/domain.svelte.js';
 	import { session } from '$lib/state/session.svelte.js';
-	import { profileSVG } from '$lib/engine/scoring.js';
+	import { profileSVG } from '$lib/engine/index.js';
 	import { startTracking, stopTracking } from '$lib/tracker.js';
 
 	const profileSvg = $derived(domain.results ? profileSVG(domain.results.pts, domain.results.elev, domain.results.cum) : '');

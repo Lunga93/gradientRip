@@ -1,8 +1,8 @@
-// UI/session helpers. Pure route geometry lives in $lib/engine/geometry.js
+// UI/session helpers. Pure route geometry lives in $lib/engine/route-geometry
 // and is re-exported here so existing importers keep working.
 
-export type { LatLon } from './engine/geometry.js';
-export { haversine, resample, cumulative, nearestOnLine, RESAMPLE_STEP_M } from './engine/geometry.js';
+export type { LatLon } from './engine/index.js';
+export { haversine, resample, cumulative, nearestOnLine, RESAMPLE_STEP_M } from './engine/index.js';
 
 const geoCode = (err: GeolocationPositionError): number => (err ? err.code : 0);
 export const geoErrorMessage = (err: GeolocationPositionError): string => {

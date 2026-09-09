@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { segWh, band, smooth3, mergePolylines } from './scoring.js';
-import { resample, haversine, cumulative } from './geometry.js';
-import { MODES, RIDER_KIT_KG } from './modes.js';
+import { segWh, smooth3, mergePolylines, classify } from './index.js';
+import { resample, haversine, cumulative } from './index.js';
+import { MODES, RIDER_KIT_KG } from './index.js';
 
 // SPEC.md regression values (e-skate defaults: mass 116.8 kg, drivetrain 80%).
 // If a change moves these by more than ~5%, the change is wrong.
@@ -39,21 +39,21 @@ describe('energy clamp', () => {
 
 describe('gradient bands are deliberately asymmetric (SPEC)', () => {
 	it('+9.9% is "working climb" (sage), -10% is "steep descent" (rust)', () => {
-		expect(band(9.9)).toEqual({ c: '#8fae7a', k: 'working climb' });
-		expect(band(-10)).toEqual({ c: '#b5502e', k: 'steep descent' });
+		expect(classify(9.9)).toEqual({ c: '#8fae7a', k: 'working climb' });
+		expect(classify(-10)).toEqual({ c: '#b5502e', k: 'steep descent' });
 	});
 
 	it('-12% is past braking but +12% is only "hard climb"', () => {
-		expect(band(-12)).toEqual({ c: '#4a1420', k: 'past braking' });
-		expect(band(12)).toEqual({ c: '#c98a2c', k: 'hard climb' });
+		expect(classify(-12)).toEqual({ c: '#4a1420', k: 'past braking' });
+		expect(classify(12)).toEqual({ c: '#c98a2c', k: 'hard climb' });
 	});
 
 	it('±4% is easy going (boundary inclusive on descent side)', () => {
-		expect(band(-4)).toEqual({ c: '#c98a2c', k: 'watch your speed' });
-		expect(band(3.9)).toEqual({ c: '#6b8f4e', k: 'easy going' });
-		expect(band(4)).toEqual({ c: '#8fae7a', k: 'working climb' });
-		expect(band(15)).toEqual({ c: '#b5502e', k: 'at the motor limit' });
-		expect(band(10)).toEqual({ c: '#c98a2c', k: 'hard climb' }); // exactly 10% is NOT < 10
+		expect(classify(-4)).toEqual({ c: '#c98a2c', k: 'watch your speed' });
+		expect(classify(3.9)).toEqual({ c: '#6b8f4e', k: 'easy going' });
+		expect(classify(4)).toEqual({ c: '#8fae7a', k: 'working climb' });
+		expect(classify(15)).toEqual({ c: '#b5502e', k: 'at the motor limit' });
+		expect(classify(10)).toEqual({ c: '#c98a2c', k: 'hard climb' }); // exactly 10% is NOT < 10
 	});
 });
 

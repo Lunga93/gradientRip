@@ -15,7 +15,7 @@ import {
 	route as svcRoute,
 	elevations as svcElevations
 } from '$lib/server/services.js';
-import type { LatLon } from '$lib/engine/geometry.js';
+import type { LatLon } from '$lib/engine/index.js';
 
 const isLatLon = (v: unknown): v is LatLon =>
 	Array.isArray(v) &&

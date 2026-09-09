@@ -7,7 +7,7 @@ import { command } from '$app/server';
 import { error } from '@sveltejs/kit';
 import { runRemotePlan } from '$lib/server/plan.js';
 import type { RemoteStop } from '$lib/server/plan.js';
-import type { PlanPacket } from '$lib/engine/planShared.js';
+import type { PlanPacket } from '$lib/engine/index.js';
 
 export interface PlanInput {
 	stops: RemoteStop[];

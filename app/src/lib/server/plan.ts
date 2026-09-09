@@ -3,12 +3,11 @@
 // routes each leg, resamples at 50 m, fetches elevation, then hands the
 // sample to the shared pure scorer. Returns the full PlanPacket.
 
-import { MODES, NOMINATIM_DELAY_MS } from '../engine/modes.js';
+import { MODES, NOMINATIM_DELAY_MS } from '../engine/index.js';
 import { geocode, route, elevations } from './services.js';
 import { resample, RESAMPLE_STEP_M } from '../util.js';
 import type { LatLon } from '../util.js';
-import { buildPlanPacket } from '../engine/planCore.js';
-import type { PlanPacket } from '../engine/planShared.js';
+import { buildPlanPacket, type PlanPacket } from '../engine/index.js';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 

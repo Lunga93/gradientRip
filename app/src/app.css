@@ -267,6 +267,11 @@ a {
 	height: 3px;
 	background: var(--brand-gradient);
 }
+@media (max-width: 640px) {
+	.panel::before {
+		display: none;
+	}
+}
 /* gradient wordmark */
 .wordmark {
 	background: var(--brand-gradient);
@@ -355,85 +360,7 @@ a {
 	fill: var(--brand-mark);
 }
 
-/* ─── plan view — grouped stop fields (Google-Maps style rows) ─────────── */
-.searchbox {
-	position: relative;
-	border: 1px solid var(--color-base-300);
-	border-radius: 16px;
-	background: var(--color-base-200);
-}
-.searchrow {
-	position: relative;
-	display: flex;
-	align-items: center;
-	gap: 0;
-	background: transparent;
-	padding: 0 4px 0 0;
-}
-.searchrow + .searchrow {
-	border-top: 1px solid var(--color-base-300);
-}
-.searchrow .marker {
-	flex: none;
-	width: 46px;
-	height: 46px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-.searchrow .origin-dot {
-	width: 13px;
-	height: 13px;
-	border-radius: 50%;
-	background: var(--color-primary);
-	border: 3px solid var(--color-base-100);
-	box-shadow: 0 0 0 1.5px var(--color-primary);
-}
-.searchrow .waypoint-dot {
-	width: 11px;
-	height: 11px;
-	border-radius: 50%;
-	background: var(--color-base-100);
-	border: 2px solid var(--color-base-content);
-	opacity: 0.75;
-}
-.searchrow .dest-pin {
-	width: 18px;
-	height: 18px;
-	fill: var(--color-error);
-}
-.searchrow input {
-	flex: 1;
-	min-width: 0;
-	border: none;
-	background: transparent;
-	padding: 13px 4px;
-	font-size: 0.95rem;
-	font-family: inherit;
-	color: var(--color-base-content);
-	outline: none;
-}
-.searchrow input::placeholder {
-	color: color-mix(in srgb, var(--color-base-content) 45%, transparent);
-}
-.searchrow:focus-within {
-	background: var(--color-base-100);
-	box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 40%, transparent) inset;
-}
-.searchrow:focus-within + .searchrow,
-.searchrow + .searchrow:has(~ .searchrow) {
-	border-top-color: transparent;
-}
-.rail {
-	position: absolute;
-	left: 23px;
-	width: 0;
-	border-left: 2px dotted var(--gridline);
-	pointer-events: none;
-}
-
-/* autocomplete dropdown — anchored to the searchbox (absolute, not fixed:
-   fixed breaks inside the transformed mobile sheet and was never positioned) */
+/* ─── autocomplete dropdown — anchored to the searchbox ─────────────────── */
 .ac-list {
 	position: absolute;
 	top: calc(100% + 6px);
@@ -528,18 +455,6 @@ a {
 	display: inline-block;
 }
 
-/* ─── status line (plan view) ─────────────────────────────────────────── */
-.status {
-	font-size: 0.8rem;
-	color: color-mix(in srgb, var(--color-base-content) 62%, transparent);
-	margin-top: 10px;
-	min-height: 1.15em;
-	line-height: 1.4;
-}
-.status.err {
-	color: var(--color-error);
-}
-
 /* ─── draw / record toolbar ───────────────────────────────────────────── */
 .draw-toolbar {
 	position: fixed;
@@ -587,9 +502,7 @@ a {
 		max-width: 100%;
 		height: 74dvh;
 		border-radius: 24px 24px 0 0;
-		border-left: none;
-		border-right: none;
-		border-bottom: none;
+		border: none;
 		padding-bottom: env(safe-area-inset-bottom);
 		transform: translateY(calc(100% - 152px));
 		transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);

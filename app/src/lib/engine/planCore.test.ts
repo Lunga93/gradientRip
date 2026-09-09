@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildPlanPacket } from './planCore.js';
-import { smooth3 } from './scoring.js';
-import type { PlanPacket } from './planShared.js';
+import { buildPlanPacket, smooth3, type PlanPacket } from './index.js';
 
 const rawElev = [0, 0, 0, 0, 1, 0, 0, 0, 0];
 const pts: [number, number][] = rawElev.map((_, i) => [-33.9, 18.4 + i * 0.0001]);

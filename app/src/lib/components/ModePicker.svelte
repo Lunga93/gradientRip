@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { domain } from '$lib/state/domain.svelte.js';
 	import { dragScroll } from '$lib/actions/dragScroll.js';
-	import { MODES, MODE_ICONS } from '$lib/engine/modes.js';
+	import { MODES, MODE_ICONS } from '$lib/engine/index.js';
 
 	let { variant = 'panel' }: { variant?: 'panel' | 'onboard' } = $props();
 

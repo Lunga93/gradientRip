@@ -7,8 +7,8 @@
 import type * as LeafletTypes from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { LatLon } from './util.js';
-import { mergePolylines } from './engine/scoring.js';
-import type { RouteSegment } from './engine/scoring.js';
+import { mergePolylines } from './engine/index.js';
+import type { RouteSegment } from './engine/index.js';
 import { session } from './state/session.svelte.js';
 import { addDrawPoint, getDrawnPath } from './tracker.js';
 

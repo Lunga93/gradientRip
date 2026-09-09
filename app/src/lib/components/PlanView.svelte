@@ -87,10 +87,12 @@
 						</button>
 					</div>
 				</section>
-				<div class="status {ui.statusErr ? 'err' : ''} flex min-h-[1.15em] min-w-0 items-center gap-2 px-1 text-base-content/60" role="status" aria-live="polite">
-					{#if ui.statusBusy}<span class="loading loading-dots loading-sm flex-none text-primary"></span>{/if}
-					<span class="min-w-0 [overflow-wrap:anywhere]">{ui.statusMsg}</span>
-				</div>
+				{#if ui.statusMsg || ui.statusBusy}
+					<div class="flex items-center gap-2 px-1 text-sm text-base-content/60 min-h-[1.15em]" role="status" aria-live="polite">
+						{#if ui.statusBusy}<span class="loading loading-dots loading-sm flex-none text-primary shrink-0"></span>{/if}
+						<span class="min-w-0 break-words whitespace-normal" class:text-error={ui.statusErr}>{ui.statusMsg}</span>
+					</div>
+				{/if}
 			{/if}
 		</div>
 	</form>

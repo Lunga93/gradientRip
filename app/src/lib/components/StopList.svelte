@@ -40,7 +40,6 @@
 	};
 
 	$effect(() => {
-		// redraw the dotted rail whenever the row set or box geometry changes
 		domain.stops.length; // eslint-disable-line @typescript-eslint/no-unused-expressions
 		positionRail();
 	});
@@ -56,8 +55,6 @@
 		(e.target as HTMLInputElement).scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 	};
 
-	// Delay so a click on a suggestion (which blurs the input first) still
-	// registers before the list disappears.
 	const onBlur = (): void => {
 		setTimeout(() => hideAcList(), 150);
 	};
@@ -71,21 +68,20 @@
 	};
 
 	const pickResult = (i: number): void => {
-		// mousedown, not click — fires before the input's blur handler hides
-		// the list, so the selection lands before the row disappears.
 		selectAcItem(i);
 	};
 </script>
 
-<div class="searchbox" bind:this={searchBoxEl} role="group" aria-label="Route stops">
-	<div class="rail" bind:this={railEl} aria-hidden="true"></div>
-	<div bind:this={rowsEl}>
+<div class="searchbox relative" bind:this={searchBoxEl} role="group" aria-label="Route stops">
+	<div class="rail absolute inset-y-0 left-[23px] w-px border-l-2 border-dotted" bind:this={railEl} aria-hidden="true" style="border-color: var(--gridline);"></div>
+
+	<div class="flex flex-col" bind:this={rowsEl}>
 		{#each domain.stops as s, i (s.id)}
-			<div class="searchrow">
+			<div class="searchrow relative flex items-center gap-2 bg-transparent px-4 py-3">
 				{@html stopIcon(i, domain.stops.length)}
 				<input
 					type="text"
-					class="stopInput flex-1 min-w-0 border-none bg-transparent px-1 py-[13px] text-[0.95rem] text-base-content outline-none placeholder:text-base-content/40"
+					class="flex-1 min-w-0 bg-transparent border-none outline-none text-[0.95rem] text-base-content placeholder:text-base-content/40"
 					placeholder={stopPlaceholder(i, domain.stops.length)}
 					autocomplete="off"
 					role="combobox"
@@ -101,7 +97,7 @@
 				/>
 				<button
 					type="button"
-					class="btn btn-circle btn-sm btn-ghost text-base-content/50 hover:text-base-content"
+					class="btn btn-circle btn-sm btn-ghost text-base-content/50 hover:text-base-content shrink-0"
 					aria-label="Save this place"
 					title="Save this place"
 					onclick={() => savePreset(i)}
@@ -111,7 +107,7 @@
 				{#if i > 0 && i < domain.stops.length - 1}
 					<button
 						type="button"
-						class="btn btn-circle btn-sm btn-ghost text-base-content/50 hover:text-error"
+						class="btn btn-circle btn-sm btn-ghost text-base-content/50 hover:text-error shrink-0"
 						aria-label="Remove this stop"
 						title="Remove this stop"
 						onclick={() => removeStop(i)}
@@ -125,7 +121,7 @@
 
 	<button
 		type="button"
-		class="btn btn-circle btn-sm btn-ghost absolute -right-3 top-1/2 z-10 -translate-y-1/2 border border-base-300 bg-base-100 text-base-content/70 shadow-sm hover:border-primary hover:text-primary"
+		class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-circle btn-sm btn-ghost border border-base-300 bg-base-100 text-base-content/70 shadow-sm hover:border-primary hover:text-primary z-10"
 		aria-label="Reverse stop order"
 		title="Reverse stop order"
 		onclick={() => domain.reverseStops()}
@@ -134,24 +130,21 @@
 	</button>
 
 	{#if session.acIdx !== null && (session.acResults.length > 0 || session.acActive === -1)}
-		<div class="ac-list" id="acList" role="listbox" aria-label="Place suggestions">
+		<div class="ac-list absolute top-full left-0 right-0 mt-1.5 z-20" id="acList" role="listbox" aria-label="Place suggestions">
 			{#if session.acResults.length === 0}
-				<div class="ac-empty">No matches nearby</div>
+				<div class="ac-empty px-3 py-2 text-sm text-base-content/60">No matches nearby</div>
 			{:else}
 				{#each session.acResults as r, i (r.lat + ',' + r.lon)}
 					<div
 						id="ac-option-{i}"
-						class="ac-item {session.acActive === i ? 'active' : ''}"
+						class="ac-item flex items-start gap-3 px-3 py-2 cursor-pointer text-sm text-base-content"
 						role="option"
 						tabindex="-1"
 						aria-selected={session.acActive === i}
-						onmousedown={(e) => {
-							e.preventDefault();
-							pickResult(i);
-						}}
+						onmousedown={(e) => { e.preventDefault(); pickResult(i); }}
 					>
-						<svg viewBox="0 0 24 24"><path d="M12 2C7.86 2 4.5 5.36 4.5 9.5c0 5.62 6.5 12 7.09 12.56a.55.55 0 00.82 0C13 21.5 19.5 15.12 19.5 9.5 19.5 5.36 16.14 2 12 2zm0 10.25A2.75 2.75 0 1112 6.75a2.75 2.75 0 010 5.5z" /></svg>
-						<span>{r.label}</span>
+						<svg class="size-4 shrink-0 mt-0.5" viewBox="0 0 24 24"><path d="M12 2C7.86 2 4.5 5.36 4.5 9.5c0 5.62 6.5 12 7.09 12.56a.55.55 0 00.82 0C13 21.5 19.5 15.12 19.5 9.5 19.5 5.36 16.14 2 12 2zm0 10.25A2.75 2.75 0 1112 6.75a2.75 2.75 0 010 5.5z" /></svg>
+						<span class="flex-1 min-w-0">{r.label}</span>
 					</div>
 				{/each}
 			{/if}

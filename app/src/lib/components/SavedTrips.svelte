@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { domain } from '$lib/state/domain.svelte.js';
 	import { ui } from '$lib/state/ui.svelte.js';
-	import { MODES } from '$lib/engine/modes.js';
+	import { MODES } from '$lib/engine/index.js';
 	import { loadTrip } from '$lib/planner.svelte.js';
 	import type { Trip } from '$lib/storage.js';
 

@@ -1,4 +1,4 @@
-import { MODES } from './engine/modes.js';
+import { MODES } from './engine/index.js';
 import { elevations, reverseGeocode, detectCountry, route as fetchRoute } from './api.js';
 import { geoState } from './geo-state.svelte.js';
 import { resample, geoErrorMessage, RESAMPLE_STEP_M, cumulative, haversine } from './util.js';
@@ -9,10 +9,8 @@ import { session } from './state/session.svelte.js';
 import { nextStopId } from './state/domain.svelte.js';
 import { renderRoute } from './mapController.svelte.js';
 import { startTracking, stopTracking } from './tracker.js';
-import { buildPlanPacket } from './engine/planCore.js';
-import { routeSegments, verdictFor } from './engine/scoring.js';
+import { buildPlanPacket, routeSegments, decide, type PlanPacket, type PlanSource } from './engine/index.js';
 import { planRoute } from './plan.remote.js';
-import type { PlanPacket, PlanSource } from './engine/planShared.js';
 import type { Trip } from './storage.js';
 
 const SNAP_FACTOR = 1.6;
@@ -125,7 +123,7 @@ export const loadTrip = (t: Trip): void => {
 	const lineCum = cumulative(line);
 	const segs = routeSegments(line, lineCum, pts, t.elev, t.cum);
 	const mode = MODES[t.modeId] ?? domain.mode;
-	const v = verdictFor(segs, t.totalWh, t.usableWh, t.climbLimit, t.brakeLimit, mode);
+	const v = decide(segs, t.totalWh, t.usableWh, t.climbLimit, t.brakeLimit, mode);
 
 	// Same session reset as a fresh plan — a loaded trip replaces the route.
 	stopTracking();
@@ -286,8 +284,8 @@ export async function snapDrawnLeg(
 	b: LatLon
 ): Promise<{ leg: LatLon[]; snapped: boolean }> {
 	const straightLen = haversine(a, b);
-	if (straightLen < 1) return { leg: [a, b], snapped: false };
-	if (straightLen < RESAMPLE_STEP_M) return { leg: [a, b], snapped: false };
+	if (straightLen < 1) return { leg: [a], snapped: false }; // duplicate tap — nothing to add
+	if (straightLen < RESAMPLE_STEP_M) return { leg: [a, b], snapped: false }; // too short — just add b
 
 	try {
 		const leg = await fetchRoute(a, b);

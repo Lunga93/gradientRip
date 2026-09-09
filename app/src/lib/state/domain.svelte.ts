@@ -1,8 +1,8 @@
 // Domain state — the ride itself: stops, results, presets, trips, mode/board.
 // No UI chrome, no GPS session. Status feedback goes through ui.setStatus.
 
-import { MODES } from '../engine/modes.js';
-import type { Mode } from '../engine/modes.js';
+import { MODES } from '../engine/index.js';
+import type { Mode } from '../engine/index.js';
 import {
 	loadPresets,
 	savePresets,
@@ -17,7 +17,7 @@ import {
 import type { Preset, Trip } from '../storage.js';
 import type { LatLon } from '../util.js';
 import { cumulative } from '../util.js';
-import type { RouteSegment, Verdict } from '../engine/scoring.js';
+import type { RouteSegment, Verdict } from '../engine/index.js';
 import { ui } from './ui.svelte.js';
 
 export interface Stop {
