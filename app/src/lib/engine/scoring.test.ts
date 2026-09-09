@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { segWh, band, smooth3, mergePolylines } from './scoring.js';
-import { resample, haversine, cumulative } from './util.js';
+import { resample, haversine, cumulative } from './geometry.js';
 import { MODES, RIDER_KIT_KG } from './modes.js';
 
 // SPEC.md regression values (e-skate defaults: mass 116.8 kg, drivetrain 80%).

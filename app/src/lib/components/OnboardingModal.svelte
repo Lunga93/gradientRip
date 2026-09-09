@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { app } from '$lib/state/app.svelte.js';
+	import { domain } from '$lib/state/domain.svelte.js';
+	import { ui } from '$lib/state/ui.svelte.js';
 	import ModePicker from './ModePicker.svelte';
 	import { tick } from 'svelte';
 
-	let cardEl: HTMLDivElement;
+	let cardEl = $state<HTMLDivElement | undefined>(undefined);
 
 	$effect(() => {
-		if (!app.onboardSeen) {
+		if (!domain.onboardSeen) {
 			tick().then(() => {
 				const checked = cardEl?.querySelector<HTMLInputElement>('input[name=omode]:checked');
 				if (checked) checked.focus();
@@ -14,25 +15,40 @@
 		}
 	});
 
-	function go() {
-		app.onboardSeen = true;
-	}
+	const go = (): void => {
+		domain.completeOnboarding();
+		ui.setTab('plan');
+	};
+
+	const onKeydown = (e: KeyboardEvent): void => {
+		if (e.key === 'Escape') go();
+	};
 </script>
 
-{#if !app.onboardSeen}
-	<div class="onboard">
-		<div class="ocard" role="dialog" aria-modal="true" aria-labelledby="onboardTitle" bind:this={cardEl}>
-			<p class="osection">First — what are you riding?</p>
-			<h2 id="onboardTitle">Pick your machine</h2>
-			<p class="osub">
+{#if !domain.onboardSeen}
+	<div
+		class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] backdrop-blur-sm sm:items-center"
+	>
+		<div
+			class="card w-full max-w-md rounded-3xl border border-base-300 bg-base-100 shadow-2xl max-h-[88vh] overflow-y-auto p-6"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="onboardTitle"
+			aria-describedby="onboardDesc"
+			bind:this={cardEl}
+			onkeydown={onKeydown}
+			tabindex="-1"
+		>
+			<div class="-mx-6 -mt-6 mb-5 h-1" style="background: var(--brand-gradient)" aria-hidden="true"></div>
+			<p class="text-[0.72rem] font-semibold tracking-wide text-primary">First — what are you riding?</p>
+			<h2 id="onboardTitle" class="mt-1 text-xl font-bold">Pick your machine</h2>
+			<p id="onboardDesc" class="mt-2 mb-4 text-[0.86rem] leading-relaxed text-base-content/60">
 				Gradient tunes drag, rolling resistance, cruise speed and battery math to the vehicle class.
-				You can switch anytime under “Ride”.
+				You can switch anytime in the Ride settings.
 			</p>
-			<div class="omodes" role="radiogroup" aria-label="Transport mode">
-				<ModePicker variant="onboard" />
-			</div>
-			<button type="button" class="go" onclick={go}>
-				<svg class="bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5L13 2z"/></svg>
+			<ModePicker variant="onboard" />
+			<button type="button" class="btn btn-hero mt-5 w-full" onclick={go}>
+				<svg viewBox="0 0 24 24" class="size-4 fill-current"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5L13 2z" /></svg>
 				Start planning
 			</button>
 		</div>

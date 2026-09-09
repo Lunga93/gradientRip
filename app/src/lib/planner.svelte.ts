@@ -1,112 +1,168 @@
-// Plan pipeline — ported from the legacy submit handler and
-// scoreAndSaveCustomRoute(). Geocode every stop in order (respecting
-// Nominatim's 1 req/sec policy), route each leg, resample at 50 m, fetch
-// elevation, integrate energy, verdict, render, save the trip.
-
-import { MODES, NOMINATIM_DELAY_MS, RIDER_KIT_KG } from './modes.js';
-import { geocode, route, elevations, setMapCenter } from './api.js';
-import { resample, cumulative, haversine } from './util.js';
+import { MODES } from './engine/modes.js';
+import { elevations, reverseGeocode, detectCountry } from './api.js';
+import { geoState } from './geo-state.svelte.js';
+import { resample, geoErrorMessage, RESAMPLE_STEP_M, cumulative } from './util.js';
 import type { LatLon } from './util.js';
-import { segWh, routeSegments, verdictFor } from './scoring.js';
-import { app } from './state/app.svelte.js';
+import { domain } from './state/domain.svelte.js';
+import { ui } from './state/ui.svelte.js';
+import { session } from './state/session.svelte.js';
+import { nextStopId } from './state/domain.svelte.js';
 import { renderRoute } from './mapController.svelte.js';
-import { startTracking } from './tracker.js';
-import { reverseGeocode, detectCountry, CT_CENTER } from './api.js';
+import { startTracking, stopTracking } from './tracker.js';
+import { buildPlanPacket } from './engine/planCore.js';
+import { routeSegments, verdictFor } from './engine/scoring.js';
+import { planRoute } from './plan.remote.js';
+import type { PlanPacket, PlanSource } from './engine/planShared.js';
+import type { Trip } from './storage.js';
 
-export function isMobileView(): boolean {
-	return window.matchMedia('(max-width:640px)').matches;
-}
+export const isMobileView = (): boolean =>
+	typeof window !== 'undefined' && window.matchMedia('(max-width:640px)').matches;
 
-export async function planRoute(): Promise<void> {
-	const btn = app.planning;
-	if (btn) return;
-	app.results = null;
-	app.planning = true;
-
-	try {
-		const queries = app.stops.map((s) => s.value.trim());
-		if (queries.length < 2 || queries.some((q) => !q)) {
-			throw new Error('Every stop needs a place before you can plan the route.');
-		}
-		if (!navigator.onLine) {
-			throw new Error(
-				"You're offline — planning a new route needs a connection. Pick a saved trip below instead."
-			);
-		}
-		const boardVal = app.boardVal || app.boards[0].value;
-		const [, climbLimit, brakeLimit] = boardVal.split('|').map(Number);
-
-		// Geocode every stop in order, respecting Nominatim's 1 req/sec policy —
-		// except stops with an exact fix (from geolocation or a saved preset
-		// captured from one), which skip text geocoding entirely and use that
-		// fix directly.
-		const coords: LatLon[] = [];
-		for (let i = 0; i < queries.length; i++) {
-			if (app.stops[i] && app.stops[i].coords) {
-				coords.push(app.stops[i].coords as LatLon);
-				continue;
-			}
-			app.setStatus(`Geocoding stop ${i + 1} of ${queries.length}…`);
-			coords.push(await geocode(queries[i]));
-			if (i < queries.length - 1) {
-				await new Promise((r) => setTimeout(r, NOMINATIM_DELAY_MS));
-			}
-		}
-
-		// Route each consecutive pair of stops and stitch the legs into one
-		// continuous line, dropping a leg's duplicated first point.
-		let line: LatLon[] = [];
-		for (let i = 0; i < coords.length - 1; i++) {
-			app.setStatus(`Fetching leg ${i + 1} of ${coords.length - 1}…`);
-			const leg = await route(coords[i], coords[i + 1]);
-			line = line.concat(line.length ? leg.slice(1) : leg);
-		}
-
-		app.setStatus('Resampling and fetching elevation…');
-		const pts = resample(line, 50);
-		const elev = await elevations(pts);
-		finishScoring({
-			line,
-			coords,
-			pts,
-			elev,
-			boardVal,
-			climbLimit,
-			brakeLimit,
-			queries,
-			source: 'planned'
-		});
-	} catch (err) {
-		app.setStatus((err as Error).message || 'Something went wrong.', true);
-	} finally {
-		app.planning = false;
+// Client entry for the Plan form: calls the typed remote command (server
+// runs the whole geocode→route→elevation→score pipeline) and finalises the
+// returned packet. Reads like the flow it is: set busy → call → render.
+export const runPlan = async (): Promise<void> => {
+	if (typeof navigator !== 'undefined' && !navigator.onLine) {
+		ui.setStatus('You are offline — planning a new route needs a connection, but saved trips still open.', true);
+		return;
 	}
+	if (session.planning) return;
+	session.planning = true;
+	domain.results = null;
+	ui.setStatus('Planning your ride…');
+	try {
+		const packet = await planRoute({
+			stops: domain.stops.map((s) => ({ value: s.value, coords: s.coords })),
+			boardVal: domain.boardVal,
+			modeId: domain.modeId,
+			country: geoState.country
+		});
+		finalisePlan(packet);
+	} catch (err) {
+		const msg = (err as { body?: { message?: string }; message?: string })?.body?.message
+			?? (err as Error)?.message
+			?? 'Something went wrong.';
+		ui.setStatus(msg, true);
+	} finally {
+		session.planning = false;
+	}
+};
+
+// Browser-side half of a successful plan (planned, drawn or recorded).
+export const finalisePlan = (packet: PlanPacket) => {
+	// A fresh plan replaces whatever route live tracking was following —
+	// stop any in-progress session before swapping the data out from under it.
+	stopTracking();
+	domain.applyResult({
+		verdict: packet.verdict,
+		pts: packet.pts,
+		elev: packet.elev,
+		cum: packet.cum,
+		totalWh: packet.totalWh,
+		totalClimb: packet.totalClimb,
+		usableWh: packet.usableWh,
+		mode: MODES[packet.modeId] ?? MODES.eskate,
+		segs: packet.segs,
+		line: packet.line,
+		coords: packet.coords
+	});
+	renderRoute(packet.segs, packet.line, packet.coords);
+
+	if (isMobileView()) ui.setSheet(true);
+
+	domain.addTrip({
+		ts: Date.now(),
+		modeId: packet.modeId,
+		boardVal: packet.boardVal,
+		queries: packet.queries,
+		coords: packet.coords,
+		line: packet.line,
+		pts: packet.pts,
+		elev: packet.elev,
+		cum: packet.cum,
+		totalWh: packet.totalWh,
+		totalClimb: packet.totalClimb,
+		usableWh: packet.usableWh,
+		climbLimit: packet.climbLimit,
+		brakeLimit: packet.brakeLimit,
+		totalKm: packet.totalKm,
+		drawn: packet.source === 'drawn' || undefined,
+		recorded: packet.source === 'recorded' || undefined
+	});
+
+	startTracking();
+	ui.setStatus('');
+	ui.setTab('ride');
 }
 
-// Shared by drawn routes (clicked points) and recorded routes (live GPS
-// points) — both end up with nothing but an array of [lat, lon], and from
-// there it's identical to scoring a computed route.
-export async function scoreAndSaveCustomRoute(line: LatLon[], name: string, source: 'drawn' | 'recorded') {
-	const boardVal = app.boardVal || app.boards[0].value;
-	const [, climbLimit, brakeLimit] = boardVal.split('|').map(Number);
+// Redraws a saved trip with zero network access — same rendering path a live
+// plan uses, fed from stored data instead of fresh API responses.
+export const loadTrip = (t: Trip): void => {
+	if (!t.drawn && !t.recorded) {
+		domain.stops = t.queries.map((q, i) => ({
+			id: nextStopId(),
+			value: q,
+			coords: t.coords ? (t.coords[i] as LatLon) : null
+		}));
+		domain.activeStopIndex = 0;
+	}
+	if (MODES[t.modeId]) domain.selectMode(t.modeId);
+	domain.boardVal = t.boardVal;
 
-	app.setStatus(`Fetching elevation for your ${source} route…`);
+	const line = t.line as LatLon[];
+	const pts = t.pts as LatLon[];
+	const lineCum = cumulative(line);
+	const segs = routeSegments(line, lineCum, pts, t.elev, t.cum);
+	const mode = MODES[t.modeId] ?? domain.mode;
+	const v = verdictFor(segs, t.totalWh, t.usableWh, t.climbLimit, t.brakeLimit, mode);
+
+	// Same session reset as a fresh plan — a loaded trip replaces the route.
+	stopTracking();
+	domain.applyResult({
+		verdict: v,
+		pts,
+		elev: t.elev,
+		cum: t.cum,
+		totalWh: t.totalWh,
+		totalClimb: t.totalClimb,
+		usableWh: t.usableWh,
+		mode,
+		segs,
+		line,
+		coords: (t.coords ?? []) as LatLon[]
+	});
+	renderRoute(segs, line, (t.coords ?? []) as LatLon[]);
+
+	if (isMobileView()) ui.setSheet(true);
+	ui.setStatus('Loaded from saved trips — no network used.');
+	ui.setTab('ride');
+};
+export const scoreAndSaveCustomRoute = async (line: LatLon[], name: string, source: PlanSource) => {
+	const boardVal = domain.boardVal || domain.boards[0].value;
+	const modeId = domain.modeId;
+
+	if (typeof navigator !== 'undefined' && !navigator.onLine) {
+		ui.setStatus(`You are offline — saving a ${source} route needs elevation data, but the traced points are kept.`, true);
+		return;
+	}
+	ui.setStatus(`Fetching elevation for your ${source} route…`);
 	try {
-		const pts = resample(line, 50);
+		if (line.length < 2) throw new Error('Need at least 2 points to score.');
+		const pts = resample(line, RESAMPLE_STEP_M);
 		const elev = await elevations(pts);
-		finishScoring({
+		const packet = buildPlanPacket({
 			line,
 			coords: [line[0], line[line.length - 1]],
 			pts,
 			elev,
 			boardVal,
-			climbLimit,
-			brakeLimit,
+			modeId,
 			queries: [name],
 			source
 		});
+		finalisePlan(packet);
 	} catch (err) {
-		app.setStatus(
+		ui.setStatus(
 			(err as Error).message ||
 				`Could not process the ${source} route — elevation lookup still needs a connection.`,
 			true
@@ -114,113 +170,41 @@ export async function scoreAndSaveCustomRoute(line: LatLon[], name: string, sour
 	}
 }
 
-interface ScoreInput {
-	line: LatLon[];
-	coords: LatLon[];
-	pts: LatLon[];
-	elev: number[];
-	boardVal: string;
-	climbLimit: number;
-	brakeLimit: number;
-	queries: string[];
-	source: 'planned' | 'drawn' | 'recorded';
-}
+/* ---------- custom route naming (injectable for tests) ---------- */
+type RouteNamer = (message: string, defaultName: string) => string | null;
+let routeNamer: RouteNamer = (message, defaultName) =>
+	typeof window !== 'undefined' && typeof window.prompt === 'function'
+		? window.prompt(message, defaultName)
+		: defaultName;
 
-function finishScoring(input: ScoreInput) {
-	const { line, coords, pts, elev, boardVal, climbLimit, brakeLimit, queries, source } = input;
-	const phys = MODES[app.modeId].phys;
-	const usableWh = (app.boardVal || app.boards[0].value).split('|').map(Number)[0] * phys.usable;
-	const mass = RIDER_KIT_KG + phys.vehicleKg;
+export const setRouteNamer = (fn: RouteNamer): void => {
+	routeNamer = fn;
+};
 
-	const cum: number[] = [0];
-	for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + haversine(pts[i - 1], pts[i]));
-
-	let totalWh = 0;
-	let totalClimb = 0;
-	for (let i = 1; i < pts.length; i++) {
-		const d = cum[i] - cum[i - 1];
-		const rise = elev[i] - elev[i - 1];
-		const grade = rise / Math.max(1, d);
-		totalWh += segWh(d, grade, mass);
-		if (rise > 0) totalClimb += rise;
-	}
-
-	// Same colour-by-gradient road-hugging render a computed route gets —
-	// routeSegments() doesn't know or care that `line` didn't come from OSRM.
-	const lineCum = cumulative(line);
-	const segs = routeSegments(line, lineCum, pts, elev, cum);
-	const mode = MODES[app.modeId];
-	const v = verdictFor(segs, totalWh, usableWh, climbLimit, brakeLimit, mode);
-
-	app.applyResult({
-		verdict: v,
-		pts,
-		elev,
-		cum,
-		totalWh,
-		totalClimb,
-		usableWh,
-		mode,
-		segs,
-		line,
-		coords
-	});
-	renderRoute(segs, line, coords);
-
-	if (isMobileView()) app.setSheet(true);
-
-	app.addTrip({
-		ts: Date.now(),
-		modeId: app.modeId,
-		boardVal,
-		queries,
-		coords,
-		line,
-		pts,
-		elev,
-		cum,
-		totalWh,
-		totalClimb,
-		usableWh,
-		climbLimit,
-		brakeLimit,
-		totalKm: cum[cum.length - 1] / 1000,
-		drawn: source === 'drawn' || undefined,
-		recorded: source === 'recorded' || undefined
-	});
-
-	// A plan you just made is a plan you're about to ride — jump straight
-	// into live tracking instead of making that a second click.
-	startTracking();
-	app.setStatus('');
-}
+export const askRouteName = (message: string, defaultName: string): string | null => {
+	const name = routeNamer(message, defaultName);
+	if (name == null) return null;
+	const trimmed = name.trim();
+	return trimmed || defaultName;
+};
 
 /* ---------- locate ---------- */
-export function geoErrorMessage(err: GeolocationPositionError): string {
-	switch (err && err.code) {
-		case 1:
-			return 'Location permission denied — allow it for this site in your browser settings and try again.';
-		case 2:
-			return "Your device couldn't determine a position (no GPS/Wi-Fi fix available).";
-		case 3:
-			return 'Location request timed out — try again, ideally with a clearer view of the sky or on Wi-Fi.';
-		default:
-			return 'Could not get your location.';
-	}
-}
-
-export function locateInto(idx: number, panMap: boolean) {
-	if (!navigator.geolocation) {
-		app.setStatus('Geolocation is not available in this browser.', true);
+export const locateInto = (idx: number, panMap: boolean) => {
+	const unavailable = !navigator.geolocation || !window.isSecureContext;
+	if (unavailable) {
+		ui.setStatus(
+			window.isSecureContext
+				? 'Geolocation is not available in this browser.'
+				: 'Location needs a secure connection (https) — this works on the deployed site, or via a tunnel like `npx localtunnel` with an https URL.',
+			true
+		);
 		return;
 	}
-	app.setStatus('Finding your location…');
+	ui.setStatus('Finding your location…');
 	navigator.geolocation.getCurrentPosition(
 		async (pos) => {
 			const { latitude, longitude, accuracy } = pos.coords;
-			// Store the exact fix — used directly at plan time instead of being
-			// re-geocoded from text, which would throw away this precision.
-			app.setStopCoords(idx, [latitude, longitude]);
+			domain.setStopCoords(idx, [latitude, longitude]);
 
 			if (panMap) {
 				const { showLocateMarker } = await import('./mapController.svelte.js');
@@ -228,19 +212,21 @@ export function locateInto(idx: number, panMap: boolean) {
 			}
 
 			try {
-				app.setStopValue(idx, await reverseGeocode(latitude, longitude));
+				domain.setStopValue(idx, await reverseGeocode(latitude, longitude), true);
 			} catch {
-				app.setStopValue(idx, `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+				domain.setStopValue(idx, `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`, true);
 			}
 
 			const precision = accuracy != null ? `±${Math.round(accuracy)} m` : 'unknown precision';
-			app.setStatus(
+			ui.setStatus(
 				accuracy != null && accuracy > 200
 					? `Located, but accuracy is low (${precision}) — check the pin/address before planning.`
 					: `Located to ${precision}.`
 			);
+			const { saveKnownLocation } = await import('./storage.js');
+			saveKnownLocation({ lat: latitude, lon: longitude, label: '', ts: Date.now() });
 		},
-		(err) => app.setStatus(geoErrorMessage(err), true),
+		(err) => ui.setStatus(geoErrorMessage(err), true),
 		{ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
 	);
 }
@@ -249,14 +235,17 @@ export function locateInto(idx: number, panMap: boolean) {
 // the user's actual location instead of the hardcoded Cape Town fallback.
 // Failure (denied/unavailable) is silent: the app already works fine on the
 // Cape Town default.
-export function initMapCenter(onCenter: (center: LatLon) => void) {
+export const initMapCenter = (onCenter: (center: LatLon) => void) => {
 	if (!navigator.geolocation) return;
 	navigator.geolocation.getCurrentPosition(
-		(pos) => {
+		async (pos) => {
 			const center: LatLon = [pos.coords.latitude, pos.coords.longitude];
-			setMapCenter(center);
-			detectCountry(center);
+			geoState.setCenter(center);
+			const detected = await detectCountry(center);
+			geoState.setCountry(detected);
 			onCenter(center);
+			const { saveKnownLocation } = await import('./storage.js');
+			saveKnownLocation({ lat: center[0], lon: center[1], label: '', ts: Date.now() });
 		},
 		() => {
 			// keep the Cape Town default (and its matching 'za' countryCode)
@@ -264,5 +253,3 @@ export function initMapCenter(onCenter: (center: LatLon) => void) {
 		{ enableHighAccuracy: false, timeout: 8000, maximumAge: 5 * 60 * 1000 }
 	);
 }
-
-export { CT_CENTER };

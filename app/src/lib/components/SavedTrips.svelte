@@ -1,116 +1,73 @@
 <script lang="ts">
-	import { app } from '$lib/state/app.svelte.js';
-	import { MODES, MODE_ICONS } from '$lib/modes.js';
-	import { cumulative, haversine } from '$lib/util.js';
-	import type { LatLon } from '$lib/util.js';
-	import { routeSegments, verdictFor } from '$lib/scoring.js';
-	import { renderRoute } from '$lib/mapController.svelte.js';
-	import { app as appState } from '$lib/state/app.svelte.js';
+	import { domain } from '$lib/state/domain.svelte.js';
+	import { ui } from '$lib/state/ui.svelte.js';
+	import { MODES } from '$lib/engine/modes.js';
+	import { loadTrip } from '$lib/planner.svelte.js';
 	import type { Trip } from '$lib/storage.js';
 
-	function tripIcon(t: Trip): string {
-		if (t.recorded) return '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="#ff5a52"/></svg>';
+	const tripIcon = (t: Trip): string => {
+		if (t.recorded)
+			return '<span class="grid size-10 shrink-0 place-items-center rounded-full bg-error/10 text-error"><svg viewBox="0 0 24 24" class="size-4"><circle cx="12" cy="12" r="7"/></svg></span>';
 		if (t.drawn)
-			return '<svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
-		return '<svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 00-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1112 6.5a2.5 2.5 0 010 5z"/></svg>';
-	}
+			return '<span class="grid size-10 shrink-0 place-items-center rounded-full bg-secondary/10 text-secondary"><svg viewBox="0 0 24 24" class="size-4"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></span>';
+		return '<span class="grid size-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary"><svg viewBox="0 0 24 24" class="size-4"><path d="M12 2a7 7 0 00-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1112 6.5a2.5 2.5 0 010 5z"/></svg></span>';
+	};
 
-	function tripLabel(t: Trip): string {
+	const tripLabel = (t: Trip): string => {
 		const prefix = t.recorded ? 'Recorded: ' : t.drawn ? 'Drawn: ' : '';
 		return prefix + t.queries.join(' → ');
-	}
+	};
 
-	function tripMeta(t: Trip): string {
+	const tripMeta = (t: Trip): string => {
 		const modeLabel = MODES[t.modeId] ? MODES[t.modeId].label : t.modeId;
 		return `${modeLabel} · ${t.totalKm.toFixed(1)} km · ${new Date(t.ts).toLocaleString()}`;
-	}
+	};
 
-	// Redraws a saved trip with no network access at all — same rendering path
-	// a live plan uses, fed from stored data instead of fresh API responses.
-	function loadTrip(t: Trip) {
-		// A drawn or recorded route's `queries` is just its custom name, not
-		// from/to stops — leave the fields as they are rather than overwriting.
-		if (!t.drawn && !t.recorded) {
-			app.stops = t.queries.map((q, i) => ({
-				value: q,
-				coords: t.coords ? (t.coords[i] as LatLon) : null
-			}));
-			app.activeStopIndex = 0;
-		}
-		if (MODES[t.modeId]) app.selectMode(t.modeId);
-		app.boardVal = t.boardVal;
-
-		const line = t.line as LatLon[];
-		const pts = t.pts as LatLon[];
-		const lineCum = cumulative(line);
-		const segs = routeSegments(line, lineCum, pts, t.elev, t.cum);
-		const mode = MODES[t.modeId] ?? app.mode;
-		const v = verdictFor(segs, t.totalWh, t.usableWh, t.climbLimit, t.brakeLimit, mode);
-
-		app.applyResult({
-			verdict: v,
-			pts,
-			elev: t.elev,
-			cum: t.cum,
-			totalWh: t.totalWh,
-			totalClimb: t.totalClimb,
-			usableWh: t.usableWh,
-			mode,
-			segs,
-			line,
-			coords: (t.coords ?? []) as LatLon[]
-		});
-		renderRoute(segs, line, (t.coords ?? []) as LatLon[]);
-		app.setStatus('Loaded from saved trips — no network used.');
-	}
-
-	function deleteTrip(e: MouseEvent, idx: number) {
-		e.stopPropagation();
-		app.deleteTrip(idx);
-	}
-
-	// keep unused import warnings away — haversine is re-exported for tests
-	void haversine;
-	void appState;
+	const deleteTrip = (idx: number): void => {
+		domain.deleteTrip(idx);
+	};
 </script>
 
-<div class="panel-card" class:hidden={app.trips.length === 0}>
-	<button
-		type="button"
-		class="collapse-header"
-		aria-expanded={!app.tripsCollapsed}
-		aria-controls="tripsBody"
-		onclick={() => app.toggleTripsCollapsed()}
-	>
-		<span class="sectionlabel">Saved trips (offline)</span>
-		<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg>
-	</button>
-	<div class="collapse-body" class:collapsed={app.tripsCollapsed} id="tripsBody">
-		<div class="collapse-inner">
-			<div class="trips">
-				{#each app.trips as t, i (t.ts + '-' + i)}
-					<button type="button" class="trip" onclick={() => loadTrip(t)}>
-						{@html tripIcon(t)}
-						<span class="tmain">
-							<span class="troute">{tripLabel(t)}</span>
-							<span class="tmeta">{tripMeta(t)}</span>
-						</span>
-						<span class="del" role="button" tabindex="0" title="Delete saved trip" onclick={(e) => deleteTrip(e, i)} onkeydown={(e) => e.key === 'Enter' && deleteTrip(e as unknown as MouseEvent, i)}>&times;</span>
-					</button>
-				{/each}
-			</div>
-		</div>
+{#if !domain.trips.length}
+	<div class="flex flex-col items-center gap-3 px-6 py-14 text-center">
+		<span class="grid size-14 place-items-center rounded-full bg-primary/10 text-primary">
+			<svg viewBox="0 0 24 24" class="size-7"><path d="M12 2a7 7 0 00-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1112 6.5a2.5 2.5 0 010 5z" /></svg>
+		</span>
+		<h3 class="text-base font-semibold text-base-content">No saved trips yet</h3>
+		<p class="text-sm leading-relaxed text-base-content/60">
+			Plan a route from the start tab and it lands here, ready to reopen offline — no connection needed.
+		</p>
+			<button class="btn btn-hero mt-2" type="button" onclick={() => ui.setTab('plan')}>Plan a route</button>
 	</div>
-</div>
-
-<style>
-	/* mode icons come from the shared icon map */
-	.trip :global(svg) {
-		fill: var(--accent);
-	}
-</style>
-
-<script module lang="ts">
-	// expose MODE_ICONS for potential template use
-	export const icons = MODE_ICONS;
-</script>
+{:else}
+	<div class="flex flex-col gap-2">
+		{#each domain.trips as t, i (t.ts + '-' + i)}
+			<div
+				class="group flex items-center gap-3 rounded-2xl border border-base-300 bg-base-200 p-2.5 text-left transition-colors hover:border-primary hover:bg-primary/5"
+			>
+				<button
+					type="button"
+					class="flex min-w-0 flex-1 items-center gap-3 bg-transparent text-left"
+					onclick={() => loadTrip(t)}
+					title="Open this saved trip"
+					aria-label="Open saved trip {tripLabel(t)}"
+				>
+					{@html tripIcon(t)}
+				<span class="min-w-0 flex-1">
+					<span class="font-display block truncate text-[0.88rem] font-semibold text-base-content">{tripLabel(t)}</span>
+						<span class="mt-0.5 block text-[0.72rem] text-base-content/55">{tripMeta(t)}</span>
+					</span>
+				</button>
+				<button
+					type="button"
+					class="btn btn-circle btn-sm btn-ghost text-base-content/40 opacity-70 hover:bg-error/15 hover:text-error group-hover:opacity-100"
+					title="Delete saved trip"
+					aria-label="Delete saved trip {tripLabel(t)}"
+					onclick={() => deleteTrip(i)}
+				>
+					<svg viewBox="0 0 24 24" class="size-4"><path d="M6 7h12l-1 14H7L6 7zm4 2v10h1V9h-1zm3 0v10h1V9h-1zM5 5V4h4l1-1h4l1 1h4v1H5z" /></svg>
+				</button>
+			</div>
+		{/each}
+	</div>
+{/if}

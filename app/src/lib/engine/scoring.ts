@@ -1,15 +1,8 @@
-// Physics + gradient scoring — ported verbatim from the legacy app.
-// Do not "simplify" this. The numbers were validated by hand against an
-// independent calculation before the code was written (see SPEC.md).
-
 import { G, RHO, MODES } from './modes.js';
 import type { Mode } from './modes.js';
-import type { LatLon } from './util.js';
+import type { LatLon } from './geometry.js';
 
-// distance in metres, grade as a fraction (0.06 = 6%), v in km/h.
-// P defaults to the active transport mode's tuning; explicit vKmh keeps the
-// SPEC.md regression cases callable (e.g. segWh(1000, 0, 116.8, 25)).
-export function segWh(distance: number, grade: number, mass: number, vKmh?: number, P?: Mode['phys']): number {
+export const segWh = (distance: number, grade: number, mass: number, vKmh?: number, P?: Mode['phys']): number => {
 	const p = P || MODES.eskate.phys;
 	const v = (vKmh == null ? p.speed : vKmh) / 3.6;
 	const fRoll = p.crr * mass * G;
@@ -19,13 +12,12 @@ export function segWh(distance: number, grade: number, mass: number, vKmh?: numb
 	return (f * distance) / p.eff / 3600;
 }
 
-/* ---------- gradient bands (deliberately asymmetric — see SPEC.md) ---------- */
 export interface Band {
 	c: string;
 	k: string;
 }
 
-export function band(gradePct: number): Band {
+export const band = (gradePct: number): Band => {
 	const g = gradePct;
 	if (g <= -12) return { c: '#4a1420', k: 'past braking' };
 	if (g <= -8) return { c: '#b5502e', k: 'steep descent' };
@@ -36,7 +28,18 @@ export function band(gradePct: number): Band {
 	return { c: '#b5502e', k: 'at the motor limit' };
 }
 
-export function smooth3(arr: number[]): number[] {
+export const bandCssVar = (gradePct: number): string => {
+	const g = gradePct;
+	if (g <= -12) return 'var(--band-stop, #4a1420)';
+	if (g <= -8) return 'var(--band-steepd, #b5502e)';
+	if (g <= -4) return 'var(--band-watch, #c98a2c)';
+	if (g < 4) return 'var(--band-easy, #6b8f4e)';
+	if (g < 10) return 'var(--band-work, #8fae7a)';
+	if (g < 15) return 'var(--band-hard, #a4630a)';
+	return 'var(--band-limit, #b5502e)';
+}
+
+export const smooth3 = (arr: number[]): number[] => {
 	if (arr.length < 3) return arr.slice();
 	const out = arr.slice();
 	for (let i = 1; i < arr.length - 1; i++) {
@@ -45,8 +48,7 @@ export function smooth3(arr: number[]): number[] {
 	return out;
 }
 
-/* ---------- profile SVG ---------- */
-export function profileSVG(pts: LatLon[], elev: number[], cum: number[]): string {
+export const profileSVG = (pts: LatLon[], elev: number[], cum: number[]): string => {
 	const W = 900;
 	const H = 180;
 	const pad = 4;
@@ -61,10 +63,10 @@ export function profileSVG(pts: LatLon[], elev: number[], cum: number[]): string
 	let bars = '';
 	for (let i = 1; i < pts.length; i++) {
 		const grade = ((elev[i] - elev[i - 1]) / Math.max(1, cum[i] - cum[i - 1])) * 100;
-		const { c } = band(grade);
+		const color = bandCssVar(grade);
 		const x0 = x(cum[i - 1]);
 		const x1 = x(cum[i]);
-		bars += `<rect x="${x0.toFixed(1)}" y="0" width="${Math.max(1, x1 - x0).toFixed(1)}" height="${H}" fill="${c}" opacity="0.35"/>`;
+		bars += `<rect x="${x0.toFixed(1)}" y="0" width="${Math.max(1, x1 - x0).toFixed(1)}" height="${H}" fill="${color}" opacity="0.35"/>`;
 	}
 
 	let line = `M ${x(cum[0]).toFixed(1)} ${y(elev[0]).toFixed(1)}`;
@@ -72,7 +74,7 @@ export function profileSVG(pts: LatLon[], elev: number[], cum: number[]): string
 		line += ` L ${x(cum[i]).toFixed(1)} ${y(elev[i]).toFixed(1)}`;
 	}
 
-	return `${bars}<path d="${line}" fill="none" stroke="#edf2ef" stroke-width="2"/>`;
+	return `${bars}<path d="${line}" fill="none" stroke="var(--profile-line, #171a1f)" stroke-width="2"/>`;
 }
 
 /* ---------- gradient -> route colouring on the map ----------
@@ -80,7 +82,7 @@ export function profileSVG(pts: LatLon[], elev: number[], cum: number[]): string
    points used for elevation. So we colour every sub-segment of the
    full-resolution route line, looking up its grade by binary-searching the
    distance-along-route into the resampled elevation profile. */
-export function gradeAt(dist: number, cum: number[], elev: number[]): number {
+export const gradeAt = (dist: number, cum: number[], elev: number[]): number => {
 	// binary search for the bracket [cum[i-1], cum[i]] containing `dist`
 	let lo = 1;
 	let hi = cum.length - 1;
@@ -102,13 +104,13 @@ export interface RouteSegment {
 	grade: number;
 }
 
-export function routeSegments(
+export const routeSegments = (
 	line: LatLon[],
 	lineCum: number[],
 	pts: LatLon[],
 	elev: number[],
 	cum: number[]
-): RouteSegment[] {
+): RouteSegment[] => {
 	const segs: RouteSegment[] = [];
 	for (let i = 1; i < line.length; i++) {
 		const mid = (lineCum[i - 1] + lineCum[i]) / 2;
@@ -125,14 +127,14 @@ export interface Verdict {
 	text: string;
 }
 
-export function verdictFor(
+export const verdictFor = (
 	segs: RouteSegment[],
 	totalWh: number,
 	usableWh: number,
 	climbLimit: number,
 	brakeLimit: number,
 	mode: Mode
-): Verdict {
+): Verdict => {
 	const m = mode;
 	const worstDescent = Math.min(0, ...segs.map((s) => s.grade));
 	const worstClimb = Math.max(0, ...segs.map((s) => s.grade));
@@ -183,7 +185,7 @@ export function verdictFor(
 // underlying points still trace every vertex of the full-resolution route,
 // so the line hugs the road exactly, but we don't create one DOM element
 // per OSRM vertex (a few km of route can be 1000+ points).
-export function mergePolylines(segs: RouteSegment[]): { c: string; pts: LatLon[] }[] {
+export const mergePolylines = (segs: RouteSegment[]): { c: string; pts: LatLon[] }[] => {
 	const groups: { c: string; pts: LatLon[] }[] = [];
 	let cur: { c: string; pts: LatLon[] } | null = null;
 	for (const s of segs) {

@@ -7,18 +7,18 @@
 import type * as LeafletTypes from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { LatLon } from './util.js';
-import { mergePolylines } from './scoring.js';
-import type { RouteSegment } from './scoring.js';
-import { app } from './state/app.svelte.js';
+import { mergePolylines } from './engine/scoring.js';
+import type { RouteSegment } from './engine/scoring.js';
+import { session } from './state/session.svelte.js';
 
 type L = typeof LeafletTypes;
 
 let Leaflet: L | null = null;
 
-export async function ensureLeaflet(): Promise<L> {
+export const ensureLeaflet = async (): Promise<L> => {
 	if (!Leaflet) Leaflet = await import('leaflet');
 	return Leaflet;
-}
+};
 
 let map: L.Map | null = null;
 let routeLayer: L.LayerGroup | null = null;
@@ -29,14 +29,16 @@ let recordLayer: L.Polyline | null = null;
 let recordMarker: L.CircleMarker | null = null;
 let locateMarker: L.CircleMarker | null = null;
 let locateAccuracyCircle: L.Circle | null = null;
+let trackMarker: L.CircleMarker | null = null;
+let trackAccuracyCircle: L.Circle | null = null;
 
-export async function createMap(container: HTMLElement, center: LatLon): Promise<L.Map> {
-	const L = await ensureLeaflet();
-	map = L.map(container, { zoomControl: false }).setView(center, 13);
-	L.control.zoom({ position: 'topright' }).addTo(map);
+export const createMap = async (container: HTMLElement, center: LatLon): Promise<L.Map> => {
+	const Leaf = await ensureLeaflet();
+	map = Leaf.map(container, { zoomControl: false }).setView(center, 13);
+	Leaf.control.zoom({ position: 'topright' }).addTo(map);
 	// Standard OSM raster tiles — free, keyless. The dark look is re-derived
 	// with a CSS invert filter (see app.css #map .leaflet-tile-pane).
-	L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+	Leaf.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 		maxZoom: 19,
 		attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 	}).addTo(map);
@@ -44,23 +46,23 @@ export async function createMap(container: HTMLElement, center: LatLon): Promise
 	// Panning away from the live marker while tracking means the rider wants
 	// to look around — stop auto-recentring until they ask to jump back.
 	map.on('dragstart', () => {
-		if (app.trackingActive && app.following) {
-			app.following = false;
-			app.recenterVisible = true;
+		if (session.trackingActive && session.following) {
+			session.following = false;
+			session.recenterVisible = true;
 		}
 	});
 
 	map.on('click', onMapClick);
 	return map;
-}
+};
 
 // browser-only layer helpers grab the loaded namespace through this getter
-function l(): L {
+const l = (): L => {
 	if (!Leaflet) throw new Error('Leaflet not loaded — call ensureLeaflet()/createMap() first');
 	return Leaflet;
-}
+};
 
-export function destroyMap(): void {
+export const destroyMap = (): void => {
 	if (map) {
 		map.remove();
 		map = null;
@@ -73,19 +75,19 @@ export function destroyMap(): void {
 	recordMarker = null;
 	locateMarker = null;
 	locateAccuracyCircle = null;
-}
+	trackMarker = null;
+	trackAccuracyCircle = null;
+};
 
-export function getMap(): L.Map | null {
-	return map;
-}
+export const getMap = (): L.Map | null => map;
 
-export function ensureMap(): L.Map {
+export const ensureMap = (): L.Map => {
 	if (!map) throw new Error('Map not initialised');
 	return map;
-}
+};
 
 /* ---------- route rendering ---------- */
-function stopMapIcon(i: number, n: number): L.DivIcon {
+const stopMapIcon = (i: number, n: number): L.DivIcon => {
 	if (i === 0) {
 		return l().divIcon({
 			className: '',
@@ -108,9 +110,9 @@ function stopMapIcon(i: number, n: number): L.DivIcon {
 		iconSize: [16, 16],
 		iconAnchor: [8, 8]
 	});
-}
+};
 
-export function renderRoute(segs: RouteSegment[], line: LatLon[], coords: LatLon[]): void {
+export const renderRoute = (segs: RouteSegment[], line: LatLon[], coords: LatLon[]): void => {
 	const m = ensureMap();
 	if (routeLayer) routeLayer.remove();
 	stopMarkers.forEach((mk) => mk.remove());
@@ -144,32 +146,23 @@ export function renderRoute(segs: RouteSegment[], line: LatLon[], coords: LatLon
 	});
 
 	m.fitBounds(l().latLngBounds(line), { padding: [40, 40] });
-}
-
-export function clearRoute(): void {
-	if (routeLayer) {
-		routeLayer.remove();
-		routeLayer = null;
-	}
-	stopMarkers.forEach((mk) => mk.remove());
-	stopMarkers = [];
-}
+};
 
 /* ---------- draw mode ---------- */
-function onMapClick(e: L.LeafletMouseEvent) {
-	if (app.drawMode) {
-		app.drawPoints.push([e.latlng.lat, e.latlng.lng]);
+const onMapClick = (e: L.LeafletMouseEvent): void => {
+	if (session.drawMode) {
+		session.drawPoints.push([e.latlng.lat, e.latlng.lng]);
 		redrawDrawLayer();
 	}
-}
+};
 
-export function redrawDrawLayer(): void {
+export const redrawDrawLayer = (): void => {
 	const m = ensureMap();
 	clearDrawLayer();
-	if (app.drawPoints.length > 1) {
-		drawLayer = l().polyline(app.drawPoints, { color: '#FFFFFF', weight: 4, dashArray: '6 8' }).addTo(m);
+	if (session.drawPoints.length > 1) {
+		drawLayer = l().polyline(session.drawPoints, { color: '#2563eb', weight: 4, dashArray: '6 8' }).addTo(m);
 	}
-	app.drawPoints.forEach((p) => {
+	session.drawPoints.forEach((p) => {
 		drawMarkers.push(
 			l().circleMarker(p, {
 				radius: 5,
@@ -180,35 +173,35 @@ export function redrawDrawLayer(): void {
 			}).addTo(m)
 		);
 	});
-}
+};
 
-export function clearDrawLayer(): void {
+export const clearDrawLayer = (): void => {
 	if (drawLayer) {
 		drawLayer.remove();
 		drawLayer = null;
 	}
 	drawMarkers.forEach((mk) => mk.remove());
 	drawMarkers = [];
-}
+};
 
-export function setDrawCursor(crosshair: boolean): void {
+export const setDrawCursor = (crosshair: boolean): void => {
 	if (!map) return;
 	map.getContainer().style.cursor = crosshair ? 'crosshair' : '';
-}
+};
 
 /* ---------- record mode ---------- */
-export function redrawRecordLayer(): void {
+export const redrawRecordLayer = (): void => {
 	const m = ensureMap();
 	if (recordLayer) {
 		recordLayer.remove();
 		recordLayer = null;
 	}
-	if (app.recordPoints.length > 1) {
-		recordLayer = l().polyline(app.recordPoints, { color: '#ff5a52', weight: 4 }).addTo(m);
+	if (session.recordPoints.length > 1) {
+		recordLayer = l().polyline(session.recordPoints, { color: '#ff5a52', weight: 4 }).addTo(m);
 	}
-}
+};
 
-export function updateRecordMarker(latlng: LatLon, first: boolean): void {
+export const updateRecordMarker = (latlng: LatLon, first: boolean): void => {
 	const m = ensureMap();
 	if (first) {
 		recordMarker = l().circleMarker(latlng, {
@@ -223,9 +216,9 @@ export function updateRecordMarker(latlng: LatLon, first: boolean): void {
 		recordMarker.setLatLng(latlng);
 		m.panTo(latlng);
 	}
-}
+};
 
-export function clearRecordLayer(): void {
+export const clearRecordLayer = (): void => {
 	if (recordLayer) {
 		recordLayer.remove();
 		recordLayer = null;
@@ -234,10 +227,10 @@ export function clearRecordLayer(): void {
 		recordMarker.remove();
 		recordMarker = null;
 	}
-}
+};
 
 /* ---------- locate ---------- */
-export function showLocateMarker(latlng: LatLon, accuracy: number): void {
+export const showLocateMarker = (latlng: LatLon, accuracy: number): void => {
 	const m = ensureMap();
 	m.setView(latlng, 16);
 	if (locateMarker) locateMarker.remove();
@@ -258,4 +251,37 @@ export function showLocateMarker(latlng: LatLon, accuracy: number): void {
 		fillOpacity: 0.06,
 		dashArray: '4 4'
 	}).addTo(m);
-}
+};
+
+/* ---------- live tracking marker (owned here, driven by tracker.ts) ---------- */
+export const updateTrackMarker = (latlng: LatLon, accuracy: number): void => {
+	const m = ensureMap();
+	if (!trackMarker) {
+		trackMarker = l()
+			.circleMarker(latlng, {
+				radius: 8,
+				color: '#fff',
+				weight: 2,
+				fillColor: '#1a73e8',
+				fillOpacity: 0.95
+			})
+			.addTo(m);
+	} else {
+		trackMarker.setLatLng(latlng);
+	}
+	if (trackAccuracyCircle) trackAccuracyCircle.remove();
+	trackAccuracyCircle = l()
+		.circle(latlng, { radius: accuracy, color: '#1a73e8', weight: 1, fillOpacity: 0.08 })
+		.addTo(m);
+};
+
+export const clearTrackMarker = (): void => {
+	if (trackMarker) {
+		trackMarker.remove();
+		trackMarker = null;
+	}
+	if (trackAccuracyCircle) {
+		trackAccuracyCircle.remove();
+		trackAccuracyCircle = null;
+	}
+};
