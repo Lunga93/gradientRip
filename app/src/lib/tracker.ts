@@ -12,7 +12,7 @@ import {
 	redrawRecordLayer, clearRecordLayer, ensureMap,
 	updateTrackMarker, clearTrackMarker, updateRecordMarker
 } from './mapController.svelte.js';
-import { scoreAndSaveCustomRoute, askRouteName } from './planner.svelte.js';
+import { scoreAndSaveCustomRoute, askRouteName, snapDrawnLeg } from './planner.svelte.js';
 
 /* ---------- tracking ---------- */
 
@@ -89,25 +89,79 @@ export const recenter = (): void => {
 
 /* ---------- draw mode ---------- */
 
+export const addDrawPoint = (latlng: LatLon): void => {
+	const len = session.drawPoints.length;
+	session.drawPoints.push(latlng);
+	if (len > 0) {
+		const prev = session.drawPoints[len - 1];
+		const legIdx = len - 1;
+		session.drawLegs.push([prev, latlng]);
+		redrawDrawLayer();
+		snapDrawnLeg(prev, latlng)
+			.then((res) => {
+				if (!session.drawMode) return;
+				if (session.drawPoints[legIdx] === prev && session.drawPoints[legIdx + 1] === latlng) {
+					session.drawLegs[legIdx] = res.leg;
+					redrawDrawLayer();
+				}
+			})
+			.catch(() => {
+				// keep straight fallback
+			});
+	} else {
+		redrawDrawLayer();
+	}
+};
+
+export const getDrawnPath = (): LatLon[] => {
+	if (session.drawPoints.length === 0) return [];
+	if (session.drawPoints.length === 1) return [session.drawPoints[0]];
+	const out: LatLon[] = [session.drawPoints[0]];
+	for (let i = 0; i < session.drawPoints.length - 1; i++) {
+		const leg = session.drawLegs[i] || [session.drawPoints[i], session.drawPoints[i + 1]];
+		if (leg.length > 1) {
+			out.push(...leg.slice(1));
+		}
+	}
+	return out;
+};
+
 export const enterDrawMode = (): void => {
 	if (session.trackingActive) stopTracking();
 	if (session.recordMode) exitRecordMode();
-	session.drawMode = true; session.drawPoints = [];
-	setDrawCursor(true); redrawDrawLayer();
+	session.drawMode = true;
+	session.drawPoints = [];
+	session.drawLegs = [];
+	setDrawCursor(true);
+	redrawDrawLayer();
 	ui.setStatus('Tap the map to trace your route, then hit Finish.');
 };
 
 export const exitDrawMode = (): void => {
-	session.drawMode = false; setDrawCursor(false); clearDrawLayer(); session.drawPoints = [];
+	session.drawMode = false;
+	setDrawCursor(false);
+	clearDrawLayer();
+	session.drawPoints = [];
+	session.drawLegs = [];
 };
 
-export const undoDrawPoint = (): void => { session.drawPoints.pop(); redrawDrawLayer(); };
+export const undoDrawPoint = (): void => {
+	if (session.drawPoints.length === 0) return;
+	session.drawPoints.pop();
+	if (session.drawLegs.length >= session.drawPoints.length) {
+		session.drawLegs.pop();
+	}
+	redrawDrawLayer();
+};
 
 export const finishDrawing = async (): Promise<void> => {
-	if (session.drawPoints.length < 2) { ui.setStatus('Add at least 2 points before finishing.', true); return; }
+	if (session.drawPoints.length < 2) {
+		ui.setStatus('Add at least 2 points before finishing.', true);
+		return;
+	}
 	const name = askRouteName('Name this route:', 'Custom shortcut');
 	if (!name) return;
-	const line = session.drawPoints.slice() as LatLon[];
+	const line = getDrawnPath();
 	exitDrawMode();
 	await scoreAndSaveCustomRoute(line, name, 'drawn');
 };

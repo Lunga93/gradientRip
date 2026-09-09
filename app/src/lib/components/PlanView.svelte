@@ -87,9 +87,9 @@
 						</button>
 					</div>
 				</section>
-				<div class="status {ui.statusErr ? 'err' : ''} flex min-h-[1.15em] items-center gap-2 px-1 text-base-content/60" role="status" aria-live="polite">
-					{#if ui.statusBusy}<span class="loading loading-dots loading-sm text-primary"></span>{/if}
-					{ui.statusMsg}
+				<div class="status {ui.statusErr ? 'err' : ''} flex min-h-[1.15em] min-w-0 items-center gap-2 px-1 text-base-content/60" role="status" aria-live="polite">
+					{#if ui.statusBusy}<span class="loading loading-dots loading-sm flex-none text-primary"></span>{/if}
+					<span class="min-w-0 [overflow-wrap:anywhere]">{ui.statusMsg}</span>
 				</div>
 			{/if}
 		</div>

@@ -280,6 +280,38 @@ export const initMapCenter = (onCenter: (center: LatLon) => void) => {
 	);
 };
 
+/** Snap a single leg between two points to the road network. */
+export async function snapDrawnLeg(
+	a: LatLon,
+	b: LatLon
+): Promise<{ leg: LatLon[]; snapped: boolean }> {
+	const straightLen = haversine(a, b);
+	if (straightLen < 1) return { leg: [a, b], snapped: false };
+	if (straightLen < RESAMPLE_STEP_M) return { leg: [a, b], snapped: false };
+
+	try {
+		const leg = await fetchRoute(a, b);
+		const routed = cumulative(leg);
+		const routedLen = routed[routed.length - 1];
+		if (leg.length >= 2 && routedLen <= SNAP_FACTOR * straightLen) {
+			return { leg, snapped: true };
+		}
+	} catch {
+		// no road match – fall through to straight interpolation
+	}
+
+	// Straight interpolation at profiling resolution.
+	const n = Math.max(1, Math.floor(straightLen / RESAMPLE_STEP_M));
+	const straightLeg: LatLon[] = [a];
+	for (let k = 1; k <= n; k++) {
+		straightLeg.push([
+			a[0] + ((b[0] - a[0]) * k) / n,
+			a[1] + ((b[1] - a[1]) * k) / n
+		]);
+	}
+	return { leg: straightLeg, snapped: false };
+}
+
 /** Snap a user-drawn polyline to the road network leg‑by‑leg.
  *  For each tapped segment we try `fetchRoute(a, b)`; if the routed length
  *  is not excessively longer than the straight-line distance we keep the
@@ -295,35 +327,10 @@ export async function snapDrawnLine(
 	let snapped = 0;
 	let straight = 0;
 	for (let i = 0; i < tapped.length - 1; i++) {
-		const a = tapped[i];
-		const b = tapped[i + 1];
-		const straightLen = haversine(a, b);
-		if (straightLen < 1) continue; // duplicate tap
-		if (straightLen < RESAMPLE_STEP_M) {
-			out.push(b);
-			continue;
-		}
-		try {
-			const leg = await fetchRoute(a, b);
-			const routed = cumulative(leg);
-			const routedLen = routed[routed.length - 1];
-			if (leg.length >= 2 && routedLen <= SNAP_FACTOR * straightLen) {
-				out.push(...leg.slice(1));
-				snapped++;
-				continue;
-			}
-		} catch {
-			// no road match – fall through to straight interpolation
-		}
-		// Straight interpolation at profiling resolution.
-		const n = Math.max(1, Math.floor(straightLen / RESAMPLE_STEP_M));
-		for (let k = 1; k <= n; k++) {
-			out.push([
-				a[0] + ((b[0] - a[0]) * k) / n,
-				a[1] + ((b[1] - a[1]) * k) / n,
-			]);
-		}
-		straight++;
+		const res = await snapDrawnLeg(tapped[i], tapped[i + 1]);
+		if (res.snapped) snapped++;
+		else straight++;
+		out.push(...res.leg.slice(1));
 	}
 	return { line: out, snapped, straight };
 }

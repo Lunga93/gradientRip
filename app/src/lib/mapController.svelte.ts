@@ -10,6 +10,7 @@ import type { LatLon } from './util.js';
 import { mergePolylines } from './engine/scoring.js';
 import type { RouteSegment } from './engine/scoring.js';
 import { session } from './state/session.svelte.js';
+import { addDrawPoint, getDrawnPath } from './tracker.js';
 
 type L = typeof LeafletTypes;
 
@@ -151,16 +152,16 @@ export const renderRoute = (segs: RouteSegment[], line: LatLon[], coords: LatLon
 /* ---------- draw mode ---------- */
 const onMapClick = (e: L.LeafletMouseEvent): void => {
 	if (session.drawMode) {
-		session.drawPoints.push([e.latlng.lat, e.latlng.lng]);
-		redrawDrawLayer();
+		addDrawPoint([e.latlng.lat, e.latlng.lng]);
 	}
 };
 
 export const redrawDrawLayer = (): void => {
 	const m = ensureMap();
 	clearDrawLayer();
-	if (session.drawPoints.length > 1) {
-		drawLayer = l().polyline(session.drawPoints, { color: '#2563eb', weight: 4, dashArray: '6 8' }).addTo(m);
+	const path = getDrawnPath();
+	if (path.length > 1) {
+		drawLayer = l().polyline(path, { color: '#2563eb', weight: 4, dashArray: '6 8' }).addTo(m);
 	}
 	session.drawPoints.forEach((p) => {
 		drawMarkers.push(

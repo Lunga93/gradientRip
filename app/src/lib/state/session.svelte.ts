@@ -18,6 +18,7 @@ class SessionState {
 	// draw / record modes
 	drawMode = $state(false);
 	drawPoints = $state<LatLon[]>([]);
+	drawLegs = $state<LatLon[][]>([]);
 	recordMode = $state(false);
 	recordPoints = $state<LatLon[]>([]);
 	recordKm = $state(0);
