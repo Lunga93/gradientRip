@@ -38,6 +38,7 @@ export const runRemotePlan = async (
 	if (queries.length < 2 || queries.some((q) => !q)) {
 		throw new Error('Every stop needs a place before you can plan the route.');
 	}
+	const t0 = performance.now();
 
 	const coords: LatLon[] = [];
 	for (let i = 0; i < queries.length; i++) {
@@ -49,18 +50,24 @@ export const runRemotePlan = async (
 		coords.push(await geocode(queries[i], country));
 		if (i < queries.length - 1) await sleep(NOMINATIM_DELAY_MS);
 	}
+	const tGeo = performance.now();
 
 	let line: LatLon[] = [];
-	for (let i = 0; i < coords.length - 1; i++) {
-		const leg = await route(coords[i], coords[i + 1]);
-		line = line.concat(line.length ? leg.slice(1) : leg);
-	}
+	// Legs are independent router calls with no shared rate policy, so they
+	// run concurrently (unlike Nominatim above, which stays sequential).
+	// Order is preserved: legs[i] always joins coords[i] → coords[i + 1].
+	const legs = await Promise.all(
+		coords.slice(0, -1).map((from, i) => route(from, coords[i + 1]))
+	);
+	for (const leg of legs) line = line.concat(line.length ? leg.slice(1) : leg);
 	if (line.length < 2) throw new Error('Routing returned no usable geometry.');
+	const tRoute = performance.now();
 
 	const pts = resample(line, RESAMPLE_STEP_M);
 	const elev = await elevations(pts);
+	const tElev = performance.now();
 
-	return buildPlanPacket({
+	const packet = buildPlanPacket({
 		line,
 		coords,
 		pts,
@@ -70,4 +77,12 @@ export const runRemotePlan = async (
 		queries,
 		source: 'planned'
 	});
+	// One line per plan on stdout — the perf record for the waterfall.
+	// eslint-disable-next-line no-console
+	console.info(
+		`[runRemotePlan] stops=${queries.length} pts=${pts.length} ` +
+			`geocode=${Math.round(tGeo - t0)}ms route=${Math.round(tRoute - tGeo)}ms ` +
+			`elev=${Math.round(tElev - tRoute)}ms score=${Math.round(performance.now() - tElev)}ms`
+	);
+	return packet;
 }

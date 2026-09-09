@@ -90,10 +90,10 @@ and is the unit to extract if this ever becomes a standalone package.
 
 ```
 address strings
-  → (server) Nominatim geocode        (1 req/sec, hard rate limit)
-  → (server) OSRM route               (returns GeoJSON polyline, no elevation)
+  → (server) Nominatim geocode        (1 req/sec, hard rate limit — sequential with delay)
+  → (server) OSRM route               (legs fetch concurrently, joined in order)
   → resample every 50 m
-  → (server) Open-Meteo elevation     (batched 100 coords/request)
+  → (server) Open-Meteo elevation     (batched 100 coords/request, up to 4 concurrent, merged in order)
   → 3-point moving average            (DEM noise suppression)
   → per-segment grade + energy integration
   → verdict + SVG profile + Leaflet overlay

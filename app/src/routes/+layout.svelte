@@ -12,6 +12,19 @@
 				/* offline shell is a progressive enhancement — ignore */
 			});
 		}
+		// Leaflet rides a dynamic import so the first paint stays lean — warm
+		// that chunk once the browser idles so the map is ready when asked.
+		const warmLeaflet = (): void => {
+			import('$lib/mapController.svelte.js')
+				.then((m) => m.ensureLeaflet())
+				.catch(() => {
+					/* offline on first paint — MapCanvas loads it on demand */
+				});
+		};
+		const idle = (window as Window & { requestIdleCallback?: (cb: () => void) => void })
+			.requestIdleCallback;
+		if (idle) idle(warmLeaflet);
+		else setTimeout(warmLeaflet, 2000);
 	});
 </script>
 

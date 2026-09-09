@@ -150,9 +150,14 @@ export const route = async (a: LatLon, b: LatLon): Promise<LatLon[]> => {
 }
 
 export const elevations = async (pts: LatLon[]): Promise<number[]> => {
-	const out: number[] = [];
-	for (let i = 0; i < pts.length; i += 100) {
-		const chunk = pts.slice(i, i + 100);
+	// Chunks are independent idempotent reads — up to 4 in flight at a time.
+	// Order is preserved by writing each chunk into its own slot.
+	const CHUNK = 100;
+	const CONCURRENCY = 4;
+	const out: number[][] = [];
+	for (let i = 0; i < pts.length; i += CHUNK) out.push([]);
+	const fetchChunk = async (start: number, slot: number): Promise<void> => {
+		const chunk = pts.slice(start, start + CHUNK);
 		const lats = chunk.map((p) => p[0].toFixed(6)).join(',');
 		const lons = chunk.map((p) => p[1].toFixed(6)).join(',');
 		const url = `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`;
@@ -162,7 +167,14 @@ export const elevations = async (pts: LatLon[]): Promise<number[]> => {
 		if (!Array.isArray(data.elevation) || data.elevation.length !== chunk.length) {
 			throw new Error('Elevation lookup returned mismatched data');
 		}
-		out.push(...data.elevation);
+		out[slot] = data.elevation;
+	};
+	for (let i = 0; i < pts.length; i += CHUNK * CONCURRENCY) {
+		const jobs: Promise<void>[] = [];
+		for (let j = 0; j < CONCURRENCY && i + j * CHUNK < pts.length; j++) {
+			jobs.push(fetchChunk(i + j * CHUNK, i / CHUNK + j));
+		}
+		await Promise.all(jobs);
 	}
-	return out;
+	return out.flat();
 }

@@ -43,7 +43,8 @@
 	<div class="flex flex-col gap-2">
 		{#each domain.trips as t, i (t.ts + '-' + i)}
 			<div
-				class="group flex items-center gap-3 rounded-2xl border border-base-300 bg-base-200 p-2.5 text-left transition-colors hover:border-primary hover:bg-primary/5"
+				class="list-rise group flex items-center gap-3 rounded-2xl border border-base-300 bg-base-200 p-2.5 text-left transition-colors hover:border-primary hover:bg-primary/5"
+				style="animation-delay: {Math.min(i * 35, 280)}ms"
 			>
 				<button
 					type="button"
