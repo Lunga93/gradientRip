@@ -18,7 +18,8 @@
 <nav class="flex items-stretch gap-1 border-t border-base-300 bg-base-100 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] pt-1.5" aria-label="Main navigation">
 	{#each tabs as tab (tab.key)}
 		<button
-			class="flex flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[0.68rem] font-medium transition-colors {ui.activeTab === tab.key ? 'bg-primary/10 text-primary' : 'text-base-content/45 hover:text-base-content'}"
+			class="flex flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[0.68rem] font-medium transition-colors {ui.activeTab === tab.key ? '' : 'text-base-content/45 hover:text-base-content'}"
+			class:tab-active={ui.activeTab === tab.key}
 			aria-current={ui.activeTab === tab.key ? 'page' : undefined}
 			onclick={() => ui.setTab(tab.key)}
 		>

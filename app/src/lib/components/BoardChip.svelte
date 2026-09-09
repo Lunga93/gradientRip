@@ -10,7 +10,7 @@
 	type="button"
 	role="radio"
 	aria-checked={active}
-	class:btn-primary={active}
+	class:pick-active={active}
 	class="btn btn-sm btn-soft border border-base-300 whitespace-nowrap"
 	onclick={() => domain.selectBoard(board.value)}
 >

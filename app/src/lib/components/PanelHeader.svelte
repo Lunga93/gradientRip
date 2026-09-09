@@ -7,8 +7,8 @@
 	<span class="brand-tile" aria-hidden="true">
 		<svg viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5L13 2z" /></svg>
 	</span>
-	<div class="min-w-0 flex-1 leading-tight">
-		<h1 class="text-[1.05rem] font-bold tracking-tight text-base-content">Gradient</h1>
+			<div class="min-w-0 flex-1 leading-tight">
+				<h1 class="wordmark text-[1.15rem] font-bold tracking-tight">Gradient</h1>
 		<p class="text-[0.72rem] text-base-content/55">Micromobility route lab — climb / brake / range</p>
 	</div>
 	<span

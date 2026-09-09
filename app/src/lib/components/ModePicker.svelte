@@ -28,7 +28,7 @@
 					onchange={() => domain.selectMode(id)}
 				/>
 				<span
-					class="flex min-w-[76px] flex-col items-center gap-2 rounded-2xl border border-base-300 bg-base-200 px-2 py-3 text-[0.7rem] font-semibold text-base-content/70 transition-transform hover:border-primary/60 active:scale-95 peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-content"
+					class="mode-pick flex min-w-[76px] flex-col items-center gap-2 rounded-2xl border border-base-300 bg-base-200 px-2 py-3 text-[0.7rem] font-semibold text-base-content/70 transition-all hover:border-primary/60 active:scale-95"
 				>
 					{@html MODE_ICONS[id]}
 					{MODES[id].label.split(' ')[0]}
@@ -51,7 +51,7 @@
 						onchange={() => domain.selectMode(id)}
 					/>
 					<span
-						class="block rounded-2xl border border-base-300 bg-base-200 p-3 transition-colors hover:border-primary/60 peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:ring-1 peer-checked:ring-primary"
+						class="mode-pick block rounded-2xl border border-base-300 bg-base-200 p-3 transition-colors hover:border-primary/60"
 					>
 						{@html MODE_ICONS[id]}
 						<strong class="mt-1.5 block text-[0.92rem]">{MODES[id].label}</strong>

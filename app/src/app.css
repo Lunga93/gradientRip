@@ -50,6 +50,7 @@
 	/* brand + app tokens (light) */
 	--brand-gradient: linear-gradient(135deg, #12a35c 0%, #0b7d43 100%);
 	--brand-gradient-hover: linear-gradient(135deg, #17b366 0%, #0d8c4a 100%);
+	--brand-glow: rgba(18, 163, 92, 0.45);
 	--brand-mark: #ffffff;
 	--app-bg: #eef1f3;
 	--gridline: #b9c2ca;
@@ -106,6 +107,7 @@
 	/* brand + app tokens (dark) */
 	--brand-gradient: linear-gradient(135deg, #ffffff 0%, #dce3e8 45%, #aeb9c2 100%);
 	--brand-gradient-hover: linear-gradient(135deg, #ffffff 0%, #eaeef1 45%, #c3cbd1 100%);
+	--brand-glow: rgba(255, 255, 255, 0.22);
 	--brand-mark: #0b0e10;
 	--app-bg: #0b0e10;
 	--gridline: #3a434b;
@@ -265,13 +267,52 @@ a {
 	height: 3px;
 	background: var(--brand-gradient);
 }
+/* gradient wordmark */
+.wordmark {
+	background: var(--brand-gradient);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+}
+/* gradient active tab */
+.tab-active {
+	background: var(--brand-gradient) !important;
+	color: var(--brand-mark) !important;
+	box-shadow: 0 6px 16px -8px var(--brand-glow);
+}
+/* gradient selected pick (board chips) */
+.pick-active {
+	background: var(--brand-gradient) !important;
+	color: var(--brand-mark) !important;
+	border-color: transparent !important;
+	box-shadow: 0 6px 16px -8px var(--brand-glow);
+}
+/* gradient selected mode cards (radio peer) */
+.mode-pick svg {
+	fill: currentColor;
+}
+.peer:checked + .mode-pick {
+	background: var(--brand-gradient);
+	color: var(--brand-mark);
+	border-color: transparent;
+	box-shadow: 0 8px 20px -10px var(--brand-glow);
+}
+.peer:checked + .mode-pick svg {
+	fill: var(--brand-mark);
+}
+.peer:checked + .mode-pick strong {
+	color: var(--brand-mark);
+}
+.peer:checked + .mode-pick span {
+	color: color-mix(in srgb, var(--brand-mark) 72%, transparent);
+}
 /* hero action — gradient primary for the main CTA in each flow */
 .btn-hero {
 	background: var(--brand-gradient);
 	color: var(--brand-mark);
 	border: none;
 	font-weight: 700;
-	box-shadow: 0 8px 20px -8px color-mix(in srgb, black 45%, transparent);
+	box-shadow: 0 10px 24px -10px var(--brand-glow), 0 2px 6px -2px color-mix(in srgb, black 35%, transparent);
 	transition: filter 0.15s linear, transform 0.15s cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 .btn-hero:hover:not(:disabled) {
