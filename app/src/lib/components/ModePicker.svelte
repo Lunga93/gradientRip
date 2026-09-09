@@ -11,7 +11,7 @@
 
 {#if variant === 'panel'}
 	<div
-		class="drag-scroll flex gap-2 overflow-x-auto p-0.5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+		class="drag-scroll flex gap-2 overflow-x-auto p-0.5 pb-3 [scrollbar-width:none] [&>*]:shrink-0 [&::-webkit-scrollbar]:hidden"
 		role="radiogroup"
 		aria-label="Transport mode"
 		tabindex="0"

@@ -63,7 +63,7 @@
 						Board // Powertrain
 						<span class="h-px flex-1 bg-base-300"></span>
 					</h2>
-						<div class="drag-scroll gap-2 overflow-x-auto pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden" role="radiogroup" aria-label="Board" tabindex="0" use:dragScroll>
+						<div class="drag-scroll flex gap-2 overflow-x-auto pb-1 [&>*]:shrink-0 [&::-webkit-scrollbar]:hidden" role="radiogroup" aria-label="Board" tabindex="0" use:dragScroll>
 						{#each domain.boards as board (board.value)}
 							<BoardChip {board} />
 						{/each}
