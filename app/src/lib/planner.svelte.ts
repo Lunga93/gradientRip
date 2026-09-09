@@ -1,7 +1,7 @@
 import { MODES } from './engine/modes.js';
-import { elevations, reverseGeocode, detectCountry } from './api.js';
+import { elevations, reverseGeocode, detectCountry, route as fetchRoute } from './api.js';
 import { geoState } from './geo-state.svelte.js';
-import { resample, geoErrorMessage, RESAMPLE_STEP_M, cumulative } from './util.js';
+import { resample, geoErrorMessage, RESAMPLE_STEP_M, cumulative, haversine } from './util.js';
 import type { LatLon } from './util.js';
 import { domain } from './state/domain.svelte.js';
 import { ui } from './state/ui.svelte.js';
@@ -14,6 +14,8 @@ import { routeSegments, verdictFor } from './engine/scoring.js';
 import { planRoute } from './plan.remote.js';
 import type { PlanPacket, PlanSource } from './engine/planShared.js';
 import type { Trip } from './storage.js';
+
+const SNAP_FACTOR = 1.6;
 
 export const isMobileView = (): boolean =>
 	typeof window !== 'undefined' && window.matchMedia('(max-width:640px)').matches;
@@ -146,7 +148,7 @@ export const loadTrip = (t: Trip): void => {
 	ui.setStatus('Loaded from saved trips — no network used.');
 	ui.setTab('ride');
 };
-export const scoreAndSaveCustomRoute = async (line: LatLon[], name: string, source: PlanSource) => {
+export const scoreAndSaveCustomRoute = async (tapped: LatLon[], name: string, source: PlanSource) => {
 	const boardVal = domain.boardVal || domain.boards[0].value;
 	const modeId = domain.modeId;
 
@@ -154,6 +156,21 @@ export const scoreAndSaveCustomRoute = async (line: LatLon[], name: string, sour
 		ui.setStatus(`You are offline — saving a ${source} route needs elevation data, but the traced points are kept.`, true);
 		return;
 	}
+	// Drawn routes snap to the road network leg-by-leg — nobody rides
+	// helicopter lines. Recordings skip this: GPS traces are the ridden path.
+	let line = tapped;
+	let snapNote: string | null = null;
+	if (source === 'drawn') {
+		ui.setStatus('Snapping your route to roads…');
+		const snapped = await snapDrawnLine(tapped);
+		line = snapped.line;
+		if (snapped.straight > 0 && snapped.snapped > 0) {
+			snapNote = `Snapped ${snapped.snapped} leg${snapped.snapped === 1 ? '' : 's'} to roads, kept ${snapped.straight} off-road section${snapped.straight === 1 ? '' : 's'} as tapped.`;
+		} else if (snapped.straight > 0) {
+			snapNote = 'No road match — kept your tapped line as-is.';
+		}
+	}
+	if (snapNote) ui.setStatus(snapNote);
 	ui.setStatus(`Fetching elevation for your ${source} route…`);
 	try {
 		if (line.length < 2) throw new Error('Need at least 2 points to score.');
@@ -261,4 +278,52 @@ export const initMapCenter = (onCenter: (center: LatLon) => void) => {
 		},
 		{ enableHighAccuracy: false, timeout: 8000, maximumAge: 5 * 60 * 1000 }
 	);
+};
+
+/** Snap a user-drawn polyline to the road network leg‑by‑leg.
+ *  For each tapped segment we try `fetchRoute(a, b)`; if the routed length
+ *  is not excessively longer than the straight-line distance we keep the
+ *  road geometry, otherwise we fall back to evenly‑spaced interpolated
+ *  way‑points at the profiling resolution.
+ *
+ *  Returns `{ line, snapped, straight }` where *snapped* is the count of
+ *  legs that were road‑snapped and *straight* is the count kept as-tapped. */
+export async function snapDrawnLine(
+	tapped: LatLon[]
+): Promise<{ line: LatLon[]; snapped: number; straight: number }> {
+	const out: LatLon[] = [tapped[0]];
+	let snapped = 0;
+	let straight = 0;
+	for (let i = 0; i < tapped.length - 1; i++) {
+		const a = tapped[i];
+		const b = tapped[i + 1];
+		const straightLen = haversine(a, b);
+		if (straightLen < 1) continue; // duplicate tap
+		if (straightLen < RESAMPLE_STEP_M) {
+			out.push(b);
+			continue;
+		}
+		try {
+			const leg = await fetchRoute(a, b);
+			const routed = cumulative(leg);
+			const routedLen = routed[routed.length - 1];
+			if (leg.length >= 2 && routedLen <= SNAP_FACTOR * straightLen) {
+				out.push(...leg.slice(1));
+				snapped++;
+				continue;
+			}
+		} catch {
+			// no road match – fall through to straight interpolation
+		}
+		// Straight interpolation at profiling resolution.
+		const n = Math.max(1, Math.floor(straightLen / RESAMPLE_STEP_M));
+		for (let k = 1; k <= n; k++) {
+			out.push([
+				a[0] + ((b[0] - a[0]) * k) / n,
+				a[1] + ((b[1] - a[1]) * k) / n,
+			]);
+		}
+		straight++;
+	}
+	return { line: out, snapped, straight };
 }
