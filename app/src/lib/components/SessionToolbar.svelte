@@ -5,7 +5,7 @@
 
 {#if session.drawMode}
 	<div class="draw-toolbar" role="status" aria-live="polite">
-		<span class="badge badge-lg badge-primary">
+		<span class="badge badge-lg badge-primary rounded-full">
 			{#if session.drawPoints.length === 1}1 point{:else}{session.drawPoints.length} points{/if}
 		</span>
 		<span class="hidden text-[0.78rem] text-base-content/60 sm:inline">Tap the map to trace your route</span>

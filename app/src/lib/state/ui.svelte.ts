@@ -17,6 +17,7 @@ class UiState {
 	theme = $state<ThemePref>(loadThemePref());
 	activeTab = $state<'plan' | 'saved' | 'ride'>('plan');
 	isMobile = $state(false);
+	panelVisible = $state(true); // hide panel in drawing/record mode
 
 	statusMsg = $state('');
 	statusErr = $state(false);

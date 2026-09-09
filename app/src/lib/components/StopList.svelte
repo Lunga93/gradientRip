@@ -3,22 +3,23 @@
 	import { domain } from '$lib/state/domain.svelte.js';
 	import { session } from '$lib/state/session.svelte.js';
 	import { scheduleAutocomplete, hideAcList, selectAcItem, acHandleKeydown } from '$lib/autocomplete.svelte.js';
+	import { Bookmark, X, Swap, DestinationPin, OriginDot, WaypointDot } from '$lib/icons/index.js';
+	import AddressFocus from './AddressFocus.svelte';
 
 	let rowsEl: HTMLDivElement;
 	let railEl: HTMLDivElement;
 	let searchBoxEl: HTMLDivElement;
 
-	const stopIcon = (i: number, n: number): string => {
-		if (i === 0) return '<span class="marker"><span class="origin-dot"></span></span>';
-		if (i === n - 1)
-			return '<span class="marker"><svg class="dest-pin" viewBox="0 0 24 24"><path d="M12 2C7.86 2 4.5 5.36 4.5 9.5c0 5.62 6.5 12 7.09 12.56a.55.55 0 00.82 0C13 21.5 19.5 15.12 19.5 9.5 19.5 5.36 16.14 2 12 2zm0 10.25A2.75 2.75 0 1112 6.75a2.75 2.75 0 010 5.5z"/></svg></span>';
-		return '<span class="marker"><span class="waypoint-dot"></span></span>';
-	};
-
 	const stopPlaceholder = (i: number, n: number): string => {
 		if (i === 0) return 'Choose starting point';
 		if (i === n - 1) return 'Choose destination';
 		return `Add stop ${i}`;
+	};
+
+	// Get the matching preset for a stop value
+	const getFavoritePreset = (value: string) => {
+		const val = value.trim().toLowerCase();
+		return domain.presets.find(p => p.query.trim().toLowerCase() === val);
 	};
 
 	const positionRail = async (): Promise<void> => {
@@ -77,42 +78,60 @@
 
 	<div class="flex flex-col" bind:this={rowsEl}>
 		{#each domain.stops as s, i (s.id)}
-			<div class="searchrow relative flex items-center gap-2 bg-transparent px-4 py-3">
-				{@html stopIcon(i, domain.stops.length)}
-				<input
-					type="text"
-					class="flex-1 min-w-0 bg-transparent border-none outline-none text-[0.95rem] text-base-content placeholder:text-base-content/40"
-					placeholder={stopPlaceholder(i, domain.stops.length)}
-					autocomplete="off"
-					role="combobox"
-					aria-expanded={session.acIdx === i && session.acResults.length > 0}
-					aria-controls="acList"
-					aria-autocomplete="list"
-					aria-activedescendant={session.acIdx === i && session.acActive >= 0 ? `ac-option-${session.acActive}` : undefined}
-					bind:value={s.value}
-					oninput={(e) => onInput(i, e)}
-					onfocus={(e) => onFocus(i, e)}
-					onblur={onBlur}
-					onkeydown={(e) => acHandleKeydown(e, i)}
-				/>
-				<button
-					type="button"
-					class="btn btn-circle btn-sm btn-ghost text-base-content/50 hover:text-base-content shrink-0"
-					aria-label="Save this place"
-					title="Save this place"
-					onclick={() => savePreset(i)}
-				>
-					<svg viewBox="0 0 24 24" class="size-4"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" /></svg>
-				</button>
+			<div class="searchrow group relative flex items-center gap-2 bg-transparent px-4 py-3">
+				<span class="marker flex items-center justify-center">
+					{#if i === 0}
+						<OriginDot class="size-4" />
+					{:else if i === domain.stops.length - 1}
+						<DestinationPin class="size-4" />
+					{:else}
+						<WaypointDot class="size-4" />
+					{/if}
+				</span>
+				<div class="flex-1 min-w-0 relative">
+					<input
+						type="text"
+						class="flex-1 min-w-0 bg-transparent border-none outline-none text-[0.95rem] text-base-content placeholder:text-base-content/40 pr-10 focus:ring-2 focus:ring-primary/40 focus:ring-offset-1 rounded-lg"
+						placeholder={stopPlaceholder(i, domain.stops.length)}
+						autocomplete="off"
+						role="combobox"
+						aria-expanded={session.acIdx === i && session.acResults.length > 0}
+						aria-controls="acList"
+						aria-autocomplete="list"
+						aria-activedescendant={session.acIdx === i && session.acActive >= 0 ? `ac-option-${session.acActive}` : undefined}
+						bind:value={s.value}
+						oninput={(e) => onInput(i, e)}
+						onfocus={(e) => onFocus(i, e)}
+						onblur={onBlur}
+						onkeydown={(e) => acHandleKeydown(e, i)}
+					/>
+					<!-- Favorite/bookmark indicator -->
+					{#if getFavoritePreset(s.value)}
+						<span class="absolute right-2 top-1/2 -translate-y-1/2 text-primary opacity-80 pointer-events-none" title="Saved place: {getFavoritePreset(s.value)?.label}" aria-label="Saved place: {getFavoritePreset(s.value)?.label}">
+							<Bookmark class="size-4 fill-current" />
+						</span>
+					{/if}
+					<!-- Address focus suggestions -->
+					<AddressFocus stopIndex={i} />
+				</div>
+			<button
+				type="button"
+				class="btn btn-circle btn-sm btn-ghost text-base-content/40 hover:text-primary shrink-0"
+				aria-label="Save this place"
+				title="Save this place"
+				onclick={() => savePreset(i)}
+			>
+				<Bookmark />
+			</button>
 				{#if i > 0 && i < domain.stops.length - 1}
 					<button
 						type="button"
-						class="btn btn-circle btn-sm btn-ghost text-base-content/50 hover:text-error shrink-0"
+						class="btn btn-circle btn-sm btn-ghost text-base-content/50 hover:text-error opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
 						aria-label="Remove this stop"
 						title="Remove this stop"
 						onclick={() => removeStop(i)}
 					>
-						<svg viewBox="0 0 24 24" class="size-4"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
+						<X />
 					</button>
 				{/if}
 			</div>
@@ -126,7 +145,7 @@
 		title="Reverse stop order"
 		onclick={() => domain.reverseStops()}
 	>
-		<svg viewBox="0 0 24 24" class="size-4"><path d="M7 7h11l-3-3 1.4-1.4L21.8 8l-5.4 5.4L15 12l3-3H7V7zm10 10H6l3 3-1.4 1.4L2.2 16l5.4-5.4L9 12l-3 3h11v2z" /></svg>
+		<Swap />
 	</button>
 
 	{#if session.acIdx !== null && (session.acResults.length > 0 || session.acActive === -1)}
@@ -143,7 +162,7 @@
 						aria-selected={session.acActive === i}
 						onmousedown={(e) => { e.preventDefault(); pickResult(i); }}
 					>
-						<svg class="size-4 shrink-0 mt-0.5" viewBox="0 0 24 24"><path d="M12 2C7.86 2 4.5 5.36 4.5 9.5c0 5.62 6.5 12 7.09 12.56a.55.55 0 00.82 0C13 21.5 19.5 15.12 19.5 9.5 19.5 5.36 16.14 2 12 2zm0 10.25A2.75 2.75 0 1112 6.75a2.75 2.75 0 010 5.5z" /></svg>
+						<DestinationPin class="size-4 shrink-0 mt-0.5" />
 						<span class="flex-1 min-w-0">{r.label}</span>
 					</div>
 				{/each}

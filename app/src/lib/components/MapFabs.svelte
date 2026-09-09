@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { LocateFixed, Crosshair } from '@lucide/svelte';
+	import { MapPin, Crosshair } from '@lucide/svelte';
 	import { ui } from '$lib/state/ui.svelte.js';
 	import { session } from '$lib/state/session.svelte.js';
 	import { locateInto } from '$lib/planner.svelte.js';
@@ -20,7 +20,7 @@
 	title="Use my location"
 	onclick={locateFab}
 >
-	<LocateFixed class="size-5" />
+	<MapPin class="size-5" />
 </button>
 {/if}
 {#if session.recenterVisible && !(ui.isMobile && ui.sheetOpen)}

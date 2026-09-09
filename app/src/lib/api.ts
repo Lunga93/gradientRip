@@ -1,6 +1,3 @@
-// Browser gateway for geo services. Thin typed wrappers over the remote
-// functions in geo.remote.ts — no manual fetch/JSON except autocomplete,
-// which keeps its /api/autocomplete endpoint for AbortSignal cancellation.
 import type { LatLon } from './util.js';
 import { geoState, DEFAULT_CENTER } from './geo-state.svelte.js';
 import {
@@ -13,8 +10,6 @@ import {
 
 export { DEFAULT_CENTER };
 
-// Remote failures arrive as HttpError with the message on body.message;
-// surface a plain Error so callers keep one error shape.
 const unwrap = (err: unknown, fallback: string): Error => {
 	const msg =
 		(err as { body?: { message?: string }; message?: string })?.body?.message ??

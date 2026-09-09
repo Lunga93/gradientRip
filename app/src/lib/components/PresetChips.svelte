@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { domain } from '$lib/state/domain.svelte.js';
+	import { Bookmark } from '$lib/icons/index.js';
 
 	const fillPreset = (id: number): void => {
 		const p = domain.presets.find((x) => x.id === id);
@@ -18,7 +19,7 @@
 {:else}
 	{#each domain.presets as p (p.id)}
 		<span
-			class="badge badge-lg badge-outline gap-1.5 px-3 py-3"
+			class="pill gap-1.5 px-3 py-3"
 		>
 			<button
 				type="button"
@@ -27,7 +28,7 @@
 				aria-label="Use saved place {p.label}"
 				onclick={() => fillPreset(p.id)}
 			>
-				<svg viewBox="0 0 24 24" class="size-3 fill-primary"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" /></svg>
+				<Bookmark class="size-3 fill-primary" />
 				<span class="max-w-[10rem] truncate">{p.label}</span>
 			</button>
 			<button

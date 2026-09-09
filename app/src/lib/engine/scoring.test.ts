@@ -43,17 +43,17 @@ describe('gradient bands are deliberately asymmetric (SPEC)', () => {
 		expect(classify(-10)).toEqual({ c: '#b5502e', k: 'steep descent' });
 	});
 
-	it('-12% is past braking but +12% is only "hard climb"', () => {
-		expect(classify(-12)).toEqual({ c: '#4a1420', k: 'past braking' });
+	it('-12% is steep descent but +12% is only "hard climb"', () => {
+		expect(classify(-12)).toEqual({ c: '#b5502e', k: 'steep descent' });
 		expect(classify(12)).toEqual({ c: '#c98a2c', k: 'hard climb' });
 	});
 
-	it('±4% is easy going (boundary inclusive on descent side)', () => {
-		expect(classify(-4)).toEqual({ c: '#c98a2c', k: 'watch your speed' });
-		expect(classify(3.9)).toEqual({ c: '#6b8f4e', k: 'easy going' });
-		expect(classify(4)).toEqual({ c: '#8fae7a', k: 'working climb' });
-		expect(classify(15)).toEqual({ c: '#b5502e', k: 'at the motor limit' });
-		expect(classify(10)).toEqual({ c: '#c98a2c', k: 'hard climb' }); // exactly 10% is NOT < 10
+	it('±6% is easy going (boundary inclusive on descent side)', () => {
+		expect(classify(-6)).toEqual({ c: '#c98a2c', k: 'watch your speed' });
+		expect(classify(5.9)).toEqual({ c: '#6b8f4e', k: 'easy going' });
+		expect(classify(6)).toEqual({ c: '#8fae7a', k: 'working climb' });
+		expect(classify(18)).toEqual({ c: '#b5502e', k: 'at the motor limit' });
+		expect(classify(12)).toEqual({ c: '#c98a2c', k: 'hard climb' }); // exactly 12% is NOT < 12
 	});
 });
 

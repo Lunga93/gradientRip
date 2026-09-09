@@ -1,6 +1,3 @@
-// Session management — GPS tracking, draw mode, record mode.
-// Ported from the legacy app. All three are mutually exclusive.
-
 import { nearestOnLine, haversine, geoErrorMessage } from './util.js';
 import type { LatLon } from './util.js';
 import { domain } from './state/domain.svelte.js';
@@ -29,6 +26,7 @@ const setTrackMsg = (msg: string, warn: boolean): void => {
 };
 
 export const startTracking = (): void => {
+	if (session.trackingActive) return;
 	if (!domain.currentRoute) return;
 	if (!navigator.geolocation) { setTrackMsg('Geolocation is not available in this browser.', true); return; }
 	if (session.drawMode) exitDrawMode();
@@ -43,6 +41,7 @@ export const startTracking = (): void => {
 };
 
 export const stopTracking = (): void => {
+	if (!session.trackingActive) return;
 	if (tracking.watchId != null && navigator.geolocation) navigator.geolocation.clearWatch(tracking.watchId);
 	tracking.watchId = null;
 	session.following = true;
@@ -135,6 +134,7 @@ export const enterDrawMode = (): void => {
 	setDrawCursor(true);
 	redrawDrawLayer();
 	ui.setStatus('Tap the map to trace your route, then hit Finish.');
+	ui.panelVisible = false; // hide panel for maximal map space
 };
 
 export const exitDrawMode = (): void => {
@@ -143,6 +143,7 @@ export const exitDrawMode = (): void => {
 	clearDrawLayer();
 	session.drawPoints = [];
 	session.drawLegs = [];
+	ui.panelVisible = true; // restore panel
 };
 
 export const undoDrawPoint = (): void => {
@@ -177,12 +178,14 @@ export const enterRecordMode = (): void => {
 	session.recordMode = true; session.recordPoints = []; session.recordKm = 0;
 	ui.setStatus('Recording your live path — move to trace the route, then hit Finish.');
 	recordWatchId = navigator.geolocation.watchPosition(onRecordUpdate, onRecordError, { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 });
+	ui.panelVisible = false; // hide panel for maximal map space
 };
 
 export const exitRecordMode = (): void => {
 	session.recordMode = false;
 	if (recordWatchId != null && navigator.geolocation) navigator.geolocation.clearWatch(recordWatchId);
 	recordWatchId = null; clearRecordLayer(); session.recordPoints = []; session.recordKm = 0;
+	ui.panelVisible = true; // restore panel
 };
 
 const onRecordError = (err: GeolocationPositionError): void => { ui.setStatus(geoErrorMessage(err), true); };

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ui } from '$lib/state/ui.svelte.js';
+	import { X } from '$lib/icons/index.js';
 </script>
 
 <div class="border-t border-base-200 bg-base-200/60">
@@ -15,7 +16,7 @@
 				title="Dismiss"
 				onclick={() => ui.dismissLegal()}
 			>
-				<svg viewBox="0 0 24 24" class="size-3.5 fill-current"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
+				<X class="size-3.5" />
 			</button>
 		</div>
 	{:else}

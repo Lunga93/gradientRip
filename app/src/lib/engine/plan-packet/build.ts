@@ -5,7 +5,7 @@ import { haversine } from '../route-geometry/haversine.js';
 import { cumulative } from '../route-geometry/cumulative.js';
 import { routeSegments } from '../route-segments/segment.js';
 import { decide } from '../verdict/decide.js';
-import { smooth3 } from '../elevation-profile/smooth.js';
+import { smooth5 } from '../elevation-profile/smooth.js';
 import type { PlanPacket, ScoreInput } from './types.js';
 
 /** Build the serializable PlanPacket from raw route + elevation data. */
@@ -15,7 +15,7 @@ export const buildPlanPacket = (input: ScoreInput): PlanPacket => {
 	if (!Array.isArray(rawElev) || rawElev.length !== pts.length)
 		throw new Error('Elevation sample count does not match route points.');
 
-	const elev = smooth3(rawElev);
+	const elev = smooth5(rawElev);
 	const mode = MODES[modeId] ?? MODES.eskate;
 	const modeIdNorm = MODES[modeId] ? modeId : 'eskate';
 	const phys = mode.phys;

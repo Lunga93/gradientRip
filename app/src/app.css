@@ -1,11 +1,8 @@
 @import 'tailwindcss';
 
 /* ────────────────────────────────────────────────────────────────────────
-   Gradient — DaisyUI themes.
-   'gradient' (light) is the default; 'gradient-dark' follows the system in
-   dark mode. Pinning a theme = setting data-theme on <html> (see app.html
-   pre-paint script). Custom --* tokens ride along in each theme so the map,
-   profile bands and brand gradients swap automatically with the theme.
+   Gradient — topographic outdoor design system.
+   Warm neutrals, one orange accent, map-first, clean data viz.
    ──────────────────────────────────────────────────────────────────────── */
 
 @plugin "daisyui" {
@@ -17,30 +14,30 @@
 	default: true;
 	color-scheme: light;
 
-	--color-base-100: oklch(100% 0 0);
-	--color-base-200: oklch(96.5% 0.005 240);
-	--color-base-300: oklch(92% 0.01 240);
-	--color-base-content: oklch(24% 0.02 240);
-	--color-primary: oklch(55% 0.15 155);
-	--color-primary-content: oklch(99% 0.01 155);
-	--color-secondary: oklch(60% 0.18 135);
-	--color-secondary-content: oklch(99% 0.01 135);
-	--color-accent: oklch(52% 0.11 190);
-	--color-accent-content: oklch(99% 0.01 190);
-	--color-neutral: oklch(32% 0.02 240);
-	--color-neutral-content: oklch(96% 0.005 240);
-	--color-info: oklch(50% 0.18 265);
-	--color-info-content: oklch(99% 0.01 265);
-	--color-success: oklch(55% 0.15 155);
-	--color-success-content: oklch(99% 0.01 155);
-	--color-warning: oklch(62% 0.15 65);
-	--color-warning-content: oklch(18% 0.03 65);
-	--color-error: oklch(58% 0.2 25);
-	--color-error-content: oklch(99% 0.01 25);
+	--color-base-100: #f8f6f1;
+	--color-base-200: #f1ede5;
+	--color-base-300: #e7e2d9;
+	--color-base-content: #1c1917;
+	--color-primary: #2563eb;
+	--color-primary-content: #ffffff;
+	--color-secondary: #78716c;
+	--color-secondary-content: #ffffff;
+	--color-accent: #f97316;
+	--color-accent-content: #ffffff;
+	--color-neutral: #e7e5e4;
+	--color-neutral-content: #1c1917;
+	--color-info: #0ea5e9;
+	--color-info-content: #ffffff;
+	--color-success: #16a34a;
+	--color-success-content: #ffffff;
+	--color-warning: #d97706;
+	--color-warning-content: #ffffff;
+	--color-error: #dc2626;
+	--color-error-content: #ffffff;
 
-	--radius-selector: 2rem;
+	--radius-selector: 1rem;
 	--radius-field: 0.75rem;
-	--radius-box: 1rem;
+	--radius-box: 1.25rem;
 	--size-selector: 0.25rem;
 	--size-field: 0.3rem;
 	--border: 1px;
@@ -48,25 +45,26 @@
 	--noise: 0;
 
 	/* brand + app tokens (light) */
-	--brand-gradient: linear-gradient(135deg, #12a35c 0%, #0b7d43 100%);
-	--brand-gradient-hover: linear-gradient(135deg, #17b366 0%, #0d8c4a 100%);
-	--brand-glow: rgba(18, 163, 92, 0.45);
+	--brand-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+	--brand-gradient-hover: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+	--brand-glow: rgba(37, 99, 235, 0.35);
 	--brand-mark: #ffffff;
-	--app-bg: #eef1f3;
-	--gridline: #b9c2ca;
-	--route-glow: drop-shadow(0 0 6px rgba(0, 0, 0, 0.5));
-	--route-casing: drop-shadow(0 0 8px rgba(0, 0, 0, 0.55));
-	--map-bg: #dfe3e6;
+	--app-bg: #f8f6f1;
+	--gridline: #d6d3cd;
+	--route-glow: drop-shadow(0 0 4px rgba(0, 0, 0, 0.35));
+	--route-casing: drop-shadow(0 0 6px rgba(0, 0, 0, 0.4));
+	--map-bg: #f8f6f1;
 	--map-tile-filter: none;
 	--map-vignette: none;
-	--band-stop: #7f1d2b;
-	--band-steepd: #b5502e;
-	--band-watch: #b8770e;
-	--band-easy: #4c7a35;
-	--band-work: #6f8f57;
-	--band-hard: #a4630a;
-	--band-limit: #b5502e;
-	--profile-line: #171a1f;
+	--band-stop: #dc2626;
+	--band-steepd: #f97316;
+	--band-watch: #facc15;
+	--band-easy: #22c55e;
+	--band-work: #84cc16;
+	--band-hard: #f97316;
+	--band-limit: #dc2626;
+	--profile-line: #1c1917;
+	--trail-accent: #f97316;
 }
 
 @plugin "daisyui/theme" {
@@ -74,30 +72,30 @@
 	prefersdark: true;
 	color-scheme: dark;
 
-	--color-base-100: oklch(18% 0.01 240);
-	--color-base-200: oklch(22% 0.012 240);
-	--color-base-300: oklch(28% 0.014 240);
-	--color-base-content: oklch(92% 0.01 240);
-	--color-primary: oklch(98% 0.005 240);
-	--color-primary-content: oklch(20% 0.01 240);
-	--color-secondary: oklch(80% 0.19 135);
-	--color-secondary-content: oklch(20% 0.03 135);
-	--color-accent: oklch(70% 0.12 200);
-	--color-accent-content: oklch(16% 0.02 200);
-	--color-neutral: oklch(30% 0.015 240);
-	--color-neutral-content: oklch(92% 0.01 240);
-	--color-info: oklch(68% 0.14 250);
-	--color-info-content: oklch(18% 0.02 250);
-	--color-success: oklch(70% 0.15 155);
-	--color-success-content: oklch(14% 0.02 155);
-	--color-warning: oklch(80% 0.15 80);
-	--color-warning-content: oklch(18% 0.03 80);
-	--color-error: oklch(68% 0.19 25);
-	--color-error-content: oklch(16% 0.02 25);
+	--color-base-100: #1c1917;
+	--color-base-200: #292524;
+	--color-base-300: #44403c;
+	--color-base-content: #fafaf9;
+	--color-primary: #60a5fa;
+	--color-primary-content: #0c0a09;
+	--color-secondary: #a8a29e;
+	--color-secondary-content: #0c0a09;
+	--color-accent: #fb923c;
+	--color-accent-content: #0c0a09;
+	--color-neutral: #44403c;
+	--color-neutral-content: #fafaf9;
+	--color-info: #38bdf8;
+	--color-info-content: #0c0a09;
+	--color-success: #4ade80;
+	--color-success-content: #0c0a09;
+	--color-warning: #fbbf24;
+	--color-warning-content: #0c0a09;
+	--color-error: #f87171;
+	--color-error-content: #0c0a09;
 
-	--radius-selector: 2rem;
+	--radius-selector: 1rem;
 	--radius-field: 0.75rem;
-	--radius-box: 1rem;
+	--radius-box: 1.25rem;
 	--size-selector: 0.25rem;
 	--size-field: 0.3rem;
 	--border: 1px;
@@ -105,25 +103,26 @@
 	--noise: 0;
 
 	/* brand + app tokens (dark) */
-	--brand-gradient: linear-gradient(135deg, #ffffff 0%, #dce3e8 45%, #aeb9c2 100%);
-	--brand-gradient-hover: linear-gradient(135deg, #ffffff 0%, #eaeef1 45%, #c3cbd1 100%);
-	--brand-glow: rgba(255, 255, 255, 0.22);
-	--brand-mark: #0b0e10;
-	--app-bg: #0b0e10;
-	--gridline: #3a434b;
-	--route-glow: drop-shadow(0 0 6px rgba(255, 255, 255, 0.28));
-	--route-casing: drop-shadow(0 0 8px rgba(0, 0, 0, 0.7));
-	--map-bg: #0b0e10;
-	--map-tile-filter: invert(1) hue-rotate(180deg) brightness(0.94) contrast(0.88) saturate(0.7);
-	--map-vignette: radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.42) 100%);
-	--band-stop: #4a1420;
-	--band-steepd: #b5502e;
-	--band-watch: #c98a2c;
-	--band-easy: #6b8f4e;
-	--band-work: #8fae7a;
-	--band-hard: #c98a2c;
-	--band-limit: #b5502e;
-	--profile-line: #edf2ef;
+	--brand-gradient: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+	--brand-gradient-hover: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+	--brand-glow: rgba(59, 130, 246, 0.35);
+	--brand-mark: #0c0a09;
+	--app-bg: #1c1917;
+	--gridline: #44403c;
+	--route-glow: drop-shadow(0 0 4px rgba(255, 255, 255, 0.25));
+	--route-casing: drop-shadow(0 0 6px rgba(0, 0, 0, 0.6));
+	--map-bg: #1c1917;
+	--map-tile-filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.85) saturate(0.6);
+	--map-vignette: radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
+	--band-stop: #f87171;
+	--band-steepd: #fb923c;
+	--band-watch: #fbbf24;
+	--band-easy: #4ade80;
+	--band-work: #a3e635;
+	--band-hard: #fb923c;
+	--band-limit: #f87171;
+	--profile-line: #fafaf9;
+	--trail-accent: #fb923c;
 }
 
 /* ─── base ────────────────────────────────────────────────────────────── */
@@ -145,6 +144,7 @@ body {
 	-webkit-font-smoothing: antialiased;
 	text-rendering: optimizeLegibility;
 }
+
 /* display type — wordmark, headings, numbers */
 .font-display,
 .panel h1,
@@ -155,12 +155,15 @@ body {
 	font-family: var(--font-display);
 	letter-spacing: -0.01em;
 }
+
 body {
 	overflow: hidden;
 }
+
 a {
 	color: var(--color-primary);
 }
+
 ::selection {
 	background: color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
@@ -173,10 +176,12 @@ a {
 	background: var(--map-bg);
 	animation: fade 0.6s cubic-bezier(0.2, 0.7, 0.3, 1);
 }
+
 #map .leaflet-tile-pane {
 	transition: filter 0.45s cubic-bezier(0.2, 0.7, 0.3, 1);
 	filter: var(--map-tile-filter);
 }
+
 #map::after {
 	content: '';
 	position: absolute;
@@ -193,43 +198,52 @@ a {
 	border-radius: 12px !important;
 	overflow: hidden;
 }
+
 .leaflet-control-zoom a {
 	background: var(--color-base-100) !important;
 	color: var(--color-base-content) !important;
 	border-color: var(--color-base-300) !important;
 }
+
 .leaflet-control-zoom a:hover {
 	background: var(--color-base-200) !important;
 	color: var(--color-primary) !important;
 }
+
 /* keep zoom clear of the fixed left panel on desktop; mobile keeps default */
 .leaflet-top.leaflet-left {
 	top: 16px;
 	left: 428px;
 }
+
 @media (max-width: 640px) {
 	.leaflet-top.leaflet-left {
 		top: 10px;
 		left: 10px;
 	}
 }
+
 /* keep attribution clear of the desktop locate/recenter FABs (bottom-right) */
 @media (min-width: 641px) {
 	.leaflet-bottom.leaflet-right {
 		bottom: 4.5rem;
 	}
 }
+
 .leaflet-control-attribution {
 	font-size: 10px;
 	background: color-mix(in srgb, var(--color-base-100) 85%, transparent) !important;
 	color: var(--color-base-content) !important;
 }
+
 .leaflet-control-attribution a {
 	color: var(--color-base-content) !important;
 }
+
 .route-glow {
 	filter: var(--route-glow);
 }
+
 .route-casing {
 	filter: var(--route-casing);
 }
@@ -252,6 +266,7 @@ a {
 	flex-direction: column;
 	overflow: hidden;
 }
+
 .panel-scroll {
 	overflow-y: auto;
 	flex: 1;
@@ -259,7 +274,8 @@ a {
 	scrollbar-color: var(--color-base-300) transparent;
 	-webkit-overflow-scrolling: touch;
 }
-/* signature gradient edge above the panel chrome */
+
+/* signature trail accent edge above the panel chrome */
 .panel::before {
 	content: '';
 	display: block;
@@ -267,24 +283,28 @@ a {
 	height: 3px;
 	background: var(--brand-gradient);
 }
+
 @media (max-width: 640px) {
 	.panel::before {
 		display: none;
 	}
 }
-/* gradient wordmark */
+
+/* wordmark */
 .wordmark {
 	background: var(--brand-gradient);
 	-webkit-background-clip: text;
 	background-clip: text;
 	color: transparent;
 }
+
 /* gradient active tab */
 .tab-active {
 	background: var(--brand-gradient) !important;
 	color: var(--brand-mark) !important;
 	box-shadow: 0 6px 16px -8px var(--brand-glow);
 }
+
 /* gradient selected pick (board chips) */
 .pick-active {
 	background: var(--brand-gradient) !important;
@@ -292,50 +312,64 @@ a {
 	border-color: transparent !important;
 	box-shadow: 0 6px 16px -8px var(--brand-glow);
 }
+
 /* gradient selected mode cards (radio peer) */
 .mode-pick svg {
 	width: 22px;
 	height: 22px;
 	flex: none;
 	fill: currentColor;
+	stroke: currentColor;
 }
+
 .peer:checked + .mode-pick {
 	background: var(--brand-gradient);
 	color: var(--brand-mark);
 	border-color: transparent;
 	box-shadow: 0 8px 20px -10px var(--brand-glow);
 }
+
 .peer:checked + .mode-pick svg {
 	fill: var(--brand-mark);
+	stroke: var(--brand-mark);
 }
+
 .peer:checked + .mode-pick strong {
 	color: var(--brand-mark);
 }
+
 .peer:checked + .mode-pick span {
 	color: color-mix(in srgb, var(--brand-mark) 72%, transparent);
 }
+
 /* hero action — gradient primary for the main CTA in each flow */
 .btn-hero {
 	background: var(--brand-gradient);
 	color: var(--brand-mark);
 	border: none;
 	font-weight: 700;
+	border-radius: 0.75rem;
 	box-shadow: 0 10px 24px -10px var(--brand-glow), 0 2px 6px -2px color-mix(in srgb, black 35%, transparent);
 	transition: filter 0.15s linear, transform 0.15s cubic-bezier(0.2, 0.7, 0.3, 1);
 }
+
 .btn-hero:hover:not(:disabled) {
 	background: var(--brand-gradient-hover);
 	filter: brightness(1.04);
 }
+
 .btn-hero:active:not(:disabled) {
 	transform: scale(0.98);
 }
+
 .btn-hero:disabled {
 	opacity: 0.55;
 }
+
 .view {
 	display: none;
 }
+
 .view.active {
 	display: block;
 	animation: fade 0.25s cubic-bezier(0.2, 0.7, 0.3, 1);
@@ -345,7 +379,7 @@ a {
 .brand-tile {
 	width: 40px;
 	height: 40px;
-	border-radius: 12px;
+	border-radius: 14px;
 	background: var(--brand-gradient);
 	display: flex;
 	align-items: center;
@@ -354,21 +388,22 @@ a {
 	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand-mark) 25%, transparent),
 		0 4px 14px -4px color-mix(in srgb, black 40%, transparent);
 }
+
 .brand-tile svg {
 	width: 21px;
 	height: 21px;
 	fill: var(--brand-mark);
 }
 
-/* ─── autocomplete dropdown — anchored to the searchbox ─────────────────── */
+/* ─── autocomplete dropdown ──────────────────────────────────────────── */
 .ac-list {
 	position: absolute;
 	top: calc(100% + 6px);
 	left: 0;
 	right: 0;
 	z-index: 40;
-	background: color-mix(in srgb, var(--color-base-100) 92%, transparent);
-	backdrop-filter: blur(12px);
+	background: color-mix(in srgb, var(--color-base-100) 94%, transparent);
+	backdrop-filter: blur(14px);
 	border: 1px solid var(--color-base-300);
 	border-radius: 14px;
 	box-shadow: 0 12px 32px color-mix(in srgb, black 24%, transparent);
@@ -376,6 +411,7 @@ a {
 	max-height: 240px;
 	overflow-y: auto;
 }
+
 .ac-item {
 	display: flex;
 	align-items: flex-start;
@@ -386,57 +422,69 @@ a {
 	color: var(--color-base-content);
 	line-height: 1.35;
 	border-bottom: 1px solid var(--color-base-200);
+	transition: background 0.15s ease;
 }
+
 .ac-item:last-child {
 	border-bottom: none;
 }
+
 .ac-item svg {
 	flex: none;
 	width: 15px;
 	height: 15px;
 	fill: color-mix(in srgb, var(--color-base-content) 55%, transparent);
 	margin-top: 2px;
+	transition: fill 0.15s ease;
 }
+
 .ac-item:hover,
 .ac-item.active {
 	background: var(--color-base-200);
 }
+
 .ac-item.active {
 	color: var(--color-primary);
 }
+
 .ac-item.active svg {
 	fill: var(--color-primary);
 }
+
 .ac-empty {
 	padding: 12px 13px;
 	font-size: 0.8rem;
 	color: color-mix(in srgb, var(--color-base-content) 60%, transparent);
 }
 
-/* ─── drag-scroll carousels (board chips, mode rows) ──────────────────── */
+/* ─── drag-scroll carousels ──────────────────────────────────────────── */
 .drag-scroll {
 	cursor: grab;
 	scrollbar-width: none;
 }
+
 .drag-scroll.dragging {
 	cursor: grabbing;
 }
+
 .drag-scroll.dragging * {
 	user-select: none;
 }
+
 .drag-scroll:focus-visible {
 	outline: 2px solid var(--color-primary);
 	outline-offset: 2px;
 	border-radius: 12px;
 }
 
-/* ─── ride view — profile chart + legend ──────────────────────────────── */
+/* ─── ride view — elevation profile ──────────────────────────────────── */
 #profile {
 	width: 100%;
-	height: 132px;
+	height: 140px;
 	display: block;
 	border-radius: 14px;
 }
+
 .legend-chip {
 	display: inline-flex;
 	align-items: center;
@@ -448,6 +496,7 @@ a {
 	border: 1px solid var(--color-base-300);
 	color: color-mix(in srgb, var(--color-base-content) 72%, transparent);
 }
+
 .legend-chip i {
 	width: 8px;
 	height: 8px;
@@ -473,6 +522,7 @@ a {
 	box-shadow: 0 12px 28px color-mix(in srgb, black 26%, transparent);
 	padding: 8px 8px 8px 16px;
 }
+
 .rec-dot {
 	width: 9px;
 	height: 9px;
@@ -481,6 +531,7 @@ a {
 	flex: none;
 	animation: rec-pulse 1.2s ease-in-out infinite;
 }
+
 @keyframes rec-pulse {
 	0%,
 	100% {
@@ -507,9 +558,11 @@ a {
 		transform: translateY(calc(100% - 152px));
 		transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
 	}
+
 	.panel.sheet-open {
 		transform: translateY(0);
 	}
+
 	.grabber {
 		display: flex;
 		align-items: center;
@@ -523,6 +576,7 @@ a {
 		touch-action: pan-y;
 		flex: none;
 	}
+
 	.grabber span {
 		width: 40px;
 		height: 5px;
@@ -530,13 +584,16 @@ a {
 		background: var(--gridline);
 		transition: background 0.15s linear;
 	}
+
 	.grabber:active span {
 		background: var(--color-primary);
 	}
+
 	.panel-scroll {
 		overscroll-behavior: contain;
 	}
 }
+
 @media (max-width: 380px) {
 	.stops-actions {
 		flex-direction: column;
@@ -545,28 +602,35 @@ a {
 
 /* ─── motion ──────────────────────────────────────────────────────────── */
 .list-rise {
-	animation: rise 0.3s cubic-bezier(0.32, 0.72, 0, 1) backwards;
+	animation: rise 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
+
 .results:not(.hidden) .animation-rise {
 	animation: rise 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
+
 .results:not(.hidden) .animation-rise:nth-child(2) {
 	animation-delay: 0.05s;
 }
+
 .results:not(.hidden) .animation-rise:nth-child(3) {
 	animation-delay: 0.1s;
 }
+
 .results:not(.hidden) .animation-rise:nth-child(4) {
 	animation-delay: 0.15s;
 }
+
 .results:not(.hidden) #profile {
 	animation: fade 0.45s cubic-bezier(0.2, 0.7, 0.3, 1);
 }
+
 .results:not(.hidden) #profile path {
 	stroke-dasharray: 1400;
 	stroke-dashoffset: 1400;
 	animation: draw 0.9s cubic-bezier(0.2, 0.7, 0.3, 1) 0.1s forwards;
 }
+
 @keyframes rise {
 	from {
 		opacity: 0;
@@ -577,6 +641,7 @@ a {
 		transform: none;
 	}
 }
+
 @keyframes fade {
 	from {
 		opacity: 0;
@@ -585,11 +650,13 @@ a {
 		opacity: 1;
 	}
 }
+
 @keyframes draw {
 	to {
 		stroke-dashoffset: 0;
 	}
 }
+
 @keyframes pop {
 	from {
 		opacity: 0;
@@ -613,4 +680,217 @@ a {
 
 .hidden {
 	display: none !important;
+}
+
+/* ─── topographic decorators (optional pattern layer) ─────────────────── */
+/* If you want a subtle contour-line background on the map or panel, you can
+   add a repeating SVG data URI. Keep it optional so it doesn’t hurt perf. */
+.topo-bg {
+	background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 100 Q50 80 100 100 T200 100' fill='none' stroke='%23d6d3cd' stroke-width='1' opacity='0.35'/%3E%3Cpath d='M0 120 Q50 100 100 120 T200 120' fill='none' stroke='%23d6d3cd' stroke-width='1' opacity='0.25'/%3E%3Cpath d='M0 80 Q50 60 100 80 T200 80' fill='none' stroke='%23d6d3cd' stroke-width='1' opacity='0.25'/%3E%3C/svg%3E");
+	background-repeat: repeat;
+}
+/* ─── component cards ──────────────────────────────────────────────────── */
+.card {
+	background: var(--color-base-100);
+	border: 1px solid var(--color-base-300);
+	border-radius: 1.25rem;
+	box-shadow: 0 1px 2px color-mix(in srgb, black 4%, transparent),
+		0 4px 12px -2px color-mix(in srgb, black 6%, transparent);
+	transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover {
+	border-color: color-mix(in srgb, var(--color-primary) 25%, var(--color-base-300));
+	box-shadow: 0 4px 12px color-mix(in srgb, black 8%, transparent),
+		0 12px 24px -6px color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.card-interactive {
+	cursor: pointer;
+}
+
+.card-interactive:active {
+	transform: scale(0.985);
+}
+
+/* elevated card variant */
+.card-elevated {
+	background: color-mix(in srgb, var(--color-base-200) 60%, var(--color-base-100));
+	border: 1px solid var(--color-base-300);
+	box-shadow: 0 2px 4px color-mix(in srgb, black 5%, transparent),
+		0 8px 20px -4px color-mix(in srgb, black 8%, transparent);
+}
+
+/* ─── pills / chips ────────────────────────────────────────────────────── */
+.pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 5px 12px;
+	border-radius: 999px;
+	font-size: 0.72rem;
+	font-weight: 500;
+	background: color-mix(in srgb, var(--color-base-200) 80%, var(--color-base-100));
+	border: 1px solid var(--color-base-300);
+	color: color-mix(in srgb, var(--color-base-content) 72%, transparent);
+	transition: all 0.2s ease;
+	white-space: nowrap;
+}
+
+.pill:hover {
+	background: var(--color-base-200);
+	border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-base-300));
+	color: var(--color-base-content);
+}
+
+.pill-accent {
+	background: color-mix(in srgb, var(--color-primary) 10%, var(--color-base-200));
+	border-color: color-mix(in srgb, var(--color-primary) 20%, var(--color-base-300));
+	color: var(--color-primary);
+}
+
+.pill-accent:hover {
+	background: color-mix(in srgb, var(--color-primary) 18%, var(--color-base-200));
+	border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-base-300));
+}
+
+.pill i {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	display: inline-block;
+	flex: none;
+}
+
+/* ─── stat tiles ──────────────────────────────────────────────────────── */
+.stat-tile {
+	background: color-mix(in srgb, var(--color-base-200) 70%, var(--color-base-100));
+	border: 1px solid var(--color-base-300);
+	border-radius: 1rem;
+	padding: 12px 14px;
+	box-shadow: 0 1px 2px color-mix(in srgb, black 3%, transparent);
+	transition: all 0.2s ease;
+}
+
+.stat-tile:hover {
+	border-color: color-mix(in srgb, var(--color-primary) 20%, var(--color-base-300));
+	box-shadow: 0 2px 8px color-mix(in srgb, black 6%, transparent),
+		0 8px 16px -4px color-mix(in srgb, var(--color-primary) 6%, transparent);
+}
+
+/* ─── search row ───────────────────────────────────────────────────────── */
+.search-row {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 14px;
+	border-radius: 1rem;
+	background: transparent;
+	transition: background 0.2s ease;
+}
+
+.search-row:hover {
+	background: color-mix(in srgb, var(--color-base-200) 40%, transparent);
+}
+
+.search-row:focus-within {
+	background: color-mix(in srgb, var(--color-base-200) 50%, transparent);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 15%, transparent);
+}
+
+/* ─── mode picker cards ────────────────────────────────────────────────── */
+.mode-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 14px 10px;
+	border-radius: 1.25rem;
+	border: 1px solid var(--color-base-300);
+	background: color-mix(in srgb, var(--color-base-200) 50%, var(--color-base-100));
+	box-shadow: 0 1px 2px color-mix(in srgb, black 4%, transparent);
+	transition: all 0.2s ease;
+	cursor: pointer;
+	user-select: none;
+}
+
+.mode-card:hover {
+	border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-base-300));
+	background: color-mix(in srgb, var(--color-base-200) 70%, var(--color-base-100));
+	box-shadow: 0 4px 12px color-mix(in srgb, black 8%, transparent);
+	transform: translateY(-1px);
+}
+
+.mode-card:active {
+	transform: scale(0.97);
+}
+
+.peer:checked + .mode-card {
+	background: var(--brand-gradient);
+	border-color: transparent;
+	color: var(--brand-mark);
+	box-shadow: 0 8px 20px -6px var(--brand-glow);
+}
+
+.peer:checked + .mode-card:hover {
+	transform: none;
+}
+
+/* ─── action buttons row ───────────────────────────────────────────────── */
+.action-row {
+	display: flex;
+	gap: 8px;
+}
+
+.action-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 8px 14px;
+	border-radius: 0.75rem;
+	font-size: 0.8rem;
+	font-weight: 500;
+	border: 1px solid var(--color-base-300);
+	background: color-mix(in srgb, var(--color-base-200) 60%, var(--color-base-100));
+	color: var(--color-base-content);
+	box-shadow: 0 1px 2px color-mix(in srgb, black 4%, transparent);
+	transition: all 0.2s ease;
+	cursor: pointer;
+}
+
+.action-btn:hover {
+	background: var(--color-base-200);
+	border-color: color-mix(in srgb, var(--color-primary) 25%, var(--color-base-300));
+	color: var(--color-primary);
+	box-shadow: 0 2px 6px color-mix(in srgb, black 6%, transparent);
+}
+
+.action-btn:active {
+	transform: scale(0.97);
+}
+
+/* ─── panel section spacing ────────────────────────────────────────────── */
+.panel-section + .panel-section {
+	margin-top: 12px;
+}
+
+.panel-section-title {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 10px;
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: color-mix(in srgb, var(--color-base-content) 55%, transparent);
+}
+
+.panel-section-title::after {
+	content: '';
+	flex: 1;
+	height: 1px;
+	background: var(--color-base-300);
 }

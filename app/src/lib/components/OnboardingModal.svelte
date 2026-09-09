@@ -3,6 +3,7 @@
 	import { ui } from '$lib/state/ui.svelte.js';
 	import ModePicker from './ModePicker.svelte';
 	import { tick } from 'svelte';
+	import { Bolt } from '$lib/icons/index.js';
 
 	let cardEl = $state<HTMLDivElement | undefined>(undefined);
 
@@ -48,7 +49,7 @@
 			</p>
 			<ModePicker variant="onboard" />
 			<button type="button" class="btn btn-hero mt-5 w-full" onclick={go}>
-				<svg viewBox="0 0 24 24" class="size-4 fill-current"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5L13 2z" /></svg>
+				<Bolt class="size-4 fill-current" />
 				Start planning
 			</button>
 		</div>

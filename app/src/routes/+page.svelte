@@ -71,7 +71,9 @@
 	});
 
 	$effect(() => {
-		if (ui.activeTab === 'ride' && panelScrollEl) panelScrollEl.scrollTo({ top: 0 });
+a		if (ui.activeTab === 'ride' && panelScrollEl && typeof panelScrollEl.scrollTo === 'function') {
+			panelScrollEl.scrollTo({ top: 0 });
+		}
 	});
 </script>
 
@@ -86,6 +88,7 @@
 <SessionToolbar />
 
 <!-- panel -->
+{#if ui.panelVisible}
 <div class="panel" class:sheet-open={ui.sheetOpen}>
 	<button
 		type="button"
@@ -110,3 +113,4 @@
 	<LegalNote />
 	<TabBar />
 </div>
+{/if}
