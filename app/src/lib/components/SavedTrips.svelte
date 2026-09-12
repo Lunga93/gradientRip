@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { domain } from '$lib/state/domain.svelte.js';
 	import { ui } from '$lib/state/ui.svelte.js';
+	import { social } from '$lib/social.svelte.js';
+	import { saveTrips } from '$lib/storage.js';
 	import { MODES, decide, routeSegments } from '$lib/engine/index.js';
 	import { cumulative } from '$lib/util.js';
 	import type { LatLon } from '$lib/util.js';
@@ -49,6 +51,24 @@
 
 	const deleteTrip = (idx: number): void => {
 		domain.deleteTrip(idx);
+	};
+
+	const toggleShare = async (t: Trip): Promise<void> => {
+		if (!social.signedIn) {
+			ui.setStatus('Sign in on the Friends tab to share trips with buddies.', true);
+			ui.setTab('friends');
+			return;
+		}
+		const next = !t.shared;
+		t.shared = next; // optimistic — reverted below on failure
+		const ok = await social.toggleShare(t.ts, next);
+		if (!ok) {
+			t.shared = !next;
+			ui.setStatus('Could not update sharing — are you offline?', true);
+			return;
+		}
+		saveTrips($state.snapshot(domain.trips));
+		ui.setStatus(next ? 'Shared with your buddies.' : 'Back to private.');
 	};
 </script>
 
@@ -131,6 +151,19 @@
 				</div>
 				<div class="mt-2.5 flex gap-1.5">
 					<SlashButton label="▶ Replay" size="xs" style="flex: 1; background: color-mix(in srgb, var(--color-accent) 16%, transparent); color: var(--color-accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 40%, transparent); filter: none;" onclick={() => loadTrip(t)} />
+					<button
+						type="button"
+						class="slash-btn slash-btn-xs"
+						style="flex: 1; filter: none; {t.shared
+							? 'background: color-mix(in srgb, var(--v-go) 16%, transparent); color: var(--v-go); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v-go) 40%, transparent);'
+							: 'background: transparent; color: var(--ink-1); box-shadow: inset 0 0 0 1px var(--panel-line);'}"
+						title={t.shared ? 'Visible to your buddies — tap to make private' : 'Private — tap to share with buddies'}
+						aria-label="{t.shared ? 'Unshare' : 'Share'} saved trip {tripLabel(t)}"
+						aria-pressed={t.shared}
+						onclick={() => toggleShare(t)}
+					>
+						{t.shared ? '★ Shared' : '☆ Share'}
+					</button>
 					<button
 						type="button"
 						class="slash-btn slash-btn-xs"

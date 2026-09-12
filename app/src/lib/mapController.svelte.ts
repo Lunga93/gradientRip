@@ -194,6 +194,7 @@ export const destroyMap = (): void => {
 	locateAccuracyCircle = null;
 	trackMarker = null;
 	trackAccuracyCircle = null;
+	friendLayer = null;
 };
 
 export const getMap = (): L.Map | null => map;
@@ -561,4 +562,64 @@ export const clearTrackMarker = (): void => {
 		trackAccuracyCircle.remove();
 		trackAccuracyCircle = null;
 	}
+};
+
+/* ---------- friend live markers (driven by the social SSE feed) ---------- */
+export interface FriendPin {
+	id: string;
+	name: string;
+	avatar: string;
+	lat: number;
+	lon: number;
+	stale: boolean;
+}
+
+let friendLayer: L.LayerGroup | null = null;
+
+const escHtml = (s: string): string =>
+	s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+const friendIconHtml = (f: FriendPin): string => {
+	const face = f.avatar
+		? `<img src="${escHtml(f.avatar)}" alt="" referrerpolicy="no-referrer" />`
+		: `<span aria-hidden="true">${escHtml((f.name || 'R')[0]?.toUpperCase() ?? 'R')}</span>`;
+	return `<div class="friend-pin${f.stale ? ' is-stale' : ''}">${f.stale ? '' : '<i class="friend-ring" aria-hidden="true"></i>'}<span class="friend-face">${face}</span></div>`;
+};
+
+export const renderFriendMarkers = (friends: FriendPin[]): void => {
+	let m: L.Map;
+	try {
+		m = ensureMap();
+	} catch {
+		return; // map not ready yet — next SSE poll re-renders
+	}
+	if (!friendLayer) friendLayer = l().layerGroup().addTo(m);
+	friendLayer.clearLayers();
+	for (const f of friends) {
+		if (!Number.isFinite(f.lat) || !Number.isFinite(f.lon)) continue;
+		l()
+			.marker([f.lat, f.lon], {
+				icon: l().divIcon({
+					className: '',
+					html: friendIconHtml(f),
+					iconSize: [40, 46],
+					iconAnchor: [20, 42]
+				}),
+				keyboard: false,
+				title: f.name,
+				zIndexOffset: 900,
+				interactive: true
+			})
+			.bindTooltip(escHtml(f.name), {
+				direction: 'top',
+				offset: [0, -44],
+				className: 'friend-tip',
+				opacity: 1
+			})
+			.addTo(friendLayer);
+	}
+};
+
+export const clearFriendMarkers = (): void => {
+	if (friendLayer) friendLayer.clearLayers();
 };

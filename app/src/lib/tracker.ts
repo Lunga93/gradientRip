@@ -3,6 +3,8 @@ import type { LatLon } from './util.js';
 import { domain } from './state/domain.svelte.js';
 import { ui } from './state/ui.svelte.js';
 import { session } from './state/session.svelte.js';
+import { social } from './social.svelte.js';
+import { publishPosition, stopPublishing } from './live.js';
 import { getMap, ensureLeaflet } from './mapController.svelte.js';
 import {
 	redrawDrawLayer, clearDrawLayer, setDrawCursor,
@@ -26,6 +28,22 @@ const tracking: Tracking = { watchId: null, hasFix: false, lastLatLng: null };
 const setTrackMsg = (msg: string, warn: boolean): void => {
 	session.trackingMsg = msg;
 	session.trackingWarn = warn;
+};
+
+// Latest own fix for friend-distance display (tracking fix wins, else record tail).
+export const getOwnFix = (): LatLon | null =>
+	tracking.lastLatLng ?? session.recordPoints[session.recordPoints.length - 1] ?? null;
+
+// Friends see me while riding or recording — publish the fix (throttled
+// inside publishPosition, no-op when signed out). Clearing happens when
+// neither mode is active anymore so mode switches don't flap the row.
+const shareFix = (latlng: LatLon, speed: number | null, accuracy: number): void => {
+	if (!social.signedIn) return;
+	void publishPosition({ lat: latlng[0], lon: latlng[1], speed, heading: null, accuracy });
+};
+
+const maybeStopSharing = (): void => {
+	if (!session.trackingActive && !session.recordMode) void stopPublishing();
 };
 
 export const startTracking = (): void => {
@@ -65,6 +83,7 @@ export const stopTracking = (): void => {
 	clearHillBadge();
 	clearArrivalBadge();
 	hillFor = null;
+	maybeStopSharing();
 	setTrackMsg('', false);
 };
 
@@ -104,6 +123,7 @@ const onTrackUpdate = async (pos: GeolocationPosition): Promise<void> => {
 	tracking.lastLatLng = latlng;
 	tracking.hasFix = true;
 	updateTrackMarker(latlng, accuracy);
+	shareFix(latlng, speed != null && speed >= 0 ? speed : null, accuracy);
 
 	const { distAlong, offRoute } = nearestOnLine(latlng, domain.currentRoute.line, domain.currentRoute.lineCum);
 	const totalDist = domain.currentRoute.lineCum[domain.currentRoute.lineCum.length - 1] || 1;
@@ -280,6 +300,7 @@ export const exitRecordMode = (): void => {
 	if (recordWatchId != null && navigator.geolocation) navigator.geolocation.clearWatch(recordWatchId);
 	recordWatchId = null; clearRecordLayer(); session.recordPoints = []; session.recordKm = 0;
 	session.recordStartedAt = null; session.recordSpeedKmh = null; session.recordAcc = null;
+	maybeStopSharing();
 	ui.panelVisible = true; // restore panel
 };
 
@@ -298,6 +319,7 @@ const onRecordUpdate = (pos: GeolocationPosition): void => {
 	const first = session.recordPoints.length === 1;
 	ensureMap();
 	updateRecordMarker(latlng, first);
+	shareFix(latlng, pos.coords.speed != null && pos.coords.speed >= 0 ? pos.coords.speed : null, pos.coords.accuracy);
 };
 
 export const finishRecording = async (): Promise<void> => {

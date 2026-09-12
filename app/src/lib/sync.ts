@@ -30,6 +30,7 @@ interface TripRow {
 	total_km: unknown;
 	drawn: boolean | null;
 	recorded: boolean | null;
+	shared: boolean | null;
 }
 
 export const tripToRow = (t: Trip): Record<string, unknown> => ({
@@ -69,7 +70,8 @@ export const rowToTrip = (r: TripRow): Trip => ({
 	brakeLimit: num(r.brake_limit),
 	totalKm: num(r.total_km),
 	drawn: r.drawn || undefined,
-	recorded: r.recorded || undefined
+	recorded: r.recorded || undefined,
+	shared: r.shared || undefined
 });
 
 interface PresetRow {

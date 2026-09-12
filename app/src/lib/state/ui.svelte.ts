@@ -15,7 +15,7 @@ class UiState {
 	sheetOpen = $state(false);
 	legalDismissed = $state(loadLegalDismissed());
 	theme = $state<ThemePref>(loadThemePref());
-	activeTab = $state<'plan' | 'saved' | 'ride'>('plan');
+	activeTab = $state<'plan' | 'saved' | 'ride' | 'friends'>('plan');
 	isMobile = $state(false);
 	panelVisible = $state(true); // hide panel in drawing/record mode
 
@@ -40,7 +40,7 @@ class UiState {
 		this.sheetOpen = open;
 	}
 
-	setTab(tab: 'plan' | 'saved' | 'ride') {
+	setTab(tab: 'plan' | 'saved' | 'ride' | 'friends') {
 		this.activeTab = tab;
 	}
 

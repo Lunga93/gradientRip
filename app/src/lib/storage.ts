@@ -34,6 +34,8 @@ export interface Trip extends Record<string, any> {
 	totalKm: number;
 	drawn?: boolean;
 	recorded?: boolean;
+	// friends-visibility, mirrored from the server (never pushed up)
+	shared?: boolean;
 }
 
 export const loadJSON = <T,>(key: string, fallback: T): T => {

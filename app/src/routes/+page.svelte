@@ -6,6 +6,7 @@
 	import PlanView from '$lib/components/PlanView.svelte';
 	import SavedView from '$lib/components/SavedView.svelte';
 	import RideView from '$lib/components/RideView.svelte';
+	import FriendsView from '$lib/components/FriendsView.svelte';
 	import LegalNote from '$lib/components/LegalNote.svelte';
 	import TabBar from '$lib/components/TabBar.svelte';
 	import MapFabs from '$lib/components/MapFabs.svelte';
@@ -119,6 +120,7 @@
 			<PlanView />
 			<SavedView />
 			<RideView />
+			<FriendsView />
 		</div>
 		<LegalNote />
 	</div>

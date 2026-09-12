@@ -7,7 +7,12 @@ export const GET: RequestHandler = async (event) => {
 	const limit = Math.max(1, Math.min(200, Number(event.url.searchParams.get('limit') ?? '50') || 50));
 	const { rows } = await withUser(userId, async (c) => {
 		return c.query(
-			'SELECT id, ts, mode_id, board_val, queries, coords, line, pts, elev, cum, total_wh, total_climb, usable_wh, climb_limit, brake_limit, total_km, drawn, recorded, created_at FROM trips WHERE user_id = current_user_id() ORDER BY ts DESC LIMIT $1',
+			`SELECT t.id, t.ts, t.mode_id, t.board_val, t.queries, t.coords, t.line, t.pts,
+			        t.elev, t.cum, t.total_wh, t.total_climb, t.usable_wh, t.climb_limit,
+			        t.brake_limit, t.total_km, t.drawn, t.recorded, t.created_at,
+			        (st.trip_id IS NOT NULL) AS shared
+			 FROM trips t LEFT JOIN shared_trips st ON st.trip_id = t.id AND st.user_id = t.user_id
+			 WHERE t.user_id = current_user_id() ORDER BY t.ts DESC LIMIT $1`,
 			[limit]
 		);
 	});
