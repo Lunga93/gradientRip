@@ -30,9 +30,9 @@
 	--brand-gradient-hover: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
 	--brand-glow: rgba(37, 99, 235, 0.4);
 	--app-bg: #dbeafe;
-	--panel-bg: rgba(248, 250, 255, 0.97);
-	--panel-edge: rgba(37, 99, 235, 0.22);
-	--panel-soft: rgba(15, 23, 42, 0.045);
+	--panel-bg: #f8faff;
+	--panel-edge: #c7d2fe;
+	--panel-soft: #f0f2f5;
 	--panel-line: rgba(15, 23, 42, 0.09);
 	--ink-0: #0f172a;
 	--ink-1: rgba(15, 23, 42, 0.85);
@@ -82,9 +82,9 @@
 	--brand-gradient-hover: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
 	--brand-glow: rgba(96, 165, 250, 0.5);
 	--app-bg: #020617;
-	--panel-bg: rgba(2, 6, 23, 0.94);
-	--panel-edge: rgba(96, 165, 250, 0.28);
-	--panel-soft: rgba(255, 255, 255, 0.045);
+	--panel-bg: #0e0e1c;
+	--panel-edge: #1e3a5f;
+	--panel-soft: #1a1a2e;
 	--panel-line: rgba(255, 255, 255, 0.09);
 	--ink-0: #f1f5f9;
 	--ink-1: rgba(241, 245, 249, 0.68);
@@ -121,10 +121,11 @@ body {
 	padding: 0;
 	height: 100%;
 	background: var(--app-bg);
-	--font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
-		'Helvetica Neue', Arial, sans-serif;
-	--font-display: 'Rajdhani', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-	--font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	--font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter',
+		'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter',
+		'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--font-mono: 'SF Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 	font-family: var(--font-sans);
 	-webkit-font-smoothing: antialiased;
 	text-rendering: optimizeLegibility;
@@ -263,7 +264,7 @@ a {
 
 .leaflet-control-attribution {
 	font-size: 10px;
-	background: color-mix(in srgb, var(--color-base-100) 85%, transparent) !important;
+	background: var(--color-base-100) !important;
 	color: var(--color-base-content) !important;
 }
 
@@ -385,6 +386,83 @@ a {
 	border-radius: 50%;
 	border: 2px solid rgba(239, 68, 68, 0.8);
 	animation: ring-expand 1.6s ease-out infinite;
+}
+
+/* friend live pins — avatar face with a sonar ring while riding */
+.friend-pin {
+	position: relative;
+	width: 40px;
+	height: 46px;
+}
+
+.friend-face {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: 32px;
+	height: 32px;
+	margin-left: -16px;
+	border-radius: 50%;
+	overflow: hidden;
+	display: grid;
+	place-items: center;
+	background: var(--color-primary);
+	color: #fff;
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: 1rem;
+	border: 2px solid #22d3ee;
+	box-shadow: 0 0 10px rgba(34, 211, 238, 0.8), 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.friend-face img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.friend-pin::after {
+	content: '';
+	position: absolute;
+	left: 50%;
+	bottom: -2px;
+	width: 0;
+	height: 0;
+	margin-left: -5px;
+	border-left: 5px solid transparent;
+	border-right: 5px solid transparent;
+	border-top: 7px solid #22d3ee;
+	filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.friend-ring {
+	position: absolute;
+	left: 50%;
+	top: 16px;
+	width: 32px;
+	height: 32px;
+	margin: -16px 0 0 -16px;
+	border-radius: 50%;
+	border: 2px solid rgba(34, 211, 238, 0.9);
+	animation: ring-expand 1.6s ease-out infinite;
+	pointer-events: none;
+}
+
+.friend-pin.is-stale .friend-face {
+	border-color: var(--ink-3);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+	opacity: 0.75;
+}
+
+.friend-pin.is-stale::after {
+	border-top-color: var(--ink-3);
+}
+
+.friend-tip {
+	font-family: var(--font-mono);
+	font-size: 0.68rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
 }
 
 /* ─── floating map badges: hill warnings + arrival ────────────────────── */
@@ -612,7 +690,7 @@ a {
 	letter-spacing: 0.1em;
 	text-transform: uppercase;
 	color: var(--vt, var(--color-primary));
-	background: color-mix(in srgb, var(--vt, var(--color-primary)) 14%, transparent);
+	background: color-mix(in srgb, var(--vt, var(--color-primary)) 14%, var(--panel-bg));
 	box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--vt, var(--color-primary)) 45%, transparent);
 	clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
 }
@@ -807,7 +885,7 @@ a {
 	gap: 8px;
 	width: 100%;
 	padding: 7px 8px;
-	background: transparent;
+	background: var(--panel-bg);
 	border: none;
 	border-left: 2px solid transparent;
 	cursor: pointer;
@@ -892,7 +970,7 @@ a {
 }
 
 .mode-cell-picked {
-	background: color-mix(in srgb, var(--mc, var(--color-primary)) 22%, transparent);
+	background: color-mix(in srgb, var(--mc, var(--color-primary)) 22%, var(--panel-bg));
 	box-shadow: inset 0 0 0 1px var(--mc, var(--color-primary)), 0 0 18px
 		color-mix(in srgb, var(--mc, var(--color-primary)) 30%, transparent);
 	clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);
@@ -919,7 +997,7 @@ a {
 }
 
 .mode-chip-picked {
-	background: color-mix(in srgb, var(--mc, var(--color-primary)) 24%, transparent);
+	background: color-mix(in srgb, var(--mc, var(--color-primary)) 24%, var(--panel-bg));
 	color: var(--mc, var(--color-primary));
 	box-shadow: inset 0 0 0 1px var(--mc, var(--color-primary)), 0 0 10px
 		color-mix(in srgb, var(--mc, var(--color-primary)) 30%, transparent);
@@ -1297,7 +1375,7 @@ a {
 		min-height: 44px;
 		padding: 12px 0 8px;
 		border: none;
-		background: transparent;
+		background: var(--panel-bg);
 		cursor: pointer;
 		touch-action: pan-y;
 		flex: none;
