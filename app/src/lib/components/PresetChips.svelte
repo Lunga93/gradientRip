@@ -15,9 +15,12 @@
 </script>
 
 {#if !domain.presets.length}
-	<span class="text-[0.78rem]" style="color: var(--ink-2);"
-		>No saved places yet — tap the bookmark on a stop to save it.</span
-	>
+	<div class="flex items-center gap-2 py-1">
+		<Mark name="bookmark" cls="size-3.5" style="color: var(--ink-3);" />
+		<span class="text-[0.78rem]" style="color: var(--ink-2);">
+			No saved places yet — tap the bookmark icon on any stop to save it here.
+		</span>
+	</div>
 {:else}
 	{#each domain.presets as p (p.id)}
 		<span class="preset-chip">

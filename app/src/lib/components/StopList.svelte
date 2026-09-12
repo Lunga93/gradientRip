@@ -11,9 +11,9 @@
 	let searchBoxEl: HTMLDivElement;
 
 	const stopPlaceholder = (i: number, n: number): string => {
-		if (i === 0) return 'Choose starting point';
-		if (i === n - 1) return 'Choose destination';
-		return `Add stop ${i}`;
+	if (i === 0) return 'Where are you starting?';
+	if (i === n - 1) return 'Where are you heading?';
+	return `Stop ${i}`;
 	};
 
 	const stopKind = (i: number, n: number): string => {

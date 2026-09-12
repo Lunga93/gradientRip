@@ -90,10 +90,9 @@
 					style="font-weight: 700; font-size: 3.25rem; letter-spacing: -0.02em; line-height: 1;"
 				>
 					<span class="wordmark">GradientRip</span>
-				</h1>
-				<p class="font-mono2 m-0" style="font-size: 0.62rem; letter-spacing: 0.2em; color: var(--ink-2);">
-					CAN YOUR BOARD HANDLE IT?
-				</p>
+				</h1>					<p class="font-mono2 m-0" style="font-size: 0.68rem; letter-spacing: 0.14em; color: var(--ink-2); line-height: 1.5;">
+						Plan any route. Know if your board can make it — before you leave.
+					</p>
 			</div>
 
 			<div class="anim-slide-up w-full" style="animation-delay: 0.1s;">

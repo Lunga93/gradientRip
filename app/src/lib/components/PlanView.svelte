@@ -41,9 +41,13 @@
 	<form onsubmit={(e) => { e.preventDefault(); runPlan(); }}>
 		<div class="relative p-5">
 			<RouteMotif opacity={0.1} />
-			<div class="relative">
-				<div class="sec-label">Route stops</div>
-				<StopList />
+			<div class="relative">					<div class="sec-label">Route stops</div>
+					<StopList />
+					{#if domain.stops.every((s) => !s.value)}
+						<p class="mt-1.5 text-[0.75rem]" style="color: var(--ink-2);">
+							Type an address or place name to set your origin and destination.
+						</p>
+					{/if}
 				<div class="stops-actions mt-2.5 flex gap-2">
 					<button
 						type="button"
