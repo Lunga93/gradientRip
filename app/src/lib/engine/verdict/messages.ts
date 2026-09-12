@@ -27,5 +27,11 @@ export const messages = {
 			`Comfortably within a day's effort and within this ${modeUnit}'s climb and braking limits — ${totalKcal} kcal, ${pct}% of the day's budget.`,
 		electric: (modeUnit: string, totalWh: string, pct: string) =>
 			`Comfortably within range and within this ${modeUnit}'s climb and braking limits — ${totalWh} Wh, ${pct}% of usable battery.`
+	},
+	fly: {
+		human: (totalKcal: string, pct: string) =>
+			`Barely a warm-up — ${totalKcal} kcal, ${pct}% of the day's budget. Send it.`,
+		electric: (modeUnit: string, totalWh: string, pct: string) =>
+			`Barely sips the pack — ${totalWh} Wh, ${pct}% of usable battery. Full send.`
 	}
 } as const;

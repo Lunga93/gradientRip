@@ -11,6 +11,8 @@
 	import MapFabs from '$lib/components/MapFabs.svelte';
 	import SessionToolbar from '$lib/components/SessionToolbar.svelte';
 	import { ui } from '$lib/state/ui.svelte.js';
+	import { domain } from '$lib/state/domain.svelte.js';
+	import { verdictColor } from '$lib/verdictTheme.js';
 	import { isMobileView } from '$lib/planner.svelte.js';
 	import { hideAcList } from '$lib/autocomplete.svelte.js';
 
@@ -46,6 +48,12 @@
 		hideAcList();
 	};
 
+	const panelEdge = $derived(
+		domain.results
+			? `--verdict-edge: linear-gradient(90deg, ${verdictColor(domain.results.verdict.level)} 0%, transparent 100%); box-shadow: 0 0 60px color-mix(in srgb, ${verdictColor(domain.results.verdict.level)} 22%, transparent), 0 8px 48px rgba(0, 0, 0, 0.45); border-color: color-mix(in srgb, ${verdictColor(domain.results.verdict.level)} 45%, transparent);`
+			: ''
+	);
+
 	onMount(() => {
 		updateNet();
 		window.addEventListener('online', updateNet);
@@ -78,7 +86,7 @@
 </script>
 
 <svelte:head>
-	<title>Gradient — skate route planner</title>
+	<title>GradientRip — e-skate route planner</title>
 	<link rel="manifest" href="/manifest.webmanifest" />
 </svelte:head>
 
@@ -89,28 +97,27 @@
 
 <!-- panel -->
 {#if ui.panelVisible}
-<div class="panel" class:sheet-open={ui.sheetOpen}>
-	<button
-		type="button"
-		class="grabber"
-		aria-expanded={ui.sheetOpen}
-		aria-controls="panelScroll"
-		aria-label={ui.sheetOpen ? 'Collapse route panel' : 'Expand route panel'}
-		onclick={toggleSheet}
-		ontouchstart={onTouchStart}
-		ontouchmove={onTouchMove}
-		ontouchend={onTouchEnd}
-	>
-		<span aria-hidden="true"></span>
-	</button>
-	<div class="panel-scroll" id="panelScroll" bind:this={panelScrollEl} onscroll={onPanelScroll}>
+	<div class="panel" class:sheet-open={ui.sheetOpen} style={panelEdge}>
+		<button
+			type="button"
+			class="grabber"
+			aria-expanded={ui.sheetOpen}
+			aria-controls="panelScroll"
+			aria-label={ui.sheetOpen ? 'Collapse route panel' : 'Expand route panel'}
+			onclick={toggleSheet}
+			ontouchstart={onTouchStart}
+			ontouchmove={onTouchMove}
+			ontouchend={onTouchEnd}
+		>
+			<span aria-hidden="true"></span>
+		</button>
 		<PanelHeader />
-		<PlanView />
-		<SavedView />
-		<RideView />
+		<TabBar />
+		<div class="panel-scroll" id="panelScroll" bind:this={panelScrollEl} onscroll={onPanelScroll}>
+			<PlanView />
+			<SavedView />
+			<RideView />
+		</div>
+		<LegalNote />
 	</div>
-
-	<LegalNote />
-	<TabBar />
-</div>
 {/if}

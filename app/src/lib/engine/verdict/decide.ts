@@ -1,6 +1,6 @@
 import type { Mode, Verdict, RouteSegment } from '../plan-packet/types.js';
 
-/** Determine if a route is OK, Caution, or Stop for the given mode/board. */
+/** Determine if a route is Fly, OK, Caution, or Stop for the given mode/board. */
 export const decide = (
 	segs: RouteSegment[],
 	totalWh: number,
@@ -32,22 +32,31 @@ export const decide = (
 	if (worstClimb >= climbLimit) {
 		return {
 			level: 'caution',
-			badge: 'Caution',
+			badge: 'Watch it',
 			text: `Peak climb of ${worstClimb.toFixed(0)}% is at or beyond this ${mode.unit}'s rated climb limit (${climbLimit}%). ${mode.climbNote}`
 		};
 	}
 	if (totalWh > usableWh * 0.7) {
 		return {
 			level: 'caution',
-			badge: 'Caution',
+			badge: 'Watch it',
 			text: mode.human
 				? `This route burns ${(totalWh / usableWh * 100).toFixed(0)}% of a comfortable day's effort one way. Fine as a single leg, heavy as a round trip.`
 				: `This route uses ${(totalWh / usableWh * 100).toFixed(0)}% of usable battery one way. Fine for a single leg, tight for a round trip without charging in between.`
 		};
 	}
+	if (totalWh < usableWh * 0.3) {
+		return {
+			level: 'fly',
+			badge: 'Fly',
+			text: mode.human
+				? `Barely a warm-up — ${kcal(totalWh)} kcal, ${(totalWh / usableWh * 100).toFixed(0)}% of the day's budget. Send it.`
+				: `Barely sips the pack — ${totalWh.toFixed(0)} Wh, ${(totalWh / usableWh * 100).toFixed(0)}% of usable battery. Full send.`
+		};
+	}
 	return {
 		level: 'ok',
-		badge: 'OK',
+		badge: 'Go',
 		text: mode.human
 			? `Comfortably within a day's effort and within this ${mode.unit}'s climb and braking limits — ${kcal(totalWh)} kcal, ${(totalWh / usableWh * 100).toFixed(0)}% of the day's budget.`
 			: `Comfortably within range and within this ${mode.unit}'s climb and braking limits — ${totalWh.toFixed(0)} Wh, ${(totalWh / usableWh * 100).toFixed(0)}% of usable battery.`

@@ -1,36 +1,41 @@
 <script lang="ts">
-	import { Sun, Moon, Monitor } from '@lucide/svelte';
+	import Mark from '$lib/components/Mark.svelte';
 	import { ui } from '$lib/state/ui.svelte.js';
-	import { Bolt } from '$lib/icons/index.js';
 </script>
 
-<div class="sticky top-0 z-11 flex items-center gap-3 border-b border-base-200 bg-base-100/95 px-4 py-3 backdrop-blur-sm">
-	<span class="brand-tile" aria-hidden="true">
-		<Bolt class="size-5" />
+<div
+	class="sticky top-0 z-11 flex items-center justify-between gap-3 px-5 py-4"
+	style="border-bottom: 1px solid var(--panel-line);"
+>
+	<span class="font-display" style="font-weight: 700; font-size: 1.35rem; letter-spacing: -0.01em;">
+		<span class="wordmark">GradientRip</span>
 	</span>
-	<div class="min-w-0 flex-1 leading-tight">
-		<h1 class="wordmark text-[1.15rem] font-bold tracking-tight">Gradient</h1>
-		<p class="text-[0.72rem] text-base-content/55">Micromobility route lab — climb / brake / range</p>
+	<div class="flex items-center gap-2">
+		<span
+			class="net-badge"
+			style="color: {ui.netOnline ? 'var(--v-go)' : 'var(--v-caution)'}; background: color-mix(in srgb, currentcolor 12%, transparent);"
+			title={ui.netOnline ? 'Connected' : 'Offline — saved trips still open.'}
+		>
+			<i aria-hidden="true"></i>
+			{ui.netOnline ? 'ONLINE' : 'OFFLINE'}
+		</span>
+		<button
+			type="button"
+			class="grid size-7 cursor-pointer place-items-center"
+			style="background: var(--panel-soft); box-shadow: inset 0 0 0 1px var(--panel-line); border-radius: 6px; color: var(--color-primary);"
+			title={ui.theme === 'auto'
+				? 'Theme follows your system — tap to override'
+				: 'Theme pinned — tap to change'}
+			aria-label="Cycle theme (auto, light, dark)"
+			onclick={() => ui.cycleTheme()}
+		>
+			{#if ui.theme === 'dark'}
+				<Mark name="sun" cls="size-4" />
+			{:else if ui.theme === 'light'}
+				<Mark name="moon" cls="size-4" />
+			{:else}
+				<Mark name="monitor" cls="size-4" />
+			{/if}
+		</button>
 	</div>
-	<span
-		class="badge badge-sm {ui.netOnline ? 'badge-ghost text-base-content/55' : 'badge-warning'} gap-1"
-		title={ui.netOnline ? 'Connected' : 'Offline — saved trips still open.'}
-	>
-		<span class="size-1.5 rounded-full bg-current"></span>
-		{ui.netOnline ? 'Online' : 'Offline'}
-	</span>
-	<button
-		class="btn btn-circle btn-sm btn-ghost text-base-content/60 hover:text-primary"
-		title={ui.theme === 'auto' ? 'Theme follows your system — tap to override' : 'Theme pinned — tap to change'}
-		aria-label="Cycle theme (auto, light, dark)"
-		onclick={() => ui.cycleTheme()}
-	>
-		{#if ui.theme === 'dark'}
-			<Sun class="size-4" />
-		{:else if ui.theme === 'light'}
-			<Moon class="size-4" />
-		{:else}
-			<Monitor class="size-4" />
-		{/if}
-	</button>
 </div>

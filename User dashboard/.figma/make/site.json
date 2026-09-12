@@ -1,0 +1,10 @@
+{
+  "description": "Connect and engage with users through real-time messaging, enhancing communication for teams and communities with a user-friendly interface.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

@@ -1,29 +1,31 @@
 <script lang="ts">
-	import { MapPin, Bookmark, Activity } from '@lucide/svelte';
-	import type { Component } from 'svelte';
 	import { ui } from '$lib/state/ui.svelte.js';
 
-	interface Tab {
-		key: 'plan' | 'saved' | 'ride';
-		label: string;
-		icon: Component;
-	}
-	const tabs: Tab[] = [
-		{ key: 'plan', label: 'Plan', icon: MapPin },
-		{ key: 'saved', label: 'Saved', icon: Bookmark },
-		{ key: 'ride', label: 'Ride', icon: Activity }
-	];
+	const tabs = [
+		{ key: 'plan', label: 'Plan' },
+		{ key: 'saved', label: 'Saved' },
+		{ key: 'ride', label: 'Ride' }
+	] as const;
 </script>
 
-<nav class="flex items-stretch gap-1 border-t border-base-300 bg-base-100 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] pt-1.5" aria-label="Main navigation">
+<nav
+	class="flex gap-0.5 px-5 pt-2.5"
+	style="border-bottom: 1px solid var(--panel-line);"
+	aria-label="Main navigation"
+>
 	{#each tabs as tab (tab.key)}
+		{@const active = ui.activeTab === tab.key}
 		<button
-			class="flex flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[0.68rem] font-medium transition-colors {ui.activeTab === tab.key ? '' : 'text-base-content/45 hover:text-base-content'}"
-			class:tab-active={ui.activeTab === tab.key}
-			aria-current={ui.activeTab === tab.key ? 'page' : undefined}
+			type="button"
+			class="font-display flex-1 cursor-pointer bg-transparent pb-2"
+			style="font-size: 0.9rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: {active
+				? 'var(--color-primary)'
+				: 'var(--ink-2)'}; border: none; border-bottom: 2px solid {active
+				? 'var(--color-primary)'
+				: 'transparent'}; filter: {active ? 'drop-shadow(0 0 8px var(--brand-glow))' : 'none'};"
+			aria-current={active ? 'page' : undefined}
 			onclick={() => ui.setTab(tab.key)}
 		>
-			<tab.icon class="size-5" />
 			{tab.label}
 		</button>
 	{/each}

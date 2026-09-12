@@ -3,6 +3,7 @@ export const TRIPS_KEY = 'gradient-trips-v1';
 export const TRANSPORT_KEY = 'gradient-transport-v1';
 export const LEGAL_KEY = 'gradient-legal-v1';
 export const THEME_KEY = 'gradient-theme-v1';
+export const MAP_STYLE_KEY = 'gradient-mapstyle-v1';
 export const BOARD_KEY = 'gradient-board-v1';
 export const LOCATION_KEY = 'gradient-location-v1';
 export const TRIPS_MAX = 15;
@@ -127,4 +128,16 @@ export const saveThemePref = (pref: ThemePref): void => {
 			/* best-effort */
 		}
 	} else setItem(THEME_KEY, pref);
+};
+
+// Map tile style: 'auto' follows the app theme, otherwise a MAP_STYLES id.
+export const loadMapStylePref = (): string => getItem(MAP_STYLE_KEY) || 'auto';
+export const saveMapStylePref = (pref: string): void => {
+	if (!pref || pref === 'auto') {
+		try {
+			localStorage.removeItem(MAP_STYLE_KEY);
+		} catch {
+			/* best-effort */
+		}
+	} else setItem(MAP_STYLE_KEY, pref);
 };

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { domain } from '$lib/state/domain.svelte.js';
-	import { Bookmark } from '$lib/icons/index.js';
+	import Mark from '$lib/components/Mark.svelte';
 
 	const fillPreset = (id: number): void => {
 		const p = domain.presets.find((x) => x.id === id);
@@ -15,29 +15,33 @@
 </script>
 
 {#if !domain.presets.length}
-	<span class="text-[0.78rem] text-base-content/60">No saved places yet — tap the star on a stop to save it.</span>
+	<span class="text-[0.78rem]" style="color: var(--ink-2);"
+		>No saved places yet — tap the bookmark on a stop to save it.</span
+	>
 {:else}
 	{#each domain.presets as p (p.id)}
-		<span
-			class="pill gap-1.5 px-3 py-3"
-		>
+		<span class="preset-chip">
 			<button
 				type="button"
 				class="flex min-w-0 cursor-pointer items-center gap-1.5 bg-transparent"
+				style="border: none; color: inherit;"
 				title="Use {p.label}"
 				aria-label="Use saved place {p.label}"
 				onclick={() => fillPreset(p.id)}
 			>
-				<Bookmark class="size-3 fill-primary" />
+				<Mark name="bookmark" cls="size-3 text-primary" />
 				<span class="max-w-[10rem] truncate">{p.label}</span>
 			</button>
 			<button
 				type="button"
-				class="btn btn-circle btn-xs btn-ghost -mr-1 text-base-content/50 hover:bg-error/15 hover:text-error"
+				class="grid size-5 cursor-pointer place-items-center text-base-content/50 transition-colors hover:text-error"
+				style="background: transparent; border: none;"
 				title="Remove saved place"
 				aria-label="Remove saved place {p.label}"
 				onclick={(e) => removePreset(e, p.id)}
-			>&times;</button>
+			>
+				<Mark name="x" cls="size-3" />
+			</button>
 		</span>
 	{/each}
 {/if}

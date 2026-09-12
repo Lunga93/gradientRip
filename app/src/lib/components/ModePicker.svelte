@@ -7,58 +7,68 @@
 
 	const electric = Object.keys(MODES).filter((id) => MODES[id].group === 'electric');
 	const human = Object.keys(MODES).filter((id) => MODES[id].group === 'human');
+	const modeColor = (id: string): string => (MODES[id].group === 'electric' ? '#8b5cf6' : '#60a5fa');
 </script>
 
 {#if variant === 'panel'}
 	<div
-		class="drag-scroll flex gap-2 overflow-x-auto p-0.5 pb-3 [scrollbar-width:none] [&>*]:shrink-0 [&::-webkit-scrollbar]:hidden"
+		class="drag-scroll flex gap-1.5 overflow-x-auto p-0.5 pb-1 [scrollbar-width:none] [&>*]:shrink-0 [&::-webkit-scrollbar]:hidden"
 		role="radiogroup"
 		aria-label="Transport mode"
 		tabindex="0"
 		use:dragScroll
 	>
 		{#each Object.keys(MODES) as id (id)}
-			<label class="cursor-pointer select-none">
-				<input
-					type="radio"
-					name="tmode"
-					value={id}
-					class="peer sr-only"
-					checked={domain.modeId === id}
-					onchange={() => domain.selectMode(id)}
-				/>
-				<span
-					class="mode-pick flex min-w-[76px] flex-col items-center gap-2 rounded-2xl border border-base-300 bg-base-200 px-2 py-3 text-[0.7rem] font-semibold text-base-content/70 transition-all hover:border-primary/60 active:scale-95"
-				>
-					{@html MODE_ICONS[id]}
-					{MODES[id].label.split(' ')[0]}
-				</span>
-			</label>
+			{@const picked = domain.modeId === id}
+			<button
+				type="button"
+				role="radio"
+				aria-checked={picked}
+				class="mode-chip"
+				class:mode-chip-picked={picked}
+				style="--mc: {modeColor(id)};"
+				onclick={() => domain.selectMode(id)}
+			>
+				{MODES[id].label}
+			</button>
 		{/each}
 	</div>
 {:else}
-	<div class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Transport mode">
-		{#each [{ key: 'electric', label: 'Electric' }, { key: 'human', label: 'Human-powered' }] as group (group.key)}
-			<p class="col-span-2 mt-2 text-[0.72rem] font-semibold tracking-wide text-primary first:mt-0">{group.label}</p>
-			{#each (group.key === 'electric' ? electric : human) as id (id)}
-				<label class="cursor-pointer">
-					<input
-						type="radio"
+	<div class="flex flex-col gap-2" role="radiogroup" aria-label="Transport mode">
+		{#each [{ key: 'electric', ids: electric }, { key: 'human', ids: human }] as group (group.key)}
+			<div class="flex items-center gap-2">
+				<span
+					class="font-mono2"
+					style="font-size: 0.62rem; letter-spacing: 0.12em; color: {group.key === 'electric'
+						? '#8b5cf6'
+						: '#60a5fa'};"
+				>
+					{group.key === 'electric' ? 'ELECTRIC' : 'HUMAN'}
+				</span>
+				<span class="h-px flex-1" style="background: var(--panel-line);"></span>
+			</div>
+			<div
+				class="grid gap-2"
+				style="grid-template-columns: repeat({group.ids.length}, 1fr);"
+			>
+				{#each group.ids as id (id)}
+					{@const picked = domain.modeId === id}
+					<button
+						type="button"
+						role="radio"
+						aria-checked={picked}
 						name="omode"
 						value={id}
-						class="peer sr-only"
-						checked={domain.modeId === id}
-						onchange={() => domain.selectMode(id)}
-					/>
-					<span
-						class="mode-pick block rounded-2xl border border-base-300 bg-base-200 p-3 transition-colors hover:border-primary/60"
+						class="mode-cell"
+						class:mode-cell-picked={picked}
+						style="--mc: {modeColor(id)}; color: {picked ? modeColor(id) : 'var(--ink-2)'};"
+						onclick={() => domain.selectMode(id)}
 					>
 						{@html MODE_ICONS[id]}
-						<strong class="mt-1.5 block text-[0.92rem]">{MODES[id].label}</strong>
-						<span class="mt-0.5 block text-[0.74rem] leading-snug text-base-content/60">{MODES[id].tag}</span>
-					</span>
-				</label>
-			{/each}
+						<span class="t">{MODES[id].label}</span>
+					</button>
+				{/each}
+			</div>
 		{/each}
 	</div>
 {/if}

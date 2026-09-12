@@ -35,7 +35,7 @@ describe('buildPlanPacket, 5-point smoothing (migration regression guard)', () =
 	it('still reports a usable non-zero verdict', () => {
 		const p = packet();
 		expect(p.totalWh).toBeGreaterThan(0);
-		expect(p.verdict.level).toBe('ok');
+		expect(p.verdict.level).toBe('fly');
 	});
 });
 
@@ -61,5 +61,39 @@ describe('buildPlanPacket mode physics', () => {
 		const p = buildPlanPacket({ ...base, elev: flatElev, boardVal: 'bad', modeId: 'nope' });
 		expect(p.modeId).toBe('eskate');
 		expect(p.totalWh).toBeGreaterThan(0);
+	});
+});
+
+describe('fly reward band', () => {
+	// Flat line of N points ~111 m apart; e-skate burns ~13 Wh/km flat, so
+	// distance (and only distance) moves the verdict between fly and ok.
+	// Board 250 Wh → usable 217.5 Wh; fly below 30% (65 Wh), ok below 70%.
+	const flatLine = (n: number): [number, number][] =>
+		Array.from({ length: n }, (_, i) => [-33.9, 18.4 + i * 0.001]);
+	const flatPacket = (n: number) => {
+		const pts = flatLine(n);
+		return buildPlanPacket({
+			line: pts,
+			coords: [pts[0], pts[pts.length - 1]],
+			pts,
+			elev: pts.map(() => 10),
+			boardVal: '250|10|20',
+			modeId: 'eskate',
+			queries: ['a', 'b'],
+			source: 'planned'
+		});
+	};
+
+	it('short flat route sips the pack → fly', () => {
+		const p = flatPacket(20);
+		expect(p.totalWh).toBeLessThan(p.usableWh * 0.3);
+		expect(p.verdict.level).toBe('fly');
+	});
+
+	it('longer flat route in the middle band → ok, never collapsed into fly', () => {
+		const p = flatPacket(70);
+		expect(p.totalWh).toBeGreaterThanOrEqual(p.usableWh * 0.3);
+		expect(p.totalWh).toBeLessThanOrEqual(p.usableWh * 0.7);
+		expect(p.verdict.level).toBe('ok');
 	});
 });

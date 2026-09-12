@@ -9,9 +9,14 @@ class SessionState {
 
 	// live tracking
 	trackingActive = $state(false);
-	trackingStats = $state<{ pct: number; remainingKm: string; acc: string } | null>(null);
+	trackingPaused = $state(false);
+	trackingStartedAt = $state<number | null>(null);
+	trackingStats = $state<{ pct: number; remainingKm: string; acc: string; speedKmh: string } | null>(
+		null
+	);
 	trackingMsg = $state('');
 	trackingWarn = $state(false);
+	arrivalShown = $state(false);
 	recenterVisible = $state(false);
 	following = $state(true);
 
@@ -22,6 +27,9 @@ class SessionState {
 	recordMode = $state(false);
 	recordPoints = $state<LatLon[]>([]);
 	recordKm = $state(0);
+	recordStartedAt = $state<number | null>(null);
+	recordSpeedKmh = $state<number | null>(null);
+	recordAcc = $state<number | null>(null);
 
 	// autocomplete
 	acIdx = $state<number | null>(null);

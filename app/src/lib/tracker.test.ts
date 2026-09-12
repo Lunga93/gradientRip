@@ -15,7 +15,13 @@ vi.mock('./mapController.svelte.js', () => ({
 	clearRecordLayer: vi.fn(),
 	updateTrackMarker: vi.fn(),
 	clearTrackMarker: vi.fn(),
-	updateRecordMarker: vi.fn()
+	updateRecordMarker: vi.fn(),
+	setRouteProgress: vi.fn(),
+	clearRouteProgress: vi.fn(),
+	showHillBadge: vi.fn(),
+	clearHillBadge: vi.fn(),
+	showArrivalBadge: vi.fn(),
+	clearArrivalBadge: vi.fn()
 }));
 
 describe('tracker draw mode', () => {

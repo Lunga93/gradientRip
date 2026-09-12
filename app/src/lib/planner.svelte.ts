@@ -8,6 +8,7 @@ import { ui } from './state/ui.svelte.js';
 import { session } from './state/session.svelte.js';
 import { nextStopId } from './state/domain.svelte.js';
 import { renderRoute } from './mapController.svelte.js';
+import { verdictHex } from './verdictTheme.js';
 import { startTracking, stopTracking } from './tracker.js';
 import { buildPlanPacket, routeSegments, decide, type PlanPacket, type PlanSource } from './engine/index.js';
 import { planRoute } from './plan.remote.js';
@@ -70,7 +71,7 @@ export const finalisePlan = (packet: PlanPacket) => {
 		line: packet.line,
 		coords: packet.coords
 	});
-	renderRoute(packet.segs, packet.line, packet.coords);
+	renderRoute(packet.segs, packet.line, packet.coords, verdictHex(packet.verdict.level));
 
 	if (isMobileView()) ui.setSheet(true);
 
@@ -90,6 +91,7 @@ export const finalisePlan = (packet: PlanPacket) => {
 		climbLimit: packet.climbLimit,
 		brakeLimit: packet.brakeLimit,
 		totalKm: packet.totalKm,
+		verdictLevel: packet.verdict.level,
 		drawn: packet.source === 'drawn' || undefined,
 		recorded: packet.source === 'recorded' || undefined
 	});
@@ -140,7 +142,7 @@ export const loadTrip = (t: Trip): void => {
 		line,
 		coords: (t.coords ?? []) as LatLon[]
 	});
-	renderRoute(segs, line, (t.coords ?? []) as LatLon[]);
+	renderRoute(segs, line, (t.coords ?? []) as LatLon[], verdictHex(v.level));
 
 	if (isMobileView()) ui.setSheet(true);
 	ui.setStatus('Loaded from saved trips — no network used.');

@@ -45,7 +45,7 @@ export interface RouteSegment {
 }
 
 export interface Verdict {
-	level: 'ok' | 'caution' | 'stop';
+	level: 'fly' | 'ok' | 'caution' | 'stop';
 	badge: string;
 	text: string;
 }

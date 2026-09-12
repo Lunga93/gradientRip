@@ -1,0 +1,24 @@
+-- Migration: 20240910000000_initial_schema
+-- Down: drop core tables and helper functions
+
+DROP POLICY IF EXISTS preset_isolation ON presets;
+DROP POLICY IF EXISTS trip_isolation ON trips;
+DROP POLICY IF EXISTS pref_isolation ON prefs;
+DROP POLICY IF EXISTS transport_modes_read ON transport_modes;
+DROP POLICY IF EXISTS boards_read ON boards;
+
+DROP FUNCTION IF EXISTS current_user_id();
+
+ALTER TABLE presets DISABLE ROW LEVEL SECURITY;
+ALTER TABLE trips DISABLE ROW LEVEL SECURITY;
+ALTER TABLE prefs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE transport_modes DISABLE ROW LEVEL SECURITY;
+ALTER TABLE boards DISABLE ROW LEVEL SECURITY;
+
+DROP TABLE IF EXISTS boards CASCADE;
+DROP TABLE IF EXISTS transport_modes CASCADE;
+DROP TABLE IF EXISTS prefs CASCADE;
+DROP TABLE IF EXISTS trips CASCADE;
+DROP TABLE IF EXISTS presets CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS schema_migrations CASCADE;
