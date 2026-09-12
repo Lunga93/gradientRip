@@ -122,3 +122,34 @@ export const isValidStyleId = (id: string): boolean => styleById(id) !== undefin
 
 export const defaultStyleForTheme = (theme: 'light' | 'dark'): string =>
 	theme === 'dark' ? DEFAULT_DARK_STYLE : DEFAULT_LIGHT_STYLE;
+
+// ── Key gating: CARTO + Stadia need API keys in production.
+// In dev (localhost) they work keyless; in prod they watermark without a key.
+const isDev = import.meta.env.DEV;
+const cartoKey = import.meta.env.VITE_CARTO_API_KEY;
+const stadiaKey = import.meta.env.VITE_STADIA_API_KEY;
+
+function needsKeyFor(url: string): 'carto' | 'stadia' | null {
+	if (url.includes('cartocdn.com')) return 'carto';
+	if (url.includes('stadiamaps.com')) return 'stadia';
+	return null;
+}
+
+/** Returns the tile URL with API key appended (if available). */
+export function tileUrl(style: MapStyleDef): string {
+	const provider = needsKeyFor(style.url);
+	if (!provider) return style.url;
+	const key = provider === 'carto' ? cartoKey : stadiaKey;
+	return key ? `${style.url}?api_key=${key}` : style.url;
+}
+
+/** In dev, all styles are available. In prod, only styles whose provider
+ *  has a key (or that are keyless like OSM) are shown. */
+export function getAvailableStyles(): MapStyleDef[] {
+	if (isDev) return MAP_STYLES;
+	return MAP_STYLES.filter((s) => {
+		const provider = needsKeyFor(s.url);
+		if (!provider) return true;
+		return provider === 'carto' ? !!cartoKey : !!stadiaKey;
+	});
+}

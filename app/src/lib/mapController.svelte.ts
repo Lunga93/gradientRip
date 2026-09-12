@@ -14,6 +14,7 @@ import { session } from './state/session.svelte.js';
 import { addDrawPoint, getDrawnPath } from './tracker.js';
 import {
 	styleById,
+	tileUrl,
 	isValidStyleId,
 	defaultStyleForTheme,
 	DEFAULT_LIGHT_STYLE
@@ -84,7 +85,7 @@ const applyTileStyle = (id: string): void => {
 		m.removeLayer(tileLayer);
 		tileLayer = null;
 	}
-	tileLayer = l().tileLayer(def.url, {
+	tileLayer = l().tileLayer(tileUrl(def), {
 		maxZoom: def.maxZoom,
 		subdomains: def.subdomains ?? 'abc',
 		attribution: def.attribution

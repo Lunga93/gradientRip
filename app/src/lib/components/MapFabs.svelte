@@ -5,7 +5,7 @@
 	import { locateInto } from '$lib/planner.svelte.js';
 	import { recenter } from '$lib/tracker.js';
 	import { ensureMap, setMapStyle } from '$lib/mapController.svelte.js';
-	import { MAP_STYLES } from '$lib/mapStyles.js';
+	import { getAvailableStyles } from '$lib/mapStyles.js';
 	import { loadMapStylePref } from '$lib/storage.js';
 
 	const locateFab = (): void => {
@@ -17,8 +17,9 @@
 	let styleOpen = $state(false);
 	let stylePref = $state(loadMapStylePref());
 
-	const lightStyles = MAP_STYLES.filter((s) => s.group === 'light');
-	const darkStyles = MAP_STYLES.filter((s) => s.group === 'dark');
+	const styles = getAvailableStyles();
+	const lightStyles = styles.filter((s) => s.group === 'light');
+	const darkStyles = styles.filter((s) => s.group === 'dark');
 
 	const pickStyle = (id: string): void => {
 		stylePref = id;
