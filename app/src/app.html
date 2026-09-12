@@ -14,7 +14,8 @@
 			// Pre-paint theme: apply the saved theme before first render
 			// so there is never a light/dark flash. 'auto' means system preference.
 			(function () {
-				try {						var t = localStorage.getItem('gradient-theme-v1');
+				try {
+					var t = localStorage.getItem('gradient-theme-v1');
 						if (t === 'light') document.documentElement.removeAttribute('data-theme');
 						else if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
 						else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {

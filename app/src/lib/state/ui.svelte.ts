@@ -49,10 +49,9 @@ class UiState {
 	setTheme(pref: ThemePref) {
 		this.theme = pref;
 		saveThemePref(pref);
-		const el = document.documentElement;
-		if (pref === 'light') el.removeAttribute('data-theme');
-		else if (pref === 'dark') el.setAttribute('data-theme', 'dark');
-		else el.removeAttribute('data-theme');
+		// Light = no attribute (the :root default); dark toggles the override.
+		if (pref === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+		else document.documentElement.removeAttribute('data-theme');
 	}
 
 	cycleTheme() {
