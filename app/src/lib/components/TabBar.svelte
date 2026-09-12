@@ -17,7 +17,7 @@
 		{@const active = ui.activeTab === tab.key}
 		<button
 			type="button"
-			class="font-display flex-1 cursor-pointer bg-transparent pb-2"
+			class="font-display flex-1 cursor-pointer bg-transparent py-3.5"
 			style="font-size: 0.9rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: {active
 				? 'var(--color-primary)'
 				: 'var(--ink-2)'}; border: none; border-bottom: 2px solid {active

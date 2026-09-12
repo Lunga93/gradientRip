@@ -21,7 +21,7 @@
 		</span>
 		<button
 			type="button"
-			class="grid size-7 cursor-pointer place-items-center"
+			class="grid size-11 cursor-pointer place-items-center"
 			style="background: var(--panel-soft); box-shadow: inset 0 0 0 1px var(--panel-line); border-radius: 6px; color: var(--color-primary);"
 			title={ui.theme === 'auto'
 				? 'Theme follows your system — tap to override'

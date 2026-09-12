@@ -49,7 +49,7 @@
 	--panel-line: rgba(15, 23, 42, 0.09);
 	--ink-0: #0f172a;
 	--ink-1: rgba(15, 23, 42, 0.65);
-	--ink-2: rgba(15, 23, 42, 0.42);
+	--ink-2: rgba(15, 23, 42, 0.6);
 	--ink-3: rgba(15, 23, 42, 0.22);
 	--v-fly: #7c3aed;
 	--v-go: #059669;
@@ -116,7 +116,7 @@
 	--panel-line: rgba(255, 255, 255, 0.09);
 	--ink-0: #f1f5f9;
 	--ink-1: rgba(241, 245, 249, 0.68);
-	--ink-2: rgba(241, 245, 249, 0.4);
+	--ink-2: rgba(241, 245, 249, 0.56);
 	--ink-3: rgba(241, 245, 249, 0.22);
 	--v-fly: #a78bfa;
 	--v-go: #34d399;
@@ -928,6 +928,10 @@ a {
 
 .mode-chip {
 	padding: 6px 13px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 44px;
 	font-size: 0.78rem;
 	font-weight: 600;
 	background: var(--panel-soft);
@@ -948,6 +952,10 @@ a {
 /* ─── board chips + preset chips ──────────────────────────────────────── */
 .board-chip {
 	padding: 7px 14px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 44px;
 	font-size: 0.78rem;
 	font-weight: 600;
 	white-space: nowrap;

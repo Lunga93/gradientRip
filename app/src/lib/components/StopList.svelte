@@ -114,7 +114,7 @@
 						</div>
 						<input
 							type="text"
-							class="w-full border-none bg-transparent text-base-content outline-none placeholder:text-base-content/40"
+							class="w-full border-none bg-transparent text-base-content outline-none placeholder:[color:var(--ink-2)]"
 							style="font-size: 0.85rem; font-weight: 500; padding-right: 1.4rem;"
 							placeholder={stopPlaceholder(i, domain.stops.length)}
 							autocomplete="off"
@@ -145,7 +145,7 @@
 				</div>
 				<button
 					type="button"
-					class="grid size-8 shrink-0 cursor-pointer place-items-center text-base-content/40 transition-colors hover:text-primary"
+					class="grid size-11 -m-1.5 shrink-0 cursor-pointer place-items-center text-base-content/40 transition-colors hover:text-primary"
 					style="background: transparent; border: none;"
 					aria-label="Save this place"
 					title="Save this place"
@@ -155,7 +155,7 @@
 				</button>
 				{#if i > 0 && i < domain.stops.length - 1}
 					<button
-						type="button"						class="grid size-8 shrink-0 cursor-pointer place-items-center text-base-content/50 opacity-0 transition-opacity group-hover:opacity-100 hover:text-error"
+						type="button"						class="grid size-11 -m-1.5 shrink-0 cursor-pointer place-items-center text-base-content/50 transition-opacity hover:text-error"
 						style="background: transparent; border: none;"
 						aria-label="Remove this stop"
 						title="Remove this stop"
