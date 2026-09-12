@@ -5,6 +5,8 @@ const UA = 'gradient-route-planner/1.0 (personal use)';
 const NOMINATIM_HEADERS = { 'User-Agent': UA, 'Accept-Language': 'en' };
 const JSON_HEADERS = { 'User-Agent': UA, Accept: 'application/json' };
 
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
 export const detectCountry = async (center: LatLon): Promise<string> => {
 	try {
 		const [lat, lon] = center;
@@ -161,13 +163,35 @@ export const elevations = async (pts: LatLon[]): Promise<number[]> => {
 		const lats = chunk.map((p) => p[0].toFixed(6)).join(',');
 		const lons = chunk.map((p) => p[1].toFixed(6)).join(',');
 		const url = `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`;
-		const resp = await fetch(url, { headers: JSON_HEADERS, signal: AbortSignal.timeout(15000) });
-		if (!resp.ok) throw new Error('Elevation lookup failed');
-		const data = await resp.json();
-		if (!Array.isArray(data.elevation) || data.elevation.length !== chunk.length) {
-			throw new Error('Elevation lookup returned mismatched data');
+		// Transient failures (429 throttling, 5xx, timeouts, network blips)
+		// retry with backoff — one bad chunk must not nuke the whole lookup.
+		let lastErr: unknown = null;
+		for (let attempt = 0; attempt < 3; attempt++) {
+			try {
+				const resp = await fetch(url, { headers: JSON_HEADERS, signal: AbortSignal.timeout(15000) });
+				if (resp.status === 429 || resp.status >= 500) {
+					throw new Error(`Elevation lookup failed (HTTP ${resp.status})`);
+				}
+				if (!resp.ok) throw new Error('Elevation lookup failed');
+				const data = await resp.json();
+				if (!Array.isArray(data.elevation) || data.elevation.length !== chunk.length) {
+					throw new Error('Elevation lookup returned mismatched data');
+				}
+				out[slot] = data.elevation;
+				return;
+			} catch (err) {
+				lastErr = err;
+				// Deterministic failures fail fast — retrying won't help.
+				if (
+					err instanceof Error &&
+					(err.message.includes('mismatched') || err.message === 'Elevation lookup failed')
+				) {
+					break;
+				}
+				if (attempt < 2) await sleep(500 * (attempt + 1));
+			}
 		}
-		out[slot] = data.elevation;
+		throw lastErr instanceof Error ? lastErr : new Error('Elevation lookup failed');
 	};
 	for (let i = 0; i < pts.length; i += CHUNK * CONCURRENCY) {
 		const jobs: Promise<void>[] = [];

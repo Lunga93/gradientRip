@@ -111,7 +111,7 @@
 							stroke-width="2"
 							stroke-linecap="round"
 						/>
-						<circle cx="4" cy="28" r="3" fill="#8b5cf6" />
+						<circle cx="4" cy="28" r="3" fill="#60a5fa" />
 						<circle cx="44" cy="4" r="3" fill="#22d3ee" />
 					</svg>
 					<div class="flex flex-1 gap-3.5">

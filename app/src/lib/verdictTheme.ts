@@ -19,11 +19,11 @@ export const verdictLabel = (level: string): string =>
 	VERDICT_STYLE[level as VerdictLevel]?.label ?? level.toUpperCase();
 
 export const VERDICT_HEX: Record<VerdictLevel, string> = {
-	fly: '#a78bfa',
+	fly: '#93c5fd',
 	ok: '#34d399',
 	caution: '#fbbf24',
 	stop: '#f87171'
 };
 
 export const verdictHex = (level: string): string =>
-	VERDICT_HEX[level as VerdictLevel] ?? '#8b5cf6';
+	VERDICT_HEX[level as VerdictLevel] ?? '#60a5fa';

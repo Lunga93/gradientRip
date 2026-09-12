@@ -222,7 +222,7 @@ const stopMapIcon = (i: number, n: number): L.DivIcon => {
 	}
 	return l().divIcon({
 		className: '',
-		html: `<div style="width:18px;height:18px;border-radius:50%;background:#1b2125;color:#FFFFFF;border:1px solid #FFFFFF;font:700 10px Roboto,sans-serif;display:flex;align-items:center;justify-content:center;">${i}</div>`,
+		html: `<div style="width:18px;height:18px;border-radius:50%;background:#1b2125;color:#FFFFFF;border:1px solid #FFFFFF;font-weight:700;font-size:10px;font-family:var(--font-mono);display:flex;align-items:center;justify-content:center;">${i}</div>`,
 		iconSize: [16, 16],
 		iconAnchor: [8, 8]
 	});
@@ -232,7 +232,7 @@ export const renderRoute = (
 	segs: RouteSegment[],
 	line: LatLon[],
 	coords: LatLon[],
-	neon = '#8b5cf6'
+	neon = '#60a5fa'
 ): void => {
 	const m = ensureMap();
 	if (routeLayer) routeLayer.remove();
@@ -255,7 +255,7 @@ export const renderRoute = (
 		interactive: false
 	}).addTo(group);
 	l().polyline(line, {
-		color: '#06060e',
+		color: '#020617',
 		weight: 8,
 		opacity: 0.9,
 		lineCap: 'round',
@@ -286,7 +286,7 @@ export const renderRoute = (
 	m.fitBounds(l().latLngBounds(line), { padding: [40, 40] });
 };
 
-/* ---------- live progress: traveled cyan vs dashed-violet remaining ---------- */
+/* ---------- live progress: traveled cyan vs dashed-blue remaining ---------- */
 const cutLineAt = (dist: number): LatLon[] => {
 	if (routeLine.length < 2) return [];
 	let lo = 0;
@@ -314,7 +314,7 @@ export const setRouteProgress = (distAlong: number): void => {
 	if (!progressLive) {
 		coreLines.forEach((c) => c.setStyle({ opacity: 0.35 }));
 		planDash = l().polyline(routeLine, {
-			color: '#8b5cf6',
+			color: '#60a5fa',
 			weight: 5,
 			opacity: 0.85,
 			lineCap: 'round',
@@ -426,7 +426,7 @@ export const redrawDrawLayer = (): void => {
 	const path = getDrawnPath();
 	if (path.length > 1) {
 		drawLayer = l().polyline(path, {
-			color: '#8b5cf6',
+			color: '#60a5fa',
 			weight: 4,
 			dashArray: '10 9',
 			className: 'line-march line-glow'
@@ -436,9 +436,9 @@ export const redrawDrawLayer = (): void => {
 		drawMarkers.push(
 			l().circleMarker(p, {
 				radius: 5,
-				color: '#8b5cf6',
+				color: '#60a5fa',
 				weight: 2,
-				fillColor: '#8b5cf6',
+				fillColor: '#60a5fa',
 				fillOpacity: 1,
 				className: 'node-glow'
 			}).addTo(m)

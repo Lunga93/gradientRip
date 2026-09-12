@@ -1,19 +1,8 @@
 @import 'tailwindcss';
 
-@plugin "daisyui" {
-	themes: false;
-}
-
-@plugin "daisyui/theme" {
-	name: "gradient";
-	default: true;
-	color-scheme: light;
-
-	--color-base-100: #f2f5ff;
-	--color-base-200: #e4eafb;
-	--color-base-300: #c9d4f2;
-	--color-base-content: #0f172a;
-	--color-primary: #7c3aed;
+/* ─── Tailwind color utilities (text-primary, bg-error, etc.) ────────── */
+@theme {
+	--color-primary: #2563eb;
 	--color-primary-content: #ffffff;
 	--color-secondary: #475569;
 	--color-secondary-content: #ffffff;
@@ -29,31 +18,29 @@
 	--color-warning-content: #ffffff;
 	--color-error: #dc2626;
 	--color-error-content: #ffffff;
+	--color-base-100: #f2f5ff;
+	--color-base-200: #e4eafb;
+	--color-base-300: #c9d4f2;
+	--color-base-content: #0f172a;
+}
 
-	--radius-selector: 0.5rem;
-	--radius-field: 0.5rem;
-	--radius-box: 0.75rem;
-	--size-selector: 0.25rem;
-	--size-field: 0.3rem;
-	--border: 1px;
-	--depth: 1;
-	--noise: 0;
-
-	--brand-gradient: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-	--brand-gradient-hover: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-	--brand-glow: rgba(124, 58, 237, 0.4);
+/* ─── Light theme tokens ──────────────────────────────────────────── */
+:root {
+	--brand-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+	--brand-gradient-hover: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+	--brand-glow: rgba(37, 99, 235, 0.4);
 	--app-bg: #dbeafe;
 	--panel-bg: rgba(248, 250, 255, 0.97);
-	--panel-edge: rgba(124, 58, 237, 0.22);
+	--panel-edge: rgba(37, 99, 235, 0.22);
 	--panel-soft: rgba(15, 23, 42, 0.045);
 	--panel-line: rgba(15, 23, 42, 0.09);
 	--ink-0: #0f172a;
-	--ink-1: rgba(15, 23, 42, 0.65);
-	--ink-2: rgba(15, 23, 42, 0.6);
+	--ink-1: rgba(15, 23, 42, 0.85);
+	--ink-2: rgba(15, 23, 42, 0.75);
 	--ink-3: rgba(15, 23, 42, 0.22);
-	--v-fly: #7c3aed;
-	--v-go: #059669;
-	--v-caution: #d97706;
+	--v-fly: #2563eb;
+	--v-go: #047857;
+	--v-caution: #b45309;
 	--v-stop: #dc2626;
 	--route-glow: drop-shadow(0 0 4px rgba(15, 23, 42, 0.35));
 	--route-casing: drop-shadow(0 0 6px rgba(15, 23, 42, 0.4));
@@ -62,69 +49,54 @@
 	--map-vignette: none;
 	--band-stop: #dc2626;
 	--band-steepd: #ea580c;
-	--band-watch: #facc15;
-	--band-easy: #22c55e;
-	--band-work: #84cc16;
+	--band-watch: #eab308;
+	--band-easy: #16a34a;
+	--band-work: #65a30d;
 	--band-hard: #ea580c;
 	--band-limit: #dc2626;
 	--profile-line: #0f172a;
 	--trail-accent: #0891b2;
-}
-
-@plugin "daisyui/theme" {
-	name: "gradient-dark";
-	prefersdark: true;
-	color-scheme: dark;
-
-	--color-base-100: #0b0b1c;
-	--color-base-200: #14142a;
-	--color-base-300: #23233d;
-	--color-base-content: #f1f5f9;
-	--color-primary: #8b5cf6;
+}[data-theme="dark"] {
+	--color-primary: #60a5fa;
 	--color-primary-content: #ffffff;
 	--color-secondary: #94a3b8;
-	--color-secondary-content: #0b0b1c;
+	--color-secondary-content: #020617;
 	--color-accent: #22d3ee;
-	--color-accent-content: #0b0b1c;
-	--color-neutral: #23233d;
+	--color-accent-content: #020617;
+	--color-neutral: #1e293b;
 	--color-neutral-content: #f1f5f9;
 	--color-info: #60a5fa;
-	--color-info-content: #0b0b1c;
+	--color-info-content: #020617;
 	--color-success: #34d399;
-	--color-success-content: #0b0b1c;
+	--color-success-content: #020617;
 	--color-warning: #fbbf24;
-	--color-warning-content: #0b0b1c;
+	--color-warning-content: #020617;
 	--color-error: #f87171;
-	--color-error-content: #0b0b1c;
+	--color-error-content: #020617;
+	--color-base-100: #020617;
+	--color-base-200: #0f172a;
+	--color-base-300: #1e293b;
+	--color-base-content: #f1f5f9;
 
-	--radius-selector: 0.5rem;
-	--radius-field: 0.5rem;
-	--radius-box: 0.75rem;
-	--size-selector: 0.25rem;
-	--size-field: 0.3rem;
-	--border: 1px;
-	--depth: 1;
-	--noise: 0;
-
-	--brand-gradient: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-	--brand-gradient-hover: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-	--brand-glow: rgba(139, 92, 246, 0.5);
-	--app-bg: #06060e;
-	--panel-bg: rgba(14, 14, 28, 0.94);
-	--panel-edge: rgba(139, 92, 246, 0.28);
+	--brand-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+	--brand-gradient-hover: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+	--brand-glow: rgba(96, 165, 250, 0.5);
+	--app-bg: #020617;
+	--panel-bg: rgba(2, 6, 23, 0.94);
+	--panel-edge: rgba(96, 165, 250, 0.28);
 	--panel-soft: rgba(255, 255, 255, 0.045);
 	--panel-line: rgba(255, 255, 255, 0.09);
 	--ink-0: #f1f5f9;
 	--ink-1: rgba(241, 245, 249, 0.68);
 	--ink-2: rgba(241, 245, 249, 0.56);
 	--ink-3: rgba(241, 245, 249, 0.22);
-	--v-fly: #a78bfa;
+	--v-fly: #93c5fd;
 	--v-go: #34d399;
 	--v-caution: #fbbf24;
 	--v-stop: #f87171;
-	--route-glow: drop-shadow(0 0 5px rgba(139, 92, 246, 0.55));
+	--route-glow: drop-shadow(0 0 5px rgba(96, 165, 250, 0.55));
 	--route-casing: drop-shadow(0 0 6px rgba(0, 0, 0, 0.6));
-	--map-bg: #06060e;
+	--map-bg: #020617;
 	--map-tile-filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.65);
 	--map-vignette: radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
 	--band-stop: #f87171;
@@ -209,7 +181,7 @@ a {
 	gap: 8px;
 	margin-bottom: 10px;
 	font-family: var(--font-mono);
-	font-size: 0.62rem;
+	font-size: 0.7rem;
 	font-weight: 600;
 	letter-spacing: 0.16em;
 	text-transform: uppercase;
@@ -320,11 +292,11 @@ a {
 }
 
 .line-glow {
-	filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.8));
+	filter: drop-shadow(0 0 6px rgba(96, 165, 250, 0.8));
 }
 
 .node-glow {
-	filter: drop-shadow(0 0 4px rgba(139, 92, 246, 0.9));
+	filter: drop-shadow(0 0 4px rgba(96, 165, 250, 0.9));
 }
 
 /* marching GPS accuracy halo */
@@ -341,7 +313,7 @@ a {
 }
 
 .stop-origin {
-	background: #8b5cf6;
+	background: #60a5fa;
 	animation: stop-ping 2.2s ease-out infinite;
 }
 
@@ -434,7 +406,7 @@ a {
 	filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.7));
 	animation: badge-pop 0.3s cubic-bezier(0.2, 0.7, 0.3, 1);
 	font-family: var(--font-mono);
-	color: #06060e;
+	color: #020617;
 }
 
 .hill-badge.danger {
@@ -448,13 +420,13 @@ a {
 }
 
 .hill-badge strong {
-	font-size: 0.58rem;
+	font-size: 0.66rem;
 	font-weight: 700;
 	letter-spacing: 0.1em;
 }
 
 .hill-badge span {
-	font-size: 0.66rem;
+	font-size: 0.72rem;
 	font-weight: 600;
 }
 
@@ -471,7 +443,7 @@ a {
 	filter: drop-shadow(0 0 16px rgba(34, 211, 238, 0.8));
 	animation: badge-pop 0.35s cubic-bezier(0.2, 0.7, 0.3, 1);
 	font-family: var(--font-display);
-	color: #06060e;
+	color: #020617;
 }
 
 .arrival-banner strong {
@@ -482,7 +454,7 @@ a {
 
 .arrival-banner span {
 	font-family: var(--font-mono);
-	font-size: 0.58rem;
+	font-size: 0.66rem;
 	font-weight: 600;
 	letter-spacing: 0.16em;
 }
@@ -538,7 +510,7 @@ a {
 
 /* wordmark */
 .wordmark {
-	background: linear-gradient(130deg, #a78bfa 0%, #22d3ee 100%);
+	background: linear-gradient(130deg, #93c5fd 0%, #22d3ee 100%);
 	-webkit-background-clip: text;
 	background-clip: text;
 	color: transparent;
@@ -597,12 +569,14 @@ a {
 
 .slash-btn-sm {
 	padding: 8px 16px;
+	min-height: 44px;
 	font-size: 0.8rem;
 	clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
 }
 
 .slash-btn-xs {
-	padding: 5px 12px;
+	padding: 8px 14px;
+	min-height: 44px;
 	font-size: 0.72rem;
 	clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
 }
@@ -650,7 +624,7 @@ a {
 	gap: 5px;
 	padding: 4px 10px;
 	font-family: var(--font-mono);
-	font-size: 0.62rem;
+	font-size: 0.7rem;
 	font-weight: 600;
 	letter-spacing: 0.1em;
 	box-shadow: inset 0 0 0 1px currentcolor;
@@ -671,6 +645,7 @@ a {
 	font-weight: 700;
 	line-height: 0.92;
 	letter-spacing: -0.02em;
+	text-wrap: balance;
 	color: var(--vt, var(--color-primary));
 }
 
@@ -695,7 +670,7 @@ a {
 
 .stat-block .k {
 	font-family: var(--font-mono);
-	font-size: 0.6rem;
+	font-size: 0.68rem;
 	font-weight: 600;
 	letter-spacing: 0.13em;
 	color: var(--ink-2);
@@ -713,7 +688,7 @@ a {
 .stat-block .v small {
 	font-family: var(--font-mono);
 	font-weight: 500;
-	font-size: 0.62rem;
+	font-size: 0.7rem;
 	color: var(--ink-2);
 	margin-left: 3px;
 }
@@ -730,6 +705,7 @@ a {
 
 .hud-cell {
 	display: flex;
+	flex: none;
 	flex-direction: column;
 	align-items: center;
 	padding: 10px 18px;
@@ -741,7 +717,7 @@ a {
 
 .hud-cell .k {
 	font-family: var(--font-mono);
-	font-size: 0.58rem;
+	font-size: 0.66rem;
 	letter-spacing: 0.14em;
 	color: var(--ink-2);
 	margin-bottom: 3px;
@@ -758,7 +734,7 @@ a {
 .hud-cell .v small {
 	font-family: var(--font-mono);
 	font-weight: 500;
-	font-size: 0.6rem;
+	font-size: 0.68rem;
 	color: var(--ink-2);
 	margin-left: 2px;
 }
@@ -935,7 +911,7 @@ a {
 	font-size: 0.78rem;
 	font-weight: 600;
 	background: var(--panel-soft);
-	color: var(--ink-2);
+	color: var(--ink-1);
 	box-shadow: inset 0 0 0 1px var(--panel-line);
 	cursor: pointer;
 	transition: all 0.15s ease;
@@ -978,7 +954,8 @@ a {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-	padding: 5px 6px 5px 12px;
+	min-height: 40px;
+	padding: 6px 6px 6px 12px;
 	font-size: 0.74rem;
 	background: var(--panel-soft);
 	color: var(--ink-1);
@@ -990,6 +967,13 @@ a {
 	background: var(--panel-soft);
 	box-shadow: inset 0 0 0 1px var(--panel-line);
 	border-radius: 8px;
+}
+
+/* 16px+ inputs don't trigger iOS Safari auto-zoom on focus */
+@media (max-width: 640px) {
+	.stop-box input {
+		font-size: 16px;
+	}
 }
 
 .stop-box:focus-within {
@@ -1005,9 +989,9 @@ a {
 	display: grid;
 	place-items: center;
 	font-family: var(--font-mono);
-	font-size: 0.6rem;
+	font-size: 0.68rem;
 	font-weight: 700;
-	color: #06060e;
+	color: #020617;
 	z-index: 1;
 }
 
@@ -1032,7 +1016,7 @@ a {
 	display: flex;
 	align-items: flex-start;
 	gap: 9px;
-	padding: 10px 12px;
+	padding: 12px;
 	cursor: pointer;
 	font-size: 0.84rem;
 	color: var(--ink-0);
@@ -1067,8 +1051,68 @@ a {
 /* ─── ride view — elevation profile ──────────────────────────────────── */
 #profile {
 	width: 100%;
-	height: 140px;
+	height: 200px;
 	display: block;
+}
+
+#profile .pline {
+	filter: drop-shadow(0 0 5px var(--color-accent));
+}
+
+/* elevation profile — HTML axis overlays (crisp real-px text; in-SVG
+ * glyphs would be condensed ~3x by preserveAspectRatio="none") */
+.profile-chart {
+	display: flex;
+	gap: 8px;
+}
+
+.profile-yaxis {
+	position: relative;
+	flex: none;
+	width: 54px;
+	height: 200px;
+	font-family: var(--font-mono);
+	font-size: 0.72rem;
+	color: var(--ink-1);
+}
+
+.profile-yaxis span {
+	position: absolute;
+	right: 0;
+	transform: translateY(-50%);
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+.profile-body {
+	position: relative;
+	flex: 1;
+	min-width: 0;
+}
+
+.profile-xaxis {
+	position: relative;
+	height: 20px;
+	margin-top: 4px;
+	font-family: var(--font-mono);
+	font-size: 0.72rem;
+	color: var(--ink-1);
+}
+
+.profile-xaxis span {
+	position: absolute;
+	top: 0;
+	transform: translateX(-50%);
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+.profile-xaxis span.first {
+	transform: none;
+}
+
+.profile-xaxis span.last {
+	transform: translateX(-100%);
 }
 
 .legend-chip {
@@ -1080,7 +1124,7 @@ a {
 	font-family: var(--font-mono);
 	background: var(--panel-soft);
 	box-shadow: inset 0 0 0 1px var(--panel-line);
-	color: var(--ink-2);
+	color: var(--ink-1);
 	clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
 }
 
@@ -1089,6 +1133,28 @@ a {
 	height: 8px;
 	display: inline-block;
 	flex: none;
+}
+
+/* onboarding spec steppers — 44px touch targets */
+.spec-step {
+	display: grid;
+	place-items: center;
+	min-width: 44px;
+	min-height: 44px;
+	padding: 0;
+	font-size: 1.15rem;
+	font-weight: 700;
+	line-height: 1;
+	color: var(--color-primary);
+	background: var(--panel-soft);
+	box-shadow: inset 0 0 0 1px var(--panel-line);
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: transform 0.1s ease, color 0.15s ease;
+}
+.spec-step:active {
+	transform: scale(0.93);
 }
 
 /* ─── draw / record toolbar ───────────────────────────────────────────── */
@@ -1109,6 +1175,13 @@ a {
 	box-shadow: inset 0 0 0 1px var(--panel-line), 0 12px 28px rgba(0, 0, 0, 0.4);
 	padding: 8px 8px 8px 16px;
 	clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px);
+}
+
+/* center over the map area (clear of the 400px panel) on desktop */
+@media (min-width: 641px) {
+	.draw-toolbar {
+		left: calc(50% + 206px);
+	}
 }
 
 .rec-dot {
@@ -1455,7 +1528,7 @@ a {
 }
 
 .stop-origin {
-	color: #8b5cf6;
+	color: #60a5fa;
 }
 
 .stop-dest {

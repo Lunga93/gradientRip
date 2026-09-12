@@ -11,13 +11,13 @@
 			National Road Traffic Act 93 of 1996, and pavements form part of the public road reserve. Treat this as
 			planning for private property, estates, campuses and trails unless you've confirmed your own legal position.
 			<button
-				class="absolute top-1.5 right-1.5 grid size-8 cursor-pointer place-items-center"
+				class="absolute top-0 right-0 grid size-11 cursor-pointer place-items-center"
 				style="background: transparent; border: none; color: var(--ink-2);"
 				aria-label="Dismiss legal note"
 				title="Dismiss"
 				onclick={() => ui.dismissLegal()}
 			>
-				<Mark name="x" cls="size-3.5" />
+				<Mark name="x" cls="size-4" />
 			</button>
 		</div>
 	{:else}

@@ -34,13 +34,13 @@
 			</button>
 			<button
 				type="button"
-				class="grid size-5 cursor-pointer place-items-center text-base-content/50 transition-colors hover:text-error"
+				class="grid size-8 cursor-pointer place-items-center text-base-content/50 transition-colors hover:text-error"
 				style="background: transparent; border: none;"
 				title="Remove saved place"
 				aria-label="Remove saved place {p.label}"
 				onclick={(e) => removePreset(e, p.id)}
 			>
-				<Mark name="x" cls="size-3" />
+				<Mark name="x" cls="size-3.5" />
 			</button>
 		</span>
 	{/each}

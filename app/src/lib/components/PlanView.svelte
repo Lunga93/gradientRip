@@ -24,10 +24,11 @@
 
 	const boardSpec = $derived.by(() => {
 		const parts = (domain.boardVal || '').split('|').map(Number);
-		const board = domain.boards.find((b) => b.value === domain.boardVal) ?? domain.boards[0];
+		const cap = Number.isFinite(parts[0]) ? parts[0] : 0;
+		const board = domain.boards.find((b) => b.value === domain.boardVal);
 		return {
-			name: board?.label ?? '',
-			cap: Number.isFinite(parts[0]) ? parts[0] : 0,
+			name: board?.label ?? `Custom · ${cap} ${domain.mode.human ? 'kcal' : 'Wh'}`,
+			cap,
 			climb: Number.isFinite(parts[1]) ? parts[1] : 0,
 			brake: Number.isFinite(parts[2]) ? parts[2] : 0
 		};

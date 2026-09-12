@@ -10,8 +10,12 @@
 	import RouteMotif from '$lib/components/RouteMotif.svelte';
 	import Mark from '$lib/components/Mark.svelte';
 
-	const profileSvg = $derived(
-		domain.results ? profileSVG(domain.results.pts, domain.results.elev, domain.results.cum) : ''
+	const profileChart = $derived(
+		domain.results
+			? profileSVG(domain.results.pts, domain.results.elev, domain.results.cum, {
+					climb: domain.results.climbLimit
+				})
+			: null
 	);
 	const level = $derived(domain.results?.verdict.level ?? 'ok');
 	const vc = $derived(verdictColor(level));
@@ -108,15 +112,35 @@
 			<div class="px-6 pb-5">
 				<div class="sec-label">Elevation profile</div>
 				<div class="chamfer-card overflow-hidden p-3">
-					<svg
-						id="profile"
-						viewBox="0 0 900 180"
-						preserveAspectRatio="none"
-						role="img"
-						aria-label="Elevation profile"
-					>
-						{@html profileSvg}
-					</svg>
+					{#if profileChart}
+						<div class="profile-chart">
+							<div class="profile-yaxis" aria-hidden="true">
+								{#each profileChart.yTicks as t (t.label)}
+									<span style="top: {t.pct}%">{t.label}</span>
+								{/each}
+							</div>
+							<div class="profile-body">
+								<svg
+									id="profile"
+									viewBox="0 0 900 200"
+									preserveAspectRatio="none"
+									role="img"
+									aria-label="Elevation profile"
+								>
+									{@html profileChart.svg}
+								</svg>
+								<div class="profile-xaxis" aria-hidden="true">
+									{#each profileChart.xTicks as t, i (t.label)}
+										<span
+											class:first={i === 0}
+											class:last={i === profileChart.xTicks.length - 1}
+											style="left: {t.pct}%">{t.label}</span
+										>
+									{/each}
+								</div>
+							</div>
+						</div>
+					{/if}
 				</div>
 				<div class="mt-2.5 flex flex-wrap gap-1.5">
 					<span class="legend-chip"><i style="background: var(--band-stop);"></i>past braking</span>

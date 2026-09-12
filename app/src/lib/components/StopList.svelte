@@ -23,7 +23,7 @@
 	};
 
 	const dotColor = (i: number, n: number): string => {
-		if (i === 0) return '#8b5cf6';
+		if (i === 0) return '#60a5fa';
 		if (i === n - 1) return '#22d3ee';
 		return '#f59e0b';
 	};
@@ -89,7 +89,7 @@
 		class="rail absolute inset-y-0 left-[27px] w-px"
 		bind:this={railEl}
 		aria-hidden="true"
-		style="background: linear-gradient(to bottom, rgba(139,92,246,0.6), rgba(34,211,238,0.6));"
+			style="background: linear-gradient(to bottom, rgba(96,165,250,0.6), rgba(34,211,238,0.6));"
 	></div>
 
 	<div class="flex flex-col gap-2" bind:this={rowsEl}>

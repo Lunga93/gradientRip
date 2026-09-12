@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { domain } from '$lib/state/domain.svelte.js';
 	import { session } from '$lib/state/session.svelte.js';
+	import { ui } from '$lib/state/ui.svelte.js';
 	import {
 		exitDrawMode,
 		undoDrawPoint,
@@ -62,7 +63,7 @@
 
 {#if session.recordMode}
 	<div
-		class="fixed top-4 left-1/2 z-20 -translate-x-1/2"
+		class="fixed top-4 left-1/2 z-20 -translate-x-1/2 md:left-[calc(50%+206px)]"
 		role="status"
 		aria-live="polite"
 		aria-label="Recording in progress"
@@ -75,7 +76,7 @@
 			</span>
 		</div>
 	</div>
-	<div class="hud-band clip-chamfer-tr fixed top-16 left-4 z-20 flex-col" aria-label="Recording stats">
+	<div class="hud-band clip-chamfer-tr fixed top-16 left-4 z-20 flex-col md:left-[424px]" aria-label="Recording stats">
 		<div class="hud-cell hud-cell-left px-4 py-2.5">
 			<span class="k">DISTANCE</span>
 			<span class="v" style="color: var(--ink-0); font-size: 1.1rem;">{session.recordKm.toFixed(2)}<small>km</small></span>
@@ -97,14 +98,14 @@
 			</span>
 		</div>
 	</div>
-	<div class="fixed bottom-[calc(28px+env(safe-area-inset-bottom,0px))] left-1/2 z-20 -translate-x-1/2">
+	<div class="fixed bottom-[calc(28px+env(safe-area-inset-bottom,0px))] left-1/2 z-20 -translate-x-1/2 md:left-[calc(50%+206px)]">
 		<SlashButton label="■ Stop recording" variant="danger" onclick={() => finishRecording()} title="Finish and score this route" />
 	</div>
 {/if}
 
 {#if session.trackingActive}
 	<div
-		class="hud-band clip-chamfer-bl fixed top-4 left-1/2 z-20 max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-x-auto"
+		class="hud-band clip-chamfer-bl fixed top-4 left-1/2 z-20 max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-x-auto md:left-[calc(50%+206px)]"
 		role="status"
 		aria-live="polite"
 		aria-label="Live ride stats"
@@ -134,7 +135,12 @@
 			<span class="v" style="color: var(--ink-2); font-size: 1rem;">{session.trackingStats?.acc ?? '—'}</span>
 		</div>
 	</div>
-	<div class="fixed bottom-[calc(20px+env(safe-area-inset-bottom,0px))] left-1/2 z-20 -translate-x-1/2">
+	<div
+		class="fixed left-1/2 z-20 -translate-x-1/2 md:left-[calc(50%+206px)] {ui.panelVisible &&
+		ui.isMobile
+			? 'bottom-[calc(160px+env(safe-area-inset-bottom,0px))]'
+			: 'bottom-[calc(20px+env(safe-area-inset-bottom,0px))]'}"
+	>
 		<div class="hud-band" style="border-radius: 12px;" role="toolbar" aria-label="Ride controls">
 			{#if session.trackingPaused}
 				<button type="button" class="grid cursor-pointer place-items-center gap-1 bg-transparent px-5 py-3" style="border: none; color: var(--color-primary);" onclick={resumeTracking} title="Resume GPS tracking">

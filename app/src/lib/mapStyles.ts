@@ -69,11 +69,11 @@ export const MAP_STYLES: MapStyleDef[] = [
 		group: 'light'
 	},
 	{
-		id: 'terrain',
-		name: 'Terrain',
-		blurb: 'Hills + trails outdoors',
-		url: 'https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png',
-		maxZoom: 18,
+		id: 'alidade',
+		name: 'Alidade Smooth',
+		blurb: 'Clean minimal light',
+		url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
+		maxZoom: 20,
 		attribution: STADIA_ATTR,
 		dark: false,
 		group: 'light'

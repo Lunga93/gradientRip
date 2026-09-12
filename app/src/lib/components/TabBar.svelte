@@ -20,7 +20,7 @@
 			class="font-display flex-1 cursor-pointer bg-transparent py-3.5"
 			style="font-size: 0.9rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: {active
 				? 'var(--color-primary)'
-				: 'var(--ink-2)'}; border: none; border-bottom: 2px solid {active
+				: 'var(--ink-1)'}; border: none; border-bottom: 2px solid {active
 				? 'var(--color-primary)'
 				: 'transparent'}; filter: {active ? 'drop-shadow(0 0 8px var(--brand-glow))' : 'none'};"
 			aria-current={active ? 'page' : undefined}

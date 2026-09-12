@@ -7,7 +7,7 @@
 
 	const electric = Object.keys(MODES).filter((id) => MODES[id].group === 'electric');
 	const human = Object.keys(MODES).filter((id) => MODES[id].group === 'human');
-	const modeColor = (id: string): string => (MODES[id].group === 'electric' ? '#8b5cf6' : '#60a5fa');
+	const modeColor = (id: string): string => (MODES[id].group === 'electric' ? '#38bdf8' : '#60a5fa');
 </script>
 
 {#if variant === 'panel'}
@@ -40,7 +40,7 @@
 				<span
 					class="font-mono2"
 					style="font-size: 0.62rem; letter-spacing: 0.12em; color: {group.key === 'electric'
-						? '#8b5cf6'
+						? '#38bdf8'
 						: '#60a5fa'};"
 				>
 					{group.key === 'electric' ? 'ELECTRIC' : 'HUMAN'}

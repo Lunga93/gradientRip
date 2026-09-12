@@ -50,8 +50,8 @@ class UiState {
 		this.theme = pref;
 		saveThemePref(pref);
 		const el = document.documentElement;
-		if (pref === 'light') el.setAttribute('data-theme', 'gradient');
-		else if (pref === 'dark') el.setAttribute('data-theme', 'gradient-dark');
+		if (pref === 'light') el.removeAttribute('data-theme');
+		else if (pref === 'dark') el.setAttribute('data-theme', 'dark');
 		else el.removeAttribute('data-theme');
 	}
 

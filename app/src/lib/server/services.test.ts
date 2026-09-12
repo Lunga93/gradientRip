@@ -31,4 +31,29 @@ describe('elevations chunk ordering', () => {
 		expect(out).toHaveLength(250);
 		out.forEach((v, i) => expect(v).toBe(i));
 	});
+
+	it('retries a throttled chunk then succeeds', async () => {
+		const pts: LatLon[] = Array.from({ length: 10 }, (_, i) => [-33.9, 18.4 + i * 0.0001]);
+		let calls = 0;
+		globalThis.fetch = (async () => {
+			calls++;
+			if (calls === 1) return { ok: false, status: 429, json: async () => ({}) };
+			return { ok: true, status: 200, json: async () => ({ elevation: Array(10).fill(7) }) };
+		}) as unknown as typeof fetch;
+
+		const out = await elevations(pts);
+		expect(out).toEqual(Array(10).fill(7));
+		expect(calls).toBe(2);
+	});
+
+	it('gives up after repeated throttling', async () => {
+		const pts: LatLon[] = Array.from({ length: 10 }, (_, i) => [-33.9, 18.4 + i * 0.0001]);
+		globalThis.fetch = (async () => ({
+			ok: false,
+			status: 429,
+			json: async () => ({})
+		})) as unknown as typeof fetch;
+
+		await expect(elevations(pts)).rejects.toThrow('HTTP 429');
+	});
 });

@@ -33,7 +33,7 @@
 			positron: 'linear-gradient(135deg,#ededed 60%,#d0d0d0 60%)',
 			watercolor: 'linear-gradient(135deg,#cfe8d8 30%,#f0e0c0 60%,#bcd4e8 90%)',
 			'toner-lite': 'linear-gradient(135deg,#ffffff 55%,#222 55%)',
-			terrain: 'linear-gradient(135deg,#d8e8c8 40%,#b8d0a8 60%,#e8e0c8 80%)',
+			alidade: 'linear-gradient(135deg,#f2f4f8 60%,#dbe3ec 60%)',
 			osm: 'linear-gradient(135deg,#e8f0e0 45%,#f8e8c8 45% 70%,#c8e0f0 70%)',
 			darkmatter: 'linear-gradient(135deg,#1a1a24 60%,#2a2a3a 60%)',
 			'alidade-dark': 'linear-gradient(135deg,#101826 55%,#1c2c44 55%)'

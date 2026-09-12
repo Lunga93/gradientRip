@@ -4,6 +4,7 @@ import { geoState } from './geo-state.svelte.js';
 import { resample, geoErrorMessage, RESAMPLE_STEP_M, cumulative, haversine } from './util.js';
 import type { LatLon } from './util.js';
 import { domain } from './state/domain.svelte.js';
+import { isPresetBoard, parseBoardVal } from './state/domain.svelte.js';
 import { ui } from './state/ui.svelte.js';
 import { session } from './state/session.svelte.js';
 import { nextStopId } from './state/domain.svelte.js';
@@ -71,7 +72,10 @@ export const finalisePlan = (packet: PlanPacket) => {
 		mode: MODES[packet.modeId] ?? MODES.eskate,
 		segs: packet.segs,
 		line: packet.line,
-		coords: packet.coords
+		coords: packet.coords,
+		boardVal: packet.boardVal,
+		climbLimit: packet.climbLimit,
+		brakeLimit: packet.brakeLimit
 	});
 	renderRoute(packet.segs, packet.line, packet.coords, verdictHex(packet.verdict.level));
 
@@ -115,10 +119,11 @@ export const loadTrip = (t: Trip): void => {
 		domain.activeStopIndex = 0;
 	}
 	if (MODES[t.modeId]) domain.selectMode(t.modeId);
-	// Trust the trip's board only if the mode still ships it — otherwise the
-	// chip row would highlight nothing while planning fell back silently.
+	// Trust the trip's board when it is a shipped preset or a valid custom
+	// triple — otherwise the chip row would highlight nothing while planning
+	// fell back silently.
 	domain.boardVal =
-		t.boardVal && (MODES[t.modeId]?.boards ?? domain.boards).some((b) => b.value === t.boardVal)
+		t.boardVal && (isPresetBoard(t.modeId, t.boardVal) || parseBoardVal(t.boardVal))
 			? t.boardVal
 			: domain.boards[0].value;
 
@@ -142,7 +147,10 @@ export const loadTrip = (t: Trip): void => {
 		mode,
 		segs,
 		line,
-		coords: (t.coords ?? []) as LatLon[]
+		coords: (t.coords ?? []) as LatLon[],
+		boardVal: t.boardVal,
+		climbLimit: t.climbLimit,
+		brakeLimit: t.brakeLimit
 	});
 	renderRoute(segs, line, (t.coords ?? []) as LatLon[], verdictHex(v.level));
 

@@ -42,7 +42,40 @@ export interface ScoredResult {
 	segs: RouteSegment[];
 	line: LatLon[];
 	coords: LatLon[];
+	boardVal: string;
+	climbLimit: number;
+	brakeLimit: number;
 }
+
+// Board values are "capWh|climbPct|brakePct" — either a shipped preset or a
+// user-tuned custom triple from onboarding. Ranges keep scoring sane
+// (a zero cap would divide by zero in battery math downstream).
+export const BOARD_RANGES = {
+	cap: [50, 5000],
+	climb: [1, 45],
+	brake: [1, 30]
+} as const;
+
+export const parseBoardVal = (v: unknown): [number, number, number] | null => {
+	if (typeof v !== 'string') return null;
+	const parts = v.split('|').map(Number);
+	if (parts.length !== 3 || parts.some((n) => !Number.isFinite(n))) return null;
+	const [cap, climb, brake] = parts as [number, number, number];
+	if (
+		cap < BOARD_RANGES.cap[0] ||
+		cap > BOARD_RANGES.cap[1] ||
+		climb < BOARD_RANGES.climb[0] ||
+		climb > BOARD_RANGES.climb[1] ||
+		brake < BOARD_RANGES.brake[0] ||
+		brake > BOARD_RANGES.brake[1]
+	) {
+		return null;
+	}
+	return [cap, climb, brake];
+};
+
+export const isPresetBoard = (modeId: string, value: string): boolean =>
+	(MODES[modeId]?.boards ?? []).some((b) => b.value === value);
 
 const loadModeId = (): string => {
 	const saved = loadMode();
@@ -50,12 +83,14 @@ const loadModeId = (): string => {
 	return 'eskate';
 };
 
-// Restore the last picked board, but never a stale value from another mode
-// (or from a mode preset that no longer ships it).
+// Restore the last picked board: a shipped preset, or a valid custom triple
+// tuned in onboarding (never a stale value from another mode's presets,
+// and never a malformed string that would poison scoring math).
 const initialBoardVal = (modeId: string): string => {
 	const boards = MODES[modeId].boards;
 	const saved = loadBoard();
-	return saved && boards.some((b) => b.value === saved) ? saved : boards[0].value;
+	if (saved && (boards.some((b) => b.value === saved) || parseBoardVal(saved))) return saved;
+	return boards[0].value;
 };
 
 class DomainState {
@@ -94,6 +129,16 @@ class DomainState {
 		if (!this.boards.some((b) => b.value === value)) return;
 		this.boardVal = value;
 		saveBoard(value);
+	}
+
+	// User-tuned triple from onboarding — validated, then persisted like a preset.
+	// Returns false (and changes nothing) when out of range.
+	setCustomBoard(cap: number, climb: number, brake: number): boolean {
+		const value = `${Math.round(cap)}|${Math.round(climb)}|${Math.round(brake)}`;
+		if (!parseBoardVal(value)) return false;
+		this.boardVal = value;
+		saveBoard(value);
+		return true;
 	}
 
 	completeOnboarding() {
