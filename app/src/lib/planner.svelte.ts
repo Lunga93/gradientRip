@@ -11,7 +11,9 @@ import { renderRoute } from './mapController.svelte.js';
 import { verdictHex } from './verdictTheme.js';
 import { startTracking, stopTracking } from './tracker.js';
 import { buildPlanPacket, routeSegments, decide, type PlanPacket, type PlanSource } from './engine/index.js';
+import { TRIPS_MAX, saveTrips, savePresets } from './storage.js';
 import { planRoute } from './plan.remote.js';
+import { fetchBackup, pushBackup } from './sync.js';
 import type { Trip } from './storage.js';
 
 const SNAP_FACTOR = 1.6;
@@ -195,6 +197,31 @@ export const scoreAndSaveCustomRoute = async (tapped: LatLon[], name: string, so
 		);
 	}
 }
+
+/* ---------- cloud backup ---------- */
+// On first load: if the cloud has data and local is empty (fresh browser),
+// restore it; otherwise push local up so new activity is mirrored. Runs once
+// per session, quietly — this is backup, not a sync UI.
+let backupInit = false;
+export const initCloudBackup = async (): Promise<void> => {
+	if (backupInit) return;
+	backupInit = true;
+	if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+	const remote = await fetchBackup();
+	if (!remote) return; // offline or endpoints down — stay local-only
+	if (remote.trips.length === 0 && remote.presets.length === 0) {
+		if (domain.trips.length > 0 || domain.presets.length > 0) await pushBackup(domain.trips, domain.presets);
+		return;
+	}
+	if (domain.trips.length === 0 && remote.trips.length > 0) {
+		domain.trips = remote.trips.slice(0, TRIPS_MAX);
+		saveTrips($state.snapshot(domain.trips));
+	}
+	if (domain.presets.length === 0 && remote.presets.length > 0) {
+		domain.presets = remote.presets;
+		savePresets($state.snapshot(domain.presets));
+	}
+};
 
 /* ---------- custom route naming (injectable for tests) ---------- */
 type RouteNamer = (message: string, defaultName: string) => string | null;

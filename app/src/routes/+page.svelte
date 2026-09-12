@@ -15,6 +15,7 @@
 	import { verdictColor } from '$lib/verdictTheme.js';
 	import { isMobileView } from '$lib/planner.svelte.js';
 	import { hideAcList } from '$lib/autocomplete.svelte.js';
+	import { initCloudBackup } from '$lib/planner.svelte.js';
 
 	let panelScrollEl = $state<HTMLDivElement>();
 
@@ -56,6 +57,7 @@
 
 	onMount(() => {
 		updateNet();
+		initCloudBackup();
 		window.addEventListener('online', updateNet);
 		window.addEventListener('offline', updateNet);
 		const mq = window.matchMedia('(max-width:640px)');

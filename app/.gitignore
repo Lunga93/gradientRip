@@ -2,3 +2,5 @@ node_modules/
 build/
 .svelte-kit/
 vite.config.ts.timestamp-*
+.env
+.env.local

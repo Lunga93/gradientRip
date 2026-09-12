@@ -15,6 +15,7 @@ import {
 	TRIPS_MAX
 } from '../storage.js';
 import type { Preset, Trip } from '../storage.js';
+import { scheduleBackup } from '../sync.js';
 import type { LatLon } from '../util.js';
 import { cumulative } from '../util.js';
 import type { RouteSegment, Verdict } from '../engine/index.js';
@@ -150,11 +151,13 @@ class DomainState {
 			coords: this.stops[idx].coords || null
 		});
 		savePresets($state.snapshot(this.presets));
+		scheduleBackup($state.snapshot(this.trips), $state.snapshot(this.presets));
 	}
 
 	deletePreset(id: number) {
 		this.presets = this.presets.filter((p) => p.id !== id);
 		savePresets($state.snapshot(this.presets));
+		scheduleBackup($state.snapshot(this.trips), $state.snapshot(this.presets));
 	}
 
 	applyPresetToActiveStop(p: Preset) {
@@ -168,11 +171,13 @@ class DomainState {
 		this.trips.unshift(trip);
 		this.trips = this.trips.slice(0, TRIPS_MAX);
 		saveTrips($state.snapshot(this.trips));
+		scheduleBackup($state.snapshot(this.trips), $state.snapshot(this.presets));
 	}
 
 	deleteTrip(idx: number) {
 		this.trips = this.trips.filter((_, i) => i !== idx);
 		saveTrips($state.snapshot(this.trips));
+		scheduleBackup($state.snapshot(this.trips), $state.snapshot(this.presets));
 	}
 
 	// Pure assignment only — lifecycle side effects (stopping live tracking)

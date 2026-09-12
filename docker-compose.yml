@@ -1,4 +1,21 @@
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=gradientrip
+      - POSTGRES_PASSWORD=changeme-in-prod
+      - POSTGRES_DB=gradientrip
+    ports:
+      - "5434:5432"
+    volumes:
+      - gradientrip-pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gradientrip -d gradientrip"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   app:
     build:
       context: ./app
@@ -7,4 +24,11 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - DATABASE_URL=postgresql://gradientrip:changeme-in-prod@db:5432/gradientrip
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  gradientrip-pgdata:

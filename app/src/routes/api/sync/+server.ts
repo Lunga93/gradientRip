@@ -8,6 +8,23 @@ function isNumberArray(v: unknown): boolean {
 	return Array.isArray(v) && v.every((x) => typeof x === 'number');
 }
 
+// Trip geometry columns are [lat, lon][] — validate the pair structure, not
+// just "array of numbers" (a flat array would crash the JSONB insert shape).
+function isLonLatPair(p: unknown): boolean {
+	return (
+		Array.isArray(p) &&
+		p.length === 2 &&
+		typeof p[0] === 'number' &&
+		typeof p[1] === 'number' &&
+		Number.isFinite(p[0]) &&
+		Number.isFinite(p[1])
+	);
+}
+
+function isCoordList(v: unknown): boolean {
+	return Array.isArray(v) && v.every(isLonLatPair);
+}
+
 function validateKnownLocation(v: unknown): { lat: number; lon: number; label: string; ts: number } | null {
 	if (!v || typeof v !== 'object') return null;
 	const loc = v as Record<string, unknown>;
@@ -30,7 +47,7 @@ export const POST: RequestHandler = async (event) => {
 				await c.query(
 					`INSERT INTO presets (user_id, label, query, coords) VALUES (current_user_id(), $1, $2, $3)
 					 ON CONFLICT (user_id, label, query) DO UPDATE SET coords = EXCLUDED.coords, updated_at = now()`,
-					[p.label.trim(), p.query.trim(), coords]
+					[p.label.trim(), p.query.trim(), coords === null ? null : JSON.stringify(coords)]
 				);
 			});
 		}
@@ -41,12 +58,14 @@ export const POST: RequestHandler = async (event) => {
 		for (const t of body.trips) {
 			if (!t || typeof t !== 'object') continue;
 			if (typeof t.ts !== 'number' || typeof t.modeId !== 'string' || typeof t.boardVal !== 'string') continue;
-			const queries = Array.isArray(t.queries) ? t.queries : [];
-			const coords = isNumberArray(t.coords) ? t.coords : [];
-			const line = isNumberArray(t.line) ? t.line : [];
-			const pts = isNumberArray(t.pts) ? t.pts : [];
+			const queries = Array.isArray(t.queries)
+				? t.queries.filter((q: unknown): q is string => typeof q === 'string')
+				: [];
+			const coords = isCoordList(t.coords) ? t.coords : [];
+			const line = isCoordList(t.line) ? t.line : [];
+			const pts = isCoordList(t.pts) ? t.pts : [];
 			const elev = isNumberArray(t.elev) ? t.elev : [];
-			const cum = typeof t.cum === 'object' && t.cum !== null ? t.cum : {};
+			const cum = isNumberArray(t.cum) ? t.cum : [];
 			await withUser(userId, async (c) => {
 				await c.query(
 					`INSERT INTO trips (user_id, ts, mode_id, board_val, queries, coords, line, pts, elev, cum, total_wh, total_climb, usable_wh, climb_limit, brake_limit, total_km, drawn, recorded)
@@ -69,7 +88,7 @@ export const POST: RequestHandler = async (event) => {
 					   drawn = EXCLUDED.drawn,
 					   recorded = EXCLUDED.recorded,
 					   updated_at = now()`,
-					[t.ts, t.modeId, t.boardVal, queries, coords, line, pts, elev, cum, t.totalWh, t.totalClimb, t.usableWh, t.climbLimit, t.brakeLimit, t.totalKm, t.drawn ?? false, t.recorded ?? false]
+					[t.ts, t.modeId, t.boardVal, queries, JSON.stringify(coords), JSON.stringify(line), JSON.stringify(pts), JSON.stringify(elev), JSON.stringify(cum), t.totalWh, t.totalClimb, t.usableWh, t.climbLimit, t.brakeLimit, t.totalKm, t.drawn ?? false, t.recorded ?? false]
 				);
 			});
 		}
@@ -94,7 +113,7 @@ export const POST: RequestHandler = async (event) => {
 				   legal_dismissed = COALESCE(EXCLUDED.legal_dismissed, prefs.legal_dismissed),
 				   known_location = COALESCE(EXCLUDED.known_location, prefs.known_location),
 				   updated_at = now()`,
-				[transport_mode, board, theme, legal_dismissed, known_location]
+				[transport_mode, board, theme, legal_dismissed, known_location === null ? null : JSON.stringify(known_location)]
 			);
 		});
 		result.prefs = 1;
