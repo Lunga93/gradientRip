@@ -42,9 +42,12 @@
 			return;
 		}
 		const boxTop = searchBoxEl.getBoundingClientRect().top;
+		const boxLeft = searchBoxEl.getBoundingClientRect().left;
 		const first = markers[0].getBoundingClientRect();
 		const last = markers[markers.length - 1].getBoundingClientRect();
 		railEl.style.display = '';
+		// Center the rail on the dots — measured, so dot-size changes can't drift it.
+		railEl.style.left = first.left - boxLeft + first.width / 2 + 'px';
 		const top = first.top - boxTop + first.height / 2 + 6;
 		const height = Math.max(0, last.top - boxTop + last.height / 2 - 6 - top);
 		railEl.style.top = top + 'px';
@@ -86,7 +89,7 @@
 
 <div class="searchbox relative" bind:this={searchBoxEl} role="group" aria-label="Route stops">
 	<div
-		class="rail absolute inset-y-0 left-[27px] w-px"
+		class="rail absolute inset-y-0 left-[11px] w-px -translate-x-1/2"
 		bind:this={railEl}
 		aria-hidden="true"
 			style="background: linear-gradient(to bottom, rgba(96,165,250,0.6), rgba(34,211,238,0.6));"

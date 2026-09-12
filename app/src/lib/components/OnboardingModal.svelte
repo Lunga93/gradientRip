@@ -3,7 +3,6 @@
 	import { ui } from '$lib/state/ui.svelte.js';
 	import ModePicker from './ModePicker.svelte';
 	import SlashButton from '$lib/components/SlashButton.svelte';
-	import RouteMotif from '$lib/components/RouteMotif.svelte';
 	import Mark from '$lib/components/Mark.svelte';
 	import { tick } from 'svelte';
 
@@ -66,12 +65,6 @@
 		class="fixed inset-0 z-50 overflow-y-auto"
 		style="background: linear-gradient(160deg, var(--app-bg) 0%, var(--color-base-200) 100%);"
 	>
-		<div
-			class="pointer-events-none absolute inset-0"
-			style="background-image: linear-gradient(color-mix(in srgb, var(--color-primary) 6%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 6%, transparent) 1px, transparent 1px); background-size: 48px 48px;"
-			aria-hidden="true"
-		></div>
-		<RouteMotif opacity={0.14} />
 		<div
 			class="relative mx-auto flex min-h-full w-full max-w-sm px-6 py-10"
 			role="dialog"

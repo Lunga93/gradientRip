@@ -17,7 +17,7 @@
 		| 'route'
 		| 'layers';
 
-	let { name, cls = '' }: { name: MarkName; cls?: string } = $props();
+	let { name, cls = '', style = '' }: { name: MarkName; cls?: string; style?: string } = $props();
 
 	const paths: Record<MarkName, string> = {
 		sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/>',
@@ -44,6 +44,7 @@
 
 <svg
 	class={cls}
+	style={style}
 	viewBox="0 0 24 24"
 	fill="none"
 	stroke="currentColor"

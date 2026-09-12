@@ -7,7 +7,6 @@
 	import { startTracking, stopTracking } from '$lib/tracker.js';
 	import BattRing from '$lib/components/BattRing.svelte';
 	import SlashButton from '$lib/components/SlashButton.svelte';
-	import RouteMotif from '$lib/components/RouteMotif.svelte';
 	import Mark from '$lib/components/Mark.svelte';
 
 	const profileChart = $derived(
@@ -57,7 +56,6 @@
 		{#if isStop}
 			<div class="anim-stop-flash pointer-events-none absolute inset-0" aria-hidden="true"></div>
 		{/if}
-		<RouteMotif opacity={0.1} />
 		<div class="relative">
 			<div class="px-6 pt-7 pb-5">
 				<span

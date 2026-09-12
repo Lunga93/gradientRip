@@ -4,7 +4,6 @@
 	import PresetChips from '$lib/components/PresetChips.svelte';
 	import ModePicker from '$lib/components/ModePicker.svelte';
 	import SlashButton from '$lib/components/SlashButton.svelte';
-	import RouteMotif from '$lib/components/RouteMotif.svelte';
 	import Mark from '$lib/components/Mark.svelte';
 	import { domain } from '$lib/state/domain.svelte.js';
 	import { ui } from '$lib/state/ui.svelte.js';
@@ -37,10 +36,9 @@
 	const human = $derived(domain.mode.human);
 </script>
 
-<div class="view {ui.activeTab === 'plan' ? 'active' : ''}">
+	<div class="view {ui.activeTab === 'plan' ? 'active' : ''}">
 	<form onsubmit={(e) => { e.preventDefault(); runPlan(); }}>
 		<div class="relative p-5">
-			<RouteMotif opacity={0.1} />
 			<div class="relative">					<div class="sec-label">Route stops</div>
 					<StopList />
 					{#if domain.stops.every((s) => !s.value)}
