@@ -1,4 +1,6 @@
 -- Down counterpart
+DROP TABLE IF EXISTS route_stats;
+DROP TABLE IF EXISTS public_routes;
 ALTER TABLE prefs DROP COLUMN IF EXISTS primary_use;
 ALTER TABLE prefs DROP COLUMN IF EXISTS units;
 ALTER TABLE prefs DROP COLUMN IF EXISTS sports;
