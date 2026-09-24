@@ -118,13 +118,14 @@ CREATE TABLE IF NOT EXISTS reports (
 	target_id UUID NOT NULL,
 	reporter UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 	reason TEXT NOT NULL CHECK (char_length(reason) BETWEEN 1 AND 500),
-	created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	UNIQUE (target_kind, target_id, reporter)
 );
 CREATE INDEX IF NOT EXISTS idx_reports_target ON reports (target_kind, target_id);
 CREATE OR REPLACE FUNCTION hide_route_on_reports() RETURNS trigger AS $$
 BEGIN
 	IF NEW.target_kind = 'route' THEN
-		IF (SELECT COUNT(*) FROM reports WHERE target_kind = 'route' AND target_id = NEW.target_id) >= 3 THEN
+		IF (SELECT COUNT(DISTINCT reporter) FROM reports WHERE target_kind = 'route' AND target_id = NEW.target_id) >= 3 THEN
 			UPDATE public_routes SET hidden = true WHERE id = NEW.target_id;
 		END IF;
 	END IF;

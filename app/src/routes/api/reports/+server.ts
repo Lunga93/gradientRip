@@ -34,12 +34,22 @@ export const POST: RequestHandler = async (event) => {
 			);
 			if (found.rows.length === 0) throw error(404, 'Event not found');
 		}
-		const { rows } = await c.query(
-			`INSERT INTO reports (target_kind, target_id, reporter, reason)
-			 VALUES ($1, $2, current_user_id(), $3) RETURNING id`,
-			[targetKind, targetId, reason]
-		);
-		return { id: rows[0].id as string };
+		let reportId: string;
+		try {
+			const { rows } = await c.query(
+				`INSERT INTO reports (target_kind, target_id, reporter, reason)
+				 VALUES ($1, $2, current_user_id(), $3) RETURNING id`,
+				[targetKind, targetId, reason]
+			);
+			reportId = rows[0].id as string;
+		} catch (e: unknown) {
+			// UNIQUE(target_kind, target_id, reporter) — same user already reported this target.
+			if (typeof e === 'object' && e !== null && (e as { code?: string }).code === '23505') {
+				throw error(409, 'Already reported');
+			}
+			throw e;
+		}
+		return { id: reportId };
 	});
 	return json({ ok: true, ...data }, { headers: { 'Cache-Control': 'no-store' } });
 };

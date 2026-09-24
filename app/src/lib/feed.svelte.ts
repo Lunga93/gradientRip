@@ -13,6 +13,7 @@ export interface FeedItem {
 }
 
 const CACHE_KEY = 'gradient-feed-v1';
+const FEED_KINDS = ['activity', 'route', 'event'] as const;
 
 // Debounced refresh — mutations call scheduleFeedRefresh with no args; only
 // the most recent refresh within the window fires (cf. scheduleBackup).
@@ -29,10 +30,11 @@ const loadCache = (): FeedItem[] => {
 			(v): v is FeedItem =>
 				!!v &&
 				typeof v === 'object' &&
-				(v as FeedItem).kind !== undefined &&
+				(FEED_KINDS as readonly string[]).includes((v as FeedItem).kind) &&
 				typeof (v as FeedItem).id === 'string' &&
 				typeof (v as FeedItem).title === 'string' &&
-				typeof (v as FeedItem).kudos === 'number'
+				typeof (v as FeedItem).kudos === 'number' &&
+				Number.isFinite((v as FeedItem).kudos)
 		);
 	} catch {
 		return [];
@@ -99,8 +101,25 @@ class FeedState {
 			const resp = await fetch(`/api/routes/${encodeURIComponent(routeId)}/kudos`, {
 				method: 'POST'
 			});
-			if (!resp.ok && item) item.kudos -= 1;
-			if (!resp.ok) queueKudos(routeId);
+			if (!resp.ok) {
+				// Revert the optimistic +1; only retryable failures re-queue.
+				if (item) item.kudos -= 1;
+				if (resp.status >= 500) queueKudos(routeId);
+				return;
+			}
+			const data = (await resp.json().catch(() => ({}))) as {
+				kudosed?: boolean;
+				kudos?: number;
+			};
+			if (item) {
+				// Authoritative server count reconciles the optimistic +1 —
+				// on re-kudos (kudosed:false) this reverts it.
+				if (typeof data.kudos === 'number' && Number.isFinite(data.kudos)) {
+					item.kudos = data.kudos;
+				} else if (data.kudosed === false) {
+					item.kudos -= 1;
+				}
+			}
 		} catch {
 			if (item) item.kudos -= 1;
 			queueKudos(routeId);
@@ -109,12 +128,23 @@ class FeedState {
 
 	async flushKudos(): Promise<void> {
 		const pending = flushQueue();
-		for (const routeId of pending) {
+		for (let i = 0; i < pending.length; i++) {
+			const routeId = pending[i];
+			let resp: Response;
 			try {
-				await fetch(`/api/routes/${encodeURIComponent(routeId)}/kudos`, { method: 'POST' });
+				resp = await fetch(`/api/routes/${encodeURIComponent(routeId)}/kudos`, { method: 'POST' });
 			} catch {
-				queueKudos(routeId);
+				// Network down — re-queue current + untouched remainder, stop.
+				pending.slice(i).forEach(queueKudos);
 				break;
+			}
+			if (!resp.ok) {
+				if (resp.status >= 500) {
+					// Retryable — re-queue current + remainder, stop.
+					pending.slice(i).forEach(queueKudos);
+					break;
+				}
+				// 4xx — permanent, drop and continue with the rest.
 			}
 		}
 		this.scheduleFeedRefresh();
