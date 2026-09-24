@@ -95,3 +95,41 @@ CREATE TABLE IF NOT EXISTS event_rsvps (
 	status TEXT NOT NULL CHECK (status IN ('going', 'interested', 'cant_go')),
 	PRIMARY KEY (event_id, user_id)
 );
+-- Task 8: Feed Phase 1 — idempotent kudos + bump trigger (same pattern as saves)
+CREATE TABLE IF NOT EXISTS route_kudos (
+	route_id UUID NOT NULL REFERENCES public_routes(id) ON DELETE CASCADE,
+	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	PRIMARY KEY (route_id, user_id)
+);
+CREATE OR REPLACE FUNCTION bump_route_kudos() RETURNS trigger AS $$
+BEGIN
+	INSERT INTO route_stats (route_id, kudos) VALUES (NEW.route_id, 1)
+	ON CONFLICT (route_id) DO UPDATE SET kudos = route_stats.kudos + 1;
+	RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS trg_route_kudos_bump ON route_kudos;
+CREATE TRIGGER trg_route_kudos_bump AFTER INSERT ON route_kudos FOR EACH ROW EXECUTE FUNCTION bump_route_kudos();
+-- Task 8: reports (polymorphic route/event) + auto-hide past threshold (3)
+CREATE TABLE IF NOT EXISTS reports (
+	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	target_kind TEXT NOT NULL CHECK (target_kind IN ('route', 'event')),
+	target_id UUID NOT NULL,
+	reporter UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	reason TEXT NOT NULL CHECK (char_length(reason) BETWEEN 1 AND 500),
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_reports_target ON reports (target_kind, target_id);
+CREATE OR REPLACE FUNCTION hide_route_on_reports() RETURNS trigger AS $$
+BEGIN
+	IF NEW.target_kind = 'route' THEN
+		IF (SELECT COUNT(*) FROM reports WHERE target_kind = 'route' AND target_id = NEW.target_id) >= 3 THEN
+			UPDATE public_routes SET hidden = true WHERE id = NEW.target_id;
+		END IF;
+	END IF;
+	RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS trg_reports_autohide ON reports;
+CREATE TRIGGER trg_reports_autohide AFTER INSERT ON reports FOR EACH ROW EXECUTE FUNCTION hide_route_on_reports();

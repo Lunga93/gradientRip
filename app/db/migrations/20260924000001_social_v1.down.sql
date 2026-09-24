@@ -1,3 +1,11 @@
+-- Down Task 8: feed kudos + reports (dependents first; prior blocks below untouched)
+DROP TRIGGER IF EXISTS trg_reports_autohide ON reports;
+DROP FUNCTION IF EXISTS hide_route_on_reports();
+DROP INDEX IF EXISTS idx_reports_target;
+DROP TABLE IF EXISTS reports;
+DROP TRIGGER IF EXISTS trg_route_kudos_bump ON route_kudos;
+DROP FUNCTION IF EXISTS bump_route_kudos();
+DROP TABLE IF EXISTS route_kudos;
 -- Down Task 6: events + RSVP (dependents first; prior blocks below untouched)
 DROP TABLE IF EXISTS event_rsvps;
 DROP TABLE IF EXISTS events;

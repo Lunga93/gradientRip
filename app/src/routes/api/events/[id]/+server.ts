@@ -4,17 +4,59 @@
 // line plus the attendee list. POST { regenerate_invite: true } revokes the
 // old link and issues a fresh invite_token (active channel members only).
 import { json, error, type RequestHandler } from '@sveltejs/kit';
-import { withUser } from '$lib/server/db.js';
+import { withUser, getPool } from '$lib/server/db.js';
 import { requireAuth } from '$lib/server/auth.js';
 import { previewRoute } from '$lib/community/privacy.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const GET: RequestHandler = async (event) => {
-	const me = await requireAuth(event);
 	const id = event.params.id ?? '';
 	if (!UUID_RE.test(id)) throw error(400, 'Invalid event id');
 	const invite = event.url.searchParams.get('invite') ?? '';
+	// Task 8 public branch: signed-out invite-link opens skip auth and get
+	// preview fields only (title/time/meetup + blurred start — no my_rsvp,
+	// no attendees). Token mismatch 404s so private events don't leak.
+	if (invite !== '') {
+		const { rows } = await getPool().query(
+			`SELECT e.id, e.channel_id, e.title, e.start_at, e.meetup_lat, e.meetup_lon,
+				e.route_id, e.capacity, e.invite_token, e.created_at,
+				r.title AS route_title, r.line AS route_line
+			 FROM events e JOIN channels ch ON ch.id = e.channel_id
+			 LEFT JOIN public_routes r ON r.id = e.route_id AND r.hidden = false
+			 WHERE e.id = $1`,
+			[id]
+		);
+		if (rows.length === 0 || invite !== (rows[0].invite_token as string)) {
+			throw error(404, 'Event not found');
+		}
+		const row = rows[0];
+		const line = (row.route_line as [number, number][] | null) ?? null;
+		return json(
+			{
+				id: row.id as string,
+				channel_id: row.channel_id as string,
+				title: row.title as string,
+				start_at: (row.start_at as Date).toISOString(),
+				meetup_lat: (row.meetup_lat as number | null) ?? null,
+				meetup_lon: (row.meetup_lon as number | null) ?? null,
+				capacity: (row.capacity as number | null) ?? null,
+				created_at: (row.created_at as Date).toISOString(),
+				preview: true,
+				route:
+					row.route_id && line
+						? {
+								id: row.route_id as string,
+								title: (row.route_title as string) ?? '',
+								preview: true as const,
+								start: line[0] ?? null
+							}
+						: null
+			},
+			{ headers: { 'Cache-Control': 'no-store' } }
+		);
+	}
+	const me = await requireAuth(event);
 	const data = await withUser(me.id, async (c) => {
 		const { rows } = await c.query(
 			`SELECT e.id, e.channel_id, e.title, e.start_at, e.meetup_lat, e.meetup_lon,
