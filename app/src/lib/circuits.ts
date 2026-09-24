@@ -42,6 +42,31 @@ export const offsetStart = (
 	return [line[line.length - 1]];
 };
 
+// Mirror of `offsetStart`: drops the last `offsetM` metres of path,
+// interpolating the crossing point so the public line ends exactly at the
+// offset distance instead of jumping to the previous vertex.
+export const offsetEnd = (
+	line: [number, number][],
+	home: [number, number],
+	offsetM: number
+): [number, number][] => {
+	if (line.length === 0) return [];
+	let acc = 0;
+	for (let i = line.length - 1; i >= 1; i--) {
+		const d = haversine(line[i - 1], line[i]);
+		if (acc + d >= offsetM) {
+			const t = d === 0 ? 0 : (offsetM - acc) / d;
+			const cut: [number, number] = [
+				line[i][0] - (line[i][0] - line[i - 1][0]) * t,
+				line[i][1] - (line[i][1] - line[i - 1][1]) * t
+			];
+			return [...line.slice(0, i), cut];
+		}
+		acc += d;
+	}
+	return [line[0]];
+};
+
 // A home circuit scored the same way the planner scores: flat-loop geometry
 // for the km target, public start pushed `publicStartDistanceM()` away from
 // the exact home, energy via segWh, verdict via decide().
@@ -76,24 +101,28 @@ export const buildHomeCircuit = (
 	const center = toTuple(home);
 	const mode = MODES[modeId] ?? MODES.eskate;
 
-	// Circular loop through home whose circumference matches the km target:
-	// the centre sits one radius due east of home, so the loop starts and
-	// ends at the front door and `offsetStart` below measures from home.
+	// Circular loop starting and ending at home whose circumference matches
+	// the km target: the centre sits one radius due east of home, so the
+	// westmost point of the circle is the front door and both trims below
+	// measure from home.
 	const radiusM = (kmTarget * 1000) / (2 * Math.PI);
 	const cosLat = Math.cos((center[0] * Math.PI) / 180);
 	const middle: LatLon = [center[0], center[1] + radiusM / (111320 * cosLat)];
 	const N = 64;
 	const loop: LatLon[] = [];
 	for (let i = 0; i <= N; i++) {
-		const theta = Math.PI + (2 * Math.PI * i) / N;
+		const theta = (3 * Math.PI) / 2 + (2 * Math.PI * i) / N;
 		loop.push([
 			middle[0] + (radiusM * Math.cos(theta)) / 111320,
 			middle[1] + (radiusM * Math.sin(theta)) / (111320 * cosLat)
 		]);
 	}
 
-	// Privacy: the published line starts away from the exact home address.
-	const line = offsetStart(loop, center, publicStartDistanceM());
+	// Privacy: excise the ~200m window around home from both ends of the
+	// loop, so the published line neither starts, ends, nor passes near the
+	// exact home address.
+	const offsetM = publicStartDistanceM();
+	const line = offsetEnd(offsetStart(loop, center, offsetM), center, offsetM);
 
 	// Flat loop — no elevation survey, so every leg is grade 0.
 	const pts = line;
