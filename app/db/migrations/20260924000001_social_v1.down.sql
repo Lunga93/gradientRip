@@ -1,3 +1,6 @@
+-- Down Task 6: events + RSVP (dependents first; prior blocks below untouched)
+DROP TABLE IF EXISTS event_rsvps;
+DROP TABLE IF EXISTS events;
 -- Down Task 5: channels + route_saves (dependents first; prior blocks below untouched)
 DROP TRIGGER IF EXISTS trg_route_saves_bump ON route_saves;
 DROP FUNCTION IF EXISTS bump_route_saves();

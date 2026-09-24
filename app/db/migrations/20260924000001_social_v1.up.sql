@@ -75,3 +75,23 @@ CREATE POLICY channels_open_read ON channels FOR SELECT TO PUBLIC USING (visibil
 CREATE POLICY channels_member_read ON channels FOR SELECT TO PUBLIC USING (
 	EXISTS (SELECT 1 FROM channel_members m WHERE m.channel_id = channels.id AND m.user_id = current_user_id() AND m.status = 'active')
 );
+-- Task 6: Events (members + link) + RSVP
+CREATE TABLE IF NOT EXISTS events (
+	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	channel_id UUID NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+	title TEXT NOT NULL CHECK (char_length(title) BETWEEN 1 AND 80),
+	start_at TIMESTAMPTZ NOT NULL,
+	meetup_lat DOUBLE PRECISION,
+	meetup_lon DOUBLE PRECISION,
+	route_id UUID REFERENCES public_routes(id) ON DELETE SET NULL,
+	capacity INT,
+	invite_token TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(12), 'hex'),
+	created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS event_rsvps (
+	event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	status TEXT NOT NULL CHECK (status IN ('going', 'interested', 'cant_go')),
+	PRIMARY KEY (event_id, user_id)
+);
