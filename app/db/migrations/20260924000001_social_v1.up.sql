@@ -37,3 +37,41 @@ CREATE TABLE IF NOT EXISTS route_stats (
 ALTER TABLE public_routes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY routes_public_read ON public_routes FOR SELECT TO PUBLIC USING (hidden = false);
 CREATE POLICY routes_self_write ON public_routes FOR ALL TO PUBLIC USING (author = current_user_id());
+-- Task 5: route_saves proper table + saves bump trigger (replaces runtime DDL + direct UPDATE in save handler)
+CREATE TABLE IF NOT EXISTS route_saves (
+	route_id UUID NOT NULL REFERENCES public_routes(id) ON DELETE CASCADE,
+	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	PRIMARY KEY (route_id, user_id)
+);
+CREATE OR REPLACE FUNCTION bump_route_saves() RETURNS trigger AS $$
+BEGIN
+	INSERT INTO route_stats (route_id, saves) VALUES (NEW.route_id, 1)
+	ON CONFLICT (route_id) DO UPDATE SET saves = route_stats.saves + 1;
+	RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS trg_route_saves_bump ON route_saves;
+CREATE TRIGGER trg_route_saves_bump AFTER INSERT ON route_saves FOR EACH ROW EXECUTE FUNCTION bump_route_saves();
+-- Task 5: Channels (mixed open + private)
+CREATE TABLE IF NOT EXISTS channels (
+	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	name TEXT NOT NULL CHECK (char_length(name) BETWEEN 1 AND 60),
+	visibility TEXT NOT NULL CHECK (visibility IN ('open', 'private')),
+	sport TEXT,
+	home_area TEXT,
+	created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS channel_members (
+	channel_id UUID NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	role TEXT NOT NULL DEFAULT 'member',
+	status TEXT NOT NULL DEFAULT 'active',
+	PRIMARY KEY (channel_id, user_id)
+);
+ALTER TABLE channels ENABLE ROW LEVEL SECURITY;
+CREATE POLICY channels_open_read ON channels FOR SELECT TO PUBLIC USING (visibility = 'open');
+CREATE POLICY channels_member_read ON channels FOR SELECT TO PUBLIC USING (
+	EXISTS (SELECT 1 FROM channel_members m WHERE m.channel_id = channels.id AND m.user_id = current_user_id() AND m.status = 'active')
+);
