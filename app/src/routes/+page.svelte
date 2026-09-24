@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import MapCanvas from '$lib/components/MapCanvas.svelte';
-	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
+	import OnboardingWizard from '$lib/components/OnboardingWizard.svelte';
 	import PanelHeader from '$lib/components/PanelHeader.svelte';
 	import PlanView from '$lib/components/PlanView.svelte';
 	import SavedView from '$lib/components/SavedView.svelte';
@@ -94,7 +94,7 @@
 </svelte:head>
 
 <MapCanvas />
-<OnboardingModal />
+<OnboardingWizard />
 <MapFabs />
 <SessionToolbar />
 

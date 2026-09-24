@@ -5,6 +5,7 @@ export const LEGAL_KEY = 'gradient-legal-v1';
 export const THEME_KEY = 'gradient-theme-v1';
 export const MAP_STYLE_KEY = 'gradient-mapstyle-v1';
 export const BOARD_KEY = 'gradient-board-v1';
+export const ONBOARDING_KEY = 'gradient-onboarding-v1';
 export const LOCATION_KEY = 'gradient-location-v1';
 export const TRIPS_MAX = 15;
 
