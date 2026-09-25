@@ -1,3 +1,10 @@
+-- Down Task 9: comments + notifications (dependents first; prior blocks below untouched)
+DROP INDEX IF EXISTS idx_notifications_unread;
+DROP INDEX IF EXISTS idx_notifications_user;
+DROP TABLE IF EXISTS notifications;
+DROP INDEX IF EXISTS idx_comments_user_created;
+DROP INDEX IF EXISTS idx_comments_target;
+DROP TABLE IF EXISTS comments;
 -- Down Task 8: feed kudos + reports (dependents first; prior blocks below untouched)
 DROP TRIGGER IF EXISTS trg_reports_autohide ON reports;
 DROP FUNCTION IF EXISTS hide_route_on_reports();

@@ -134,3 +134,28 @@ END;
 $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS trg_reports_autohide ON reports;
 CREATE TRIGGER trg_reports_autohide AFTER INSERT ON reports FOR EACH ROW EXECUTE FUNCTION hide_route_on_reports();
+-- Task 9: Phase 2 threaded comments + notifications + per-user rate-limit index
+CREATE TABLE IF NOT EXISTS comments (
+	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	feed_kind TEXT NOT NULL CHECK (feed_kind IN ('activity', 'route', 'event')),
+	target_id UUID NOT NULL,
+	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	parent_id UUID REFERENCES comments(id) ON DELETE CASCADE,
+	body TEXT NOT NULL CHECK (char_length(body) BETWEEN 1 AND 500),
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_comments_target ON comments (feed_kind, target_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_comments_user_created ON comments (user_id, created_at);
+CREATE TABLE IF NOT EXISTS notifications (
+	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	kind TEXT NOT NULL DEFAULT 'comment' CHECK (kind IN ('comment', 'reply')),
+	actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
+	feed_kind TEXT NOT NULL CHECK (feed_kind IN ('activity', 'route', 'event')),
+	target_id UUID NOT NULL,
+	comment_id UUID REFERENCES comments(id) ON DELETE CASCADE,
+	read_at TIMESTAMPTZ,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications (user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications (user_id) WHERE read_at IS NULL;

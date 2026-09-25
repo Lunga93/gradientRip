@@ -12,6 +12,34 @@ export interface FeedItem {
 	kudos: number;
 }
 
+// Phase 2 gate — the comments + notifications UI stays hidden until Phase 1
+// is stable. Flip to true to expose it. The /api/comments and
+// /api/notifications endpoints are live regardless of this flag.
+export const feedPhase2 = false;
+
+export interface FeedComment {
+	id: string;
+	parent_id: string | null;
+	body: string;
+	user_id: string;
+	display_name: string | null;
+	avatar_url: string | null;
+	created_at: string;
+}
+
+export interface FeedNotification {
+	id: string;
+	kind: string;
+	actor_id: string | null;
+	feed_kind: string;
+	target_id: string;
+	comment_id: string | null;
+	read_at: string | null;
+	created_at: string;
+	actor_name: string | null;
+	actor_avatar: string | null;
+}
+
 const CACHE_KEY = 'gradient-feed-v1';
 const FEED_KINDS = ['activity', 'route', 'event'] as const;
 
@@ -54,6 +82,10 @@ class FeedState {
 	items = $state<FeedItem[]>(typeof localStorage !== 'undefined' ? loadCache() : []);
 	loading = $state(false);
 	lastError = $state('');
+	// Phase 2 state — only populated while feedPhase2 is on.
+	comments = $state<Record<string, FeedComment[]>>({});
+	notifications = $state<FeedNotification[]>([]);
+	unread = $state(0);
 
 	readonly count = $derived(this.items.length);
 
@@ -173,6 +205,80 @@ class FeedState {
 			const message = 'You appear to be offline';
 			this.lastError = message;
 			return { ok: false, message };
+		}
+	}
+
+	// --- Phase 2 (gated behind feedPhase2; endpoints stay live) ---
+
+	commentsFor(targetId: string): FeedComment[] {
+		return this.comments[targetId] ?? [];
+	}
+
+	async loadComments(kind: string, targetId: string): Promise<void> {
+		if (!feedPhase2) return;
+		try {
+			const resp = await fetch(
+				`/api/comments?kind=${encodeURIComponent(kind)}&id=${encodeURIComponent(targetId)}`
+			);
+			if (!resp.ok) return;
+			const data = (await resp.json()) as { items: FeedComment[] };
+			if (!Array.isArray(data.items)) return;
+			this.comments = { ...this.comments, [targetId]: data.items };
+		} catch {
+			/* offline — keep last known */
+		}
+	}
+
+	async postComment(
+		kind: string,
+		targetId: string,
+		body: string,
+		parentId: string | null = null
+	): Promise<{ ok: boolean; message: string }> {
+		if (!feedPhase2) return { ok: false, message: 'Comments are not enabled yet' };
+		this.lastError = '';
+		try {
+			const resp = await fetch('/api/comments', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ kind, target_id: targetId, body, parent_id: parentId })
+			});
+			const data = (await resp.json().catch(() => ({}))) as { message?: string };
+			if (!resp.ok) {
+				const message = typeof data.message === 'string' ? data.message : 'Could not post comment';
+				this.lastError = message;
+				return { ok: false, message };
+			}
+			await this.loadComments(kind, targetId);
+			return { ok: true, message: 'Comment posted' };
+		} catch {
+			const message = 'You appear to be offline';
+			this.lastError = message;
+			return { ok: false, message };
+		}
+	}
+
+	async loadNotifications(): Promise<void> {
+		if (!feedPhase2) return;
+		try {
+			const resp = await fetch('/api/notifications');
+			if (!resp.ok) return;
+			const data = (await resp.json()) as { items: FeedNotification[]; unread: number };
+			if (Array.isArray(data.items)) this.notifications = data.items;
+			if (typeof data.unread === 'number') this.unread = data.unread;
+		} catch {
+			/* offline — keep last known badge */
+		}
+	}
+
+	async markNotificationsRead(): Promise<void> {
+		if (!feedPhase2) return;
+		try {
+			const resp = await fetch('/api/notifications', { method: 'POST' });
+			if (!resp.ok) return;
+			await this.loadNotifications();
+		} catch {
+			/* offline — badge keeps its count */
 		}
 	}
 }
