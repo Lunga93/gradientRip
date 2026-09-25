@@ -153,14 +153,21 @@ class SocialState {
 	}
 
 	async toggleShare(ts: number, shared: boolean): Promise<boolean> {
+		this.lastError = '';
 		try {
 			const resp = await fetch('/api/trips/share', {
 				method: 'PUT',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ ts, shared })
 			});
-			return resp.ok;
+			if (resp.ok) return true;
+			this.lastError =
+				resp.status === 404
+					? 'Trip is not on the server yet — open it from Saved so it syncs, then share.'
+					: 'Server refused the share — try again in a bit.';
+			return false;
 		} catch {
+			this.lastError = 'You appear to be offline.';
 			return false;
 		}
 	}

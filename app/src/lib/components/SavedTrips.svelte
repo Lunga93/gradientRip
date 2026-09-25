@@ -64,7 +64,7 @@
 		const ok = await social.toggleShare(t.ts, next);
 		if (!ok) {
 			t.shared = !next;
-			ui.setStatus('Could not update sharing — are you offline?', true);
+			ui.setStatus(social.lastError || 'Could not update sharing — try again.', true);
 			return;
 		}
 		saveTrips($state.snapshot(domain.trips));
