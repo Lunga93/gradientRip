@@ -19,6 +19,9 @@ DROP TABLE IF EXISTS events;
 -- Down Task 5: channels + route_saves (dependents first; prior blocks below untouched)
 DROP TRIGGER IF EXISTS trg_route_saves_bump ON route_saves;
 DROP FUNCTION IF EXISTS bump_route_saves();
+-- Policies on channels reference channel_members — drop them before the member table.
+DROP POLICY IF EXISTS channels_member_read ON channels;
+DROP POLICY IF EXISTS channels_open_read ON channels;
 DROP TABLE IF EXISTS channel_members;
 DROP TABLE IF EXISTS channels;
 DROP TABLE IF EXISTS route_saves;

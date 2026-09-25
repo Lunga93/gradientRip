@@ -1,6 +1,9 @@
 // POST /api/reports { target_kind: 'route'|'event', target_id, reason } —
 // inserts a moderation report. The trg_reports_autohide trigger hides a
 // route once reports for it reach the threshold (3); no direct UPDATE here.
+// Event reports are rejected for now: there is no events.hidden column or
+// hide branch in the trigger, so accepting them would be a no-op. Follow-up
+// to add event hiding should re-enable target_kind='event' here.
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
 import { requireAuth } from '$lib/server/auth.js';
@@ -16,6 +19,12 @@ export const POST: RequestHandler = async (event) => {
 	const reason = typeof body?.reason === 'string' ? body.reason.trim() : '';
 	if (!(KINDS as readonly string[]).includes(targetKind)) {
 		throw error(400, "target_kind must be 'route' or 'event'");
+	}
+	// No events.hidden column / trigger branch exists — accepting event
+	// reports would store rows that never action. Reject explicitly until
+	// the event-moderation follow-up lands.
+	if (targetKind === 'event') {
+		throw error(400, 'Event reports are not supported yet');
 	}
 	if (!UUID_RE.test(targetId)) throw error(400, 'Invalid target id');
 	if (!reason || reason.length > 500) throw error(400, 'reason must be 1-500 chars');

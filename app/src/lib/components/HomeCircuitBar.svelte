@@ -126,6 +126,9 @@
 		<p class="m-0 mb-2.5 text-[0.75rem] leading-relaxed" style="color: var(--ink-2);">
 			{circuit.verdict.text}
 		</p>
+		<p class="m-0 mb-2.5 text-[0.7rem] leading-relaxed" style="color: var(--ink-2);">
+			Flat estimate — hills not included.
+		</p>
 		{#if status}
 			<p class="m-0 mb-2 text-[0.78rem]" style="color: var(--ink-1);" role="status">{status}</p>
 		{/if}

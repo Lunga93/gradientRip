@@ -1,4 +1,7 @@
 -- Up: social v1 slice 1 — profile/prefs extension (rest lands in Task 3/5/6 migrations appended here)
+-- pgcrypto supplies gen_random_bytes() for the events.invite_token default
+-- (gen_random_uuid() is core since PG13, but gen_random_bytes() is not).
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS sports TEXT[] NOT NULL DEFAULT '{}';
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS home_lat DOUBLE PRECISION;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS home_lon DOUBLE PRECISION;

@@ -1,11 +1,13 @@
 // GET /api/events/[id]?invite= — preview-vs-full gate (consumed by Task 8
 // feed cards). Everyone sees title/time/meetup + a blurred route (start
 // point only); channel members and invite-link holders see the full route
-// line plus the attendee list. POST { regenerate_invite: true } revokes the
+// line plus the attendee list. A valid ?invite= token returns the full route
+// + attendees regardless of auth; a mismatched token 404s so private events
+// don't leak. POST { regenerate_invite: true } revokes the
 // old link and issues a fresh invite_token (active channel members only).
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser, getPool } from '$lib/server/db.js';
-import { requireAuth } from '$lib/server/auth.js';
+import { requireAuth, getAuthUser } from '$lib/server/auth.js';
 import { previewRoute } from '$lib/community/privacy.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -14,9 +16,8 @@ export const GET: RequestHandler = async (event) => {
 	const id = event.params.id ?? '';
 	if (!UUID_RE.test(id)) throw error(400, 'Invalid event id');
 	const invite = event.url.searchParams.get('invite') ?? '';
-	// Task 8 public branch: signed-out invite-link opens skip auth and get
-	// preview fields only (title/time/meetup + blurred start — no my_rsvp,
-	// no attendees). Token mismatch 404s so private events don't leak.
+	// Valid invite link: full route + attendees regardless of auth. Token
+	// mismatch 404s so private events don't leak.
 	if (invite !== '') {
 		const { rows } = await getPool().query(
 			`SELECT e.id, e.channel_id, e.title, e.start_at, e.meetup_lat, e.meetup_lon,
@@ -32,6 +33,30 @@ export const GET: RequestHandler = async (event) => {
 		}
 		const row = rows[0];
 		const line = (row.route_line as [number, number][] | null) ?? null;
+		const attendees = await getPool().query(
+			`SELECT r.status, p.display_name
+			 FROM event_rsvps r LEFT JOIN profiles p ON p.user_id = r.user_id
+			 WHERE r.event_id = $1 ORDER BY r.status, p.display_name LIMIT 200`,
+			[id]
+		);
+		// Best-effort member context when the holder is also signed in.
+		const me = await getAuthUser(event).catch(() => null);
+		let isMember = false;
+		let myRsvp: string | null = null;
+		if (me) {
+			const pool = getPool();
+			const member = await pool.query(
+				`SELECT 1 FROM channel_members
+				 WHERE channel_id = $1 AND user_id = $2 AND status = 'active'`,
+				[row.channel_id, me.id]
+			);
+			isMember = member.rows.length > 0;
+			const rsvp = await pool.query(
+				'SELECT status FROM event_rsvps WHERE event_id = $1 AND user_id = $2',
+				[id, me.id]
+			);
+			myRsvp = (rsvp.rows[0]?.status as string | undefined) ?? null;
+		}
 		return json(
 			{
 				id: row.id as string,
@@ -42,16 +67,22 @@ export const GET: RequestHandler = async (event) => {
 				meetup_lon: (row.meetup_lon as number | null) ?? null,
 				capacity: (row.capacity as number | null) ?? null,
 				created_at: (row.created_at as Date).toISOString(),
-				preview: true,
+				is_member: isMember,
+				preview: false,
+				my_rsvp: myRsvp,
 				route:
 					row.route_id && line
 						? {
 								id: row.route_id as string,
 								title: (row.route_title as string) ?? '',
-								preview: true as const,
-								start: line[0] ?? null
+								preview: false as const,
+								line
 							}
-						: null
+						: null,
+				attendees: attendees.rows.map((a) => ({
+					status: a.status as string,
+					display_name: (a.display_name as string | null) ?? 'Rider'
+				}))
 			},
 			{ headers: { 'Cache-Control': 'no-store' } }
 		);

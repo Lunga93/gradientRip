@@ -2,7 +2,7 @@
 // notifications fanned out by POST /api/comments. Returns the latest items
 // plus the unread count; read via the partial idx_notifications_unread
 // index. POST /api/notifications { ids? } marks read (all unread when ids
-// is omitted). Endpoints are live; the UI stays behind the feedPhase2 flag
+// is omitted; an explicit empty array marks nothing). Endpoints are live; the UI stays behind the feedPhase2 flag
 // until Phase 1 is stable (cf. feed.svelte.ts). The live SSE friends feed
 // is untouched — polling this endpoint for the badge suffices.
 import { json, error, type RequestHandler } from '@sveltejs/kit';
@@ -37,7 +37,8 @@ export const POST: RequestHandler = async (event) => {
 		throw error(400, 'ids must be notification UUIDs');
 	}
 	const data = await withUser(me.id, async (c) => {
-		if (ids === null || ids.length === 0) {
+		if (ids !== null && ids.length === 0) return { read: 0 };
+		if (ids === null) {
 			const { rowCount } = await c.query(
 				`UPDATE notifications SET read_at = now()
 				 WHERE user_id = current_user_id() AND read_at IS NULL`
