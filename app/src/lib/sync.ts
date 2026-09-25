@@ -1,4 +1,5 @@
 import type { Trip, Preset } from './storage.js';
+import { parseHome, parseSports, parseUnits } from './profiles/profile.js';
 
 
 const num = (v: unknown): number => (typeof v === 'number' ? v : Number(v) || 0);
@@ -80,6 +81,25 @@ export const rowToPreset = (r: PresetRow): Preset => ({
 });
 
 
+// Onboarding prefs mirrored to the cloud. Scopes follow the endpoints:
+// sports/units ride the device-cookie /api/prefs; sports/units/home ride the
+// Google-auth /api/profile (401 when signed out is ignored). The /api/sync
+// body stays trips+presets — its prefs branch has no sports/units/home
+// columns and would just upsert nulls.
+export interface HomeFix {
+	lat: number;
+	lon: number;
+	label: string;
+}
+
+export interface PrefsBackup {
+	sports: string[];
+	units: string;
+	home: HomeFix | null;
+}
+
+// Debounced mirror of the latest local state — mutations call scheduleBackup
+// with a snapshot; only the most recent payload within the window is pushed.
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
 let pending: { trips: Trip[]; presets: Preset[] } | null = null;
 
@@ -94,7 +114,13 @@ export const scheduleBackup = (trips: Trip[], presets: Preset[]): void => {
 	}, 2500);
 };
 
-export const pushBackup = async (trips: Trip[], presets: Preset[]): Promise<boolean> => {
+export const pushBackup = async (
+	trips: Trip[],
+	presets: Preset[],
+	prefs?: PrefsBackup | null
+): Promise<boolean> => {
+	// Strictly `=== false`: some environments (node, SSR-ish) expose navigator
+	// without onLine — treating undefined as offline would silently skip sync.
 	if (typeof navigator !== 'undefined' && navigator.onLine === false) return false;
 	try {
 		const resp = await fetch('/api/sync', {
@@ -109,9 +135,35 @@ export const pushBackup = async (trips: Trip[], presets: Preset[]): Promise<bool
 				}))
 			})
 		});
+		if (prefs) await pushPrefs(prefs);
 		return resp.ok;
 	} catch {
 		return false;
+	}
+};
+
+// Best-effort prefs mirror — failures are silent (offline, signed out, or
+// endpoints down all just stay local-only). Never throws.
+export const pushPrefs = async (prefs: PrefsBackup): Promise<void> => {
+	if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+	const json = { 'Content-Type': 'application/json' };
+	try {
+		await fetch('/api/prefs', {
+			method: 'PUT',
+			headers: json,
+			body: JSON.stringify({ sports: prefs.sports, units: prefs.units })
+		});
+	} catch {
+		/* stay local-only */
+	}
+	try {
+		await fetch('/api/profile', {
+			method: 'PUT',
+			headers: json,
+			body: JSON.stringify({ sports: prefs.sports, units: prefs.units, home: prefs.home })
+		});
+	} catch {
+		/* signed out or unreachable — device prefs above still landed */
 	}
 };
 
@@ -132,4 +184,48 @@ export const fetchBackup = async (): Promise<{ trips: Trip[]; presets: Preset[] 
 	} catch {
 		return null;
 	}
+};
+
+// Remote onboarding prefs: device-scoped /api/prefs first, then the
+// Google-auth /api/profile overlays sports/home/units when signed in
+// (401 → skipped). Sanitised through the Task 1 validators. Null when
+// offline or when neither endpoint answers.
+export const fetchPrefs = async (): Promise<PrefsBackup | null> => {
+	if (typeof navigator !== 'undefined' && navigator.onLine === false) return null;
+	let out: PrefsBackup | null = null;
+	try {
+		const resp = await fetch('/api/prefs');
+		if (resp.ok) {
+			const p = (await resp.json()) as { sports?: unknown; units?: unknown };
+			out = {
+				sports: parseSports(p.sports),
+				units: typeof p.units === 'string' ? parseUnits(p.units) : 'km',
+				home: null
+			};
+		}
+	} catch {
+		/* stay local-only */
+	}
+	try {
+		const resp = await fetch('/api/profile');
+		if (resp.ok) {
+			const p = (await resp.json()) as { sports?: unknown; units?: unknown; home?: unknown };
+			const sports = parseSports(p.sports);
+			const home = parseHome(p.home);
+			if (out) {
+				if (sports.length > 0) out.sports = sports;
+				if (home) out.home = home;
+				if (typeof p.units === 'string') out.units = parseUnits(p.units);
+			} else if (sports.length > 0 || home) {
+				out = {
+					sports,
+					units: typeof p.units === 'string' ? parseUnits(p.units) : 'km',
+					home
+				};
+			}
+		}
+	} catch {
+		/* signed out — device prefs above still apply */
+	}
+	return out;
 };

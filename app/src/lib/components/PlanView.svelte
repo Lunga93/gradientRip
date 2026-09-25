@@ -2,6 +2,7 @@
 	import StopList from '$lib/components/StopList.svelte';
 	import BoardChip from '$lib/components/BoardChip.svelte';
 	import PresetChips from '$lib/components/PresetChips.svelte';
+	import HomeCircuitBar from '$lib/components/HomeCircuitBar.svelte';
 	import ModePicker from '$lib/components/ModePicker.svelte';
 	import SlashButton from '$lib/components/SlashButton.svelte';
 	import Mark from '$lib/components/Mark.svelte';
@@ -9,6 +10,7 @@
 	import { ui } from '$lib/state/ui.svelte.js';
 	import { session } from '$lib/state/session.svelte.js';
 	import { locateInto, runPlan } from '$lib/planner.svelte.js';
+	import { readOnboardingDraft } from '$lib/profiles/onboarding.js';
 	import { enterDrawMode, exitDrawMode, enterRecordMode, exitRecordMode } from '$lib/tracker.js';
 	import { dragScroll } from '$lib/actions/dragScroll.js';
 
@@ -157,6 +159,12 @@
 								<span class="inline-flex items-center gap-1.5"><span class="rec-dot" aria-hidden="true"></span>REC LIVE</span>
 							</button>
 						</div>
+					</section>
+
+					<section class="mt-5">
+						<div class="sec-label">Home circuits</div>
+						<!-- Null home renders nothing (null-by-design); re-read each render so a finished wizard shows up. -->
+						<HomeCircuitBar home={readOnboardingDraft().home} />
 					</section>
 
 					{#if session.planning || ui.statusMsg}

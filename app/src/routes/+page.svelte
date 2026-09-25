@@ -6,6 +6,9 @@
 	import PlanView from '$lib/components/PlanView.svelte';
 	import SavedView from '$lib/components/SavedView.svelte';
 	import RideView from '$lib/components/RideView.svelte';
+	import ChannelsView from '$lib/components/ChannelsView.svelte';
+	import ExploreView from '$lib/components/ExploreView.svelte';
+	import EventsView from '$lib/components/EventsView.svelte';
 	import FriendsView from '$lib/components/FriendsView.svelte';
 	import LegalNote from '$lib/components/LegalNote.svelte';
 	import TabBar from '$lib/components/TabBar.svelte';
@@ -119,6 +122,11 @@
 			<PlanView />
 			<SavedView />
 			<RideView />
+			<div class="view {ui.activeTab === 'channels' ? 'active' : ''}">
+				<ChannelsView />
+				<ExploreView />
+				<EventsView />
+			</div>
 			<FriendsView />
 		</div>
 		<LegalNote />

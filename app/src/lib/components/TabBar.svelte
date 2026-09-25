@@ -6,6 +6,7 @@
 		{ key: 'plan', label: 'Plan' },
 		{ key: 'saved', label: 'Saved' },
 		{ key: 'ride', label: 'Ride' },
+		{ key: 'channels', label: 'Channels' },
 		{ key: 'friends', label: 'Friends' }
 	] as const;
 </script>

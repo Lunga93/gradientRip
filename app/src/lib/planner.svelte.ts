@@ -14,7 +14,8 @@ import { startTracking, stopTracking } from './tracker.js';
 import { buildPlanPacket, routeSegments, decide, type PlanPacket, type PlanSource } from './engine/index.js';
 import { TRIPS_MAX, saveTrips, savePresets } from './storage.js';
 import { planRoute } from './plan.remote.js';
-import { fetchBackup, pushBackup } from './sync.js';
+import { fetchBackup, fetchPrefs, pushBackup } from './sync.js';
+import { readOnboardingDraft, writeOnboardingDraft } from './profiles/onboarding.js';
 import type { Trip } from './storage.js';
 
 const SNAP_FACTOR = 1.6;
@@ -200,7 +201,14 @@ export const initCloudBackup = async (): Promise<void> => {
 	const remote = await fetchBackup();
 	if (!remote) return;
 	if (remote.trips.length === 0 && remote.presets.length === 0) {
-		if (domain.trips.length > 0 || domain.presets.length > 0) await pushBackup(domain.trips, domain.presets);
+		if (domain.trips.length > 0 || domain.presets.length > 0) {
+			const draft = readOnboardingDraft();
+			await pushBackup(domain.trips, domain.presets, {
+				sports: draft.sports,
+				units: 'km',
+				home: draft.home
+			});
+		}
 		return;
 	}
 	if (domain.trips.length === 0 && remote.trips.length > 0) {
@@ -210,6 +218,25 @@ export const initCloudBackup = async (): Promise<void> => {
 	if (domain.presets.length === 0 && remote.presets.length > 0) {
 		domain.presets = remote.presets;
 		savePresets($state.snapshot(domain.presets));
+	}
+	// Prefs hydrate (fresh browser): only fills an EMPTY local draft — cloud
+	// never overwrites picked sports or a set home. Best-effort, never throws.
+	try {
+		const draft = readOnboardingDraft();
+		if (draft.sports.length === 0 && draft.home === null) {
+			const prefs = await fetchPrefs();
+			if (prefs && (prefs.sports.length > 0 || prefs.home !== null)) {
+				writeOnboardingDraft({
+					displayName: draft.displayName,
+					sports: prefs.sports,
+					modeId: draft.modeId,
+					boardVal: draft.boardVal,
+					home: prefs.home
+				});
+			}
+		}
+	} catch {
+		/* stay local-only */
 	}
 };
 

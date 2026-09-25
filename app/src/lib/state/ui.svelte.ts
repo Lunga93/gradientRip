@@ -13,7 +13,7 @@ class UiState {
 	sheetOpen = $state(false);
 	legalDismissed = $state(loadLegalDismissed());
 	theme = $state<ThemePref>(loadThemePref());
-	activeTab = $state<'plan' | 'saved' | 'ride' | 'friends'>('plan');
+	activeTab = $state<'plan' | 'saved' | 'ride' | 'channels' | 'friends'>('plan');
 	isMobile = $state(false);
 	panelVisible = $state(true);
 
@@ -36,7 +36,7 @@ class UiState {
 		this.sheetOpen = open;
 	}
 
-	setTab(tab: 'plan' | 'saved' | 'ride' | 'friends') {
+	setTab(tab: 'plan' | 'saved' | 'ride' | 'channels' | 'friends') {
 		this.activeTab = tab;
 	}
 
