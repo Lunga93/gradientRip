@@ -1,3 +1,5 @@
+// UI chrome state — theme, legal note, net status, plan status.
+// No ride data, no GPS session.
 
 import {
 	loadLegalDismissed,
@@ -10,18 +12,17 @@ import type { ThemePref } from '../storage.js';
 
 class UiState {
 	netOnline = $state(true);
-	sheetOpen = $state(false);
 	legalDismissed = $state(loadLegalDismissed());
 	theme = $state<ThemePref>(loadThemePref());
-	activeTab = $state<'plan' | 'saved' | 'ride' | 'channels' | 'friends'>('plan');
 	isMobile = $state(false);
-	panelVisible = $state(true);
 
 	statusMsg = $state('');
 	statusErr = $state(false);
 
+	// --- derived ---
 	statusBusy = $derived(!!this.statusMsg && !this.statusErr);
 
+	// --- actions ---
 	dismissLegal() {
 		this.legalDismissed = true;
 		setLegalDismissed();
@@ -32,18 +33,13 @@ class UiState {
 		clearLegalDismissed();
 	}
 
-	setSheet(open: boolean) {
-		this.sheetOpen = open;
-	}
-
-	setTab(tab: 'plan' | 'saved' | 'ride' | 'channels' | 'friends') {
-		this.activeTab = tab;
-	}
-
+	// Cycles auto → light → dark (the toggle in the header). Persists the
+	// choice; the pre-paint script in app.html applies it before first paint.
 	setTheme(pref: ThemePref) {
 		this.theme = pref;
 		saveThemePref(pref);
-		if (pref === 'dark') document.documentElement.setAttribute('data-theme', 'gradient-dark');
+		// Light = no attribute (the :root default); dark toggles the override.
+		if (pref === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
 		else document.documentElement.removeAttribute('data-theme');
 	}
 
