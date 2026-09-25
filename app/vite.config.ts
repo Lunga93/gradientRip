@@ -7,5 +7,10 @@ export default defineConfig({
 	test: {
 		include: ['src/**/*.test.ts'],
 		environment: 'node'
+	},
+	// Component tests run in a DOM (happy-dom per file). Resolve the client
+	// build of `svelte` under Vitest so @testing-library/svelte gets `mount`.
+	resolve: {
+		conditions: process.env.VITEST ? ['browser'] : []
 	}
 });
