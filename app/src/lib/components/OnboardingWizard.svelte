@@ -8,6 +8,7 @@
 	import Mark from '$lib/components/Mark.svelte';
 	import { autocompleteSearch, reverseGeocode } from '$lib/api.js';
 	import { readOnboardingDraft, writeOnboardingDraft } from '$lib/profiles/onboarding.js';
+	import { pushPrefs } from '$lib/sync.js';
 
 	// Google prefill arrives as props (wired to social.me by the caller);
 	// everything stays editable and every step can be skipped.
@@ -183,6 +184,14 @@
 
 	const finish = (): void => {
 		persist();
+		// Steady-state prefs sync: the cold-start backup fires once, so a
+		// just-finished wizard mirrors its draft now. Best-effort, never throws.
+		try {
+			const draft = readOnboardingDraft();
+			void pushPrefs({ sports: draft.sports, units: 'km', home: draft.home });
+		} catch {
+			/* stay local-only */
+		}
 		domain.completeOnboarding();
 		ui.setTab('plan');
 	};

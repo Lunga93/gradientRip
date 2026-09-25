@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { tripToRow, rowToTrip, rowToPreset, pushBackup, fetchBackup } from './sync.js';
+import { tripToRow, rowToTrip, rowToPreset, pushBackup, fetchBackup, pushPrefs, fetchPrefs } from './sync.js';
 import type { Trip, Preset } from './storage.js';
 
 const trip = (over: Partial<Trip> = {}): Trip => ({
@@ -140,5 +140,77 @@ describe('pushBackup / fetchBackup', () => {
 		const out = await fetchBackup();
 		expect(out?.trips[0].modeId).toBe('eskate');
 		expect(out?.presets[0].id).toBe(-6);
+	});
+});
+
+describe('pushPrefs', () => {
+	const realFetch = globalThis.fetch;
+
+	beforeEach(() => vi.restoreAllMocks());
+	afterEach(() => {
+		globalThis.fetch = realFetch;
+	});
+
+	it('skips all network traffic for an empty draft (never clobbers cloud)', async () => {
+		const fetchMock = vi.fn(async () => ({ ok: true }) as Response);
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+		await pushPrefs({ sports: [], units: 'km', home: null });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it('omits null home so a sports-only draft never clears cloud home', async () => {
+		const fetchMock = vi.fn(async () => ({ ok: true }) as Response);
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+		await pushPrefs({ sports: ['eskate'], units: 'km', home: null });
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+		const prefsBody = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+		const profileBody = JSON.parse((fetchMock.mock.calls[1] as unknown as [string, RequestInit])[1].body as string);
+		expect(prefsBody.sports).toEqual(['eskate']);
+		expect(profileBody.sports).toEqual(['eskate']);
+		expect('home' in profileBody).toBe(false);
+	});
+
+	it('omits empty sports so a home-only draft never clears cloud sports', async () => {
+		const fetchMock = vi.fn(async () => ({ ok: true }) as Response);
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+		const home = { lat: -33.9, lon: 18.4, label: 'Home' };
+		await pushPrefs({ sports: [], units: 'km', home });
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+		const prefsBody = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+		const profileBody = JSON.parse((fetchMock.mock.calls[1] as unknown as [string, RequestInit])[1].body as string);
+		expect('sports' in prefsBody).toBe(false);
+		expect('sports' in profileBody).toBe(false);
+		expect(profileBody.home).toEqual(home);
+	});
+
+	it('fails soft on network error', async () => {
+		globalThis.fetch = vi.fn(async () => {
+			throw new Error('down');
+		}) as unknown as typeof fetch;
+		await expect(pushPrefs({ sports: ['eskate'], units: 'km', home: null })).resolves.toBeUndefined();
+	});
+});
+
+describe('fetchPrefs', () => {
+	const realFetch = globalThis.fetch;
+
+	beforeEach(() => vi.restoreAllMocks());
+	afterEach(() => {
+		globalThis.fetch = realFetch;
+	});
+
+	it('keeps units-only profile prefs instead of returning null', async () => {
+		globalThis.fetch = (async (input: RequestInfo | URL) =>
+			String(input).endsWith('/api/prefs')
+				? ({ ok: false } as Response)
+				: ({ ok: true, json: async () => ({ sports: [], units: 'km', home: null }) } as Response)) as typeof fetch;
+		const out = await fetchPrefs();
+		expect(out).not.toBeNull();
+		expect(out?.units).toBe('km');
+	});
+
+	it('returns null when both endpoints fail', async () => {
+		globalThis.fetch = vi.fn(async () => ({ ok: false }) as Response) as unknown as typeof fetch;
+		expect(await fetchPrefs()).toBeNull();
 	});
 });

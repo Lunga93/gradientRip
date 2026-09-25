@@ -198,6 +198,27 @@ export const initCloudBackup = async (): Promise<void> => {
 	if (backupInit) return;
 	backupInit = true;
 	if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+	// Prefs hydrate runs independently of the trips/presets fetch, so a
+	// prefs-only cloud still restores a fresh browser. Only fills an EMPTY
+	// local draft — cloud never overwrites picked sports or a set home.
+	// Best-effort, never throws.
+	try {
+		const draft = readOnboardingDraft();
+		if (draft.sports.length === 0 && draft.home === null) {
+			const prefs = await fetchPrefs();
+			if (prefs && (prefs.sports.length > 0 || prefs.home !== null)) {
+				writeOnboardingDraft({
+					displayName: draft.displayName,
+					sports: prefs.sports,
+					modeId: draft.modeId,
+					boardVal: draft.boardVal,
+					home: prefs.home
+				});
+			}
+		}
+	} catch {
+		/* stay local-only */
+	}
 	const remote = await fetchBackup();
 	if (!remote) return;
 	if (remote.trips.length === 0 && remote.presets.length === 0) {
@@ -218,25 +239,6 @@ export const initCloudBackup = async (): Promise<void> => {
 	if (domain.presets.length === 0 && remote.presets.length > 0) {
 		domain.presets = remote.presets;
 		savePresets($state.snapshot(domain.presets));
-	}
-	// Prefs hydrate (fresh browser): only fills an EMPTY local draft — cloud
-	// never overwrites picked sports or a set home. Best-effort, never throws.
-	try {
-		const draft = readOnboardingDraft();
-		if (draft.sports.length === 0 && draft.home === null) {
-			const prefs = await fetchPrefs();
-			if (prefs && (prefs.sports.length > 0 || prefs.home !== null)) {
-				writeOnboardingDraft({
-					displayName: draft.displayName,
-					sports: prefs.sports,
-					modeId: draft.modeId,
-					boardVal: draft.boardVal,
-					home: prefs.home
-				});
-			}
-		}
-	} catch {
-		/* stay local-only */
 	}
 };
 

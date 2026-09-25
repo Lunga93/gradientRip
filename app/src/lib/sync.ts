@@ -1,5 +1,6 @@
 import type { Trip, Preset } from './storage.js';
 import { parseHome, parseSports, parseUnits } from './profiles/profile.js';
+import { readOnboardingDraft } from './profiles/onboarding.js';
 
 
 const num = (v: unknown): number => (typeof v === 'number' ? v : Number(v) || 0);
@@ -103,14 +104,32 @@ export interface PrefsBackup {
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
 let pending: { trips: Trip[]; presets: Preset[] } | null = null;
 
+// Snapshot of the onboarding draft for the scheduled mirror — null when the
+// draft is empty so an untouched wizard never clobbers cloud prefs.
+// Never throws (storage is best-effort).
+const snapshotPrefs = (): PrefsBackup | null => {
+	try {
+		const draft = readOnboardingDraft();
+		if (draft.sports.length === 0 && draft.home === null) return null;
+		return { sports: draft.sports, units: 'km', home: draft.home };
+	} catch {
+		return null;
+	}
+};
+
 export const scheduleBackup = (trips: Trip[], presets: Preset[]): void => {
 	if (typeof window === 'undefined') return;
 	pending = { trips, presets };
 	if (pushTimer) clearTimeout(pushTimer);
 	pushTimer = setTimeout(() => {
 		pushTimer = null;
-		if (pending) void pushBackup(pending.trips, pending.presets);
-		pending = null;
+		if (pending) {
+			const p = pending;
+			pending = null;
+			// Steady-state prefs sync: every trips/presets backup also mirrors
+			// the latest draft (skipped when the draft is empty). Best-effort.
+			void pushBackup(p.trips, p.presets, snapshotPrefs());
+		}
 	}, 2500);
 };
 
@@ -143,15 +162,22 @@ export const pushBackup = async (
 };
 
 // Best-effort prefs mirror — failures are silent (offline, signed out, or
-// endpoints down all just stay local-only). Never throws.
+// endpoints down all just stay local-only). Never throws. Empty values are
+// never sent: an empty sports list / null home is omitted from the PUT bodies
+// (both servers COALESCE-merge / update-only-provided-fields, so sending them
+// would clobber cloud prefs), and a fully-empty draft skips the push entirely.
 export const pushPrefs = async (prefs: PrefsBackup): Promise<void> => {
 	if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+	const sports = prefs.sports.length > 0 ? prefs.sports : undefined;
+	const home = prefs.home ?? undefined;
+	if (!sports && !home) return;
 	const json = { 'Content-Type': 'application/json' };
+	const units = prefs.units;
 	try {
 		await fetch('/api/prefs', {
 			method: 'PUT',
 			headers: json,
-			body: JSON.stringify({ sports: prefs.sports, units: prefs.units })
+			body: JSON.stringify({ ...(sports ? { sports } : {}), units })
 		});
 	} catch {
 		/* stay local-only */
@@ -160,7 +186,7 @@ export const pushPrefs = async (prefs: PrefsBackup): Promise<void> => {
 		await fetch('/api/profile', {
 			method: 'PUT',
 			headers: json,
-			body: JSON.stringify({ sports: prefs.sports, units: prefs.units, home: prefs.home })
+			body: JSON.stringify({ ...(sports ? { sports } : {}), units, ...(home ? { home } : {}) })
 		});
 	} catch {
 		/* signed out or unreachable — device prefs above still landed */
@@ -216,7 +242,7 @@ export const fetchPrefs = async (): Promise<PrefsBackup | null> => {
 				if (sports.length > 0) out.sports = sports;
 				if (home) out.home = home;
 				if (typeof p.units === 'string') out.units = parseUnits(p.units);
-			} else if (sports.length > 0 || home) {
+			} else if (sports.length > 0 || home || typeof p.units === 'string') {
 				out = {
 					sports,
 					units: typeof p.units === 'string' ? parseUnits(p.units) : 'km',
