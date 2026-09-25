@@ -3,7 +3,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { env } from '$env/dynamic/private';
 import { error, type RequestEvent } from '@sveltejs/kit';
 import { getPool } from '$lib/server/db.js';
-import { getDeviceId } from '$lib/server/device.js';
+import { getDeviceId, requireUser } from '$lib/server/device.js';
 
 export const SESSION_COOKIE = 'gradient-session-v1';
 export const OAUTH_STATE_COOKIE = 'gradient-oauth-state';
@@ -151,6 +151,68 @@ export const getAuthUser = async (event: RequestEvent): Promise<AuthUser | null>
 	}
 };
 
+// Resolve the effective user id for device-scoped endpoints (sync, trips,
+// presets): prefer the Google identity when signed in, so every device writes
+// to the same row that share/friends read. Anonymous users keep working
+// untouched on their device row.
+//
+// When the signed-in Google row differs from this device's row (second
+// device, or seeded users that were never linked at login), data stranded on
+// the anonymous device row is folded into the Google row — the same merge
+// first-login linking performs. Without this, trips pushed from an unlinked
+// device are invisible to /api/trips/share ("Trip not found").
+export const resolveUserId = async (event: RequestEvent): Promise<string> => {
+	const authed = await getAuthUser(event);
+	if (!authed) return requireUser(event);
+	const pool = getPool();
+	const deviceId = await getDeviceId(event);
+	const { rows } = await pool.query('SELECT id, google_id FROM users WHERE device_id = $1', [
+		deviceId
+	]);
+	const deviceRow = rows[0] as { id: string; google_id: string | null } | undefined;
+	if (!deviceRow || deviceRow.id === authed.id || deviceRow.google_id) return authed.id;
+	const stranded = await pool.query(
+		'SELECT (SELECT count(*) FROM trips WHERE user_id = $1) AS trips, (SELECT count(*) FROM presets WHERE user_id = $1) AS presets',
+		[deviceRow.id]
+	);
+	if (stranded.rows[0].trips === '0' && stranded.rows[0].presets === '0') return authed.id;
+	await pool.query('BEGIN');
+	try {
+		await pool.query(
+			`INSERT INTO trips (user_id, ts, mode_id, board_val, queries, coords, line, pts, elev, cum,
+			   total_wh, total_climb, usable_wh, climb_limit, brake_limit, total_km, drawn, recorded)
+			 SELECT $1, ts, mode_id, board_val, queries, coords, line, pts, elev, cum,
+			   total_wh, total_climb, usable_wh, climb_limit, brake_limit, total_km, drawn, recorded
+			 FROM trips WHERE user_id = $2
+			 ON CONFLICT (user_id, ts) DO NOTHING`,
+			[authed.id, deviceRow.id]
+		);
+		await pool.query(
+			`INSERT INTO shared_trips (trip_id, user_id)
+			 SELECT g.id, $1 FROM trips g JOIN trips d ON d.ts = g.ts
+			 WHERE g.user_id = $1 AND d.user_id = $2
+			 AND EXISTS (SELECT 1 FROM shared_trips s WHERE s.trip_id = d.id)
+			 ON CONFLICT DO NOTHING`,
+			[authed.id, deviceRow.id]
+		);
+		await pool.query('DELETE FROM shared_trips WHERE user_id = $1', [deviceRow.id]);
+		await pool.query('DELETE FROM trips WHERE user_id = $1', [deviceRow.id]);
+		await pool.query(
+			`INSERT INTO presets (user_id, label, query, coords)
+			 SELECT $1, label, query, coords FROM presets WHERE user_id = $2
+			 ON CONFLICT (user_id, label, query) DO UPDATE SET coords = EXCLUDED.coords, updated_at = now()`,
+			[authed.id, deviceRow.id]
+		);
+		await pool.query('DELETE FROM presets WHERE user_id = $1', [deviceRow.id]);
+		await pool.query('COMMIT');
+	} catch (e) {
+		await pool.query('ROLLBACK');
+		throw e;
+	}
+	return authed.id;
+};
+
+/* ---------- identity linking ---------- */
 
 export const linkGoogleIdentity = async (
 	event: RequestEvent,

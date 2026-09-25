@@ -1,6 +1,6 @@
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
-import { requireUser } from '$lib/server/device.js';
+import { resolveUserId } from '$lib/server/auth.js';
 
 const VALID_THEMES = new Set(['auto', 'light', 'dark']);
 
@@ -31,7 +31,7 @@ const validateKnownLocation = (v: unknown): { lat: number; lon: number; label: s
 }
 
 export const POST: RequestHandler = async (event) => {
-	const userId = await requireUser(event);
+	const userId = await resolveUserId(event);
 	const body = await event.request.json().catch(() => null);
 	if (!body || typeof body !== 'object') throw error(400, 'Invalid JSON body');
 

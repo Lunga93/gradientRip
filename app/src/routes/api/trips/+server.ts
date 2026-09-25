@@ -1,9 +1,9 @@
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
-import { requireUser } from '$lib/server/device.js';
+import { resolveUserId } from '$lib/server/auth.js';
 
 export const GET: RequestHandler = async (event) => {
-	const userId = await requireUser(event);
+	const userId = await resolveUserId(event);
 	const limit = Math.max(1, Math.min(200, Number(event.url.searchParams.get('limit') ?? '50') || 50));
 	const { rows } = await withUser(userId, async (c) => {
 		return c.query(
@@ -22,7 +22,7 @@ export const GET: RequestHandler = async (event) => {
 };
 
 export const POST: RequestHandler = async (event) => {
-	const userId = await requireUser(event);
+	const userId = await resolveUserId(event);
 	const body = await event.request.json().catch(() => null);
 	if (!body) throw error(400, 'Invalid JSON body');
 

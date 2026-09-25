@@ -1,9 +1,9 @@
 import { error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
-import { requireUser } from '$lib/server/device.js';
+import { resolveUserId } from '$lib/server/auth.js';
 
 export const DELETE: RequestHandler = async (event) => {
-	const userId = await requireUser(event);
+	const userId = await resolveUserId(event);
 	const id = Number(event.params.id);
 	if (!Number.isInteger(id)) throw error(400, 'id must be an integer');
 	const result = await withUser(userId, async (c) => {

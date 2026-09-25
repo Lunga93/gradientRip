@@ -1,9 +1,9 @@
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
-import { requireUser } from '$lib/server/device.js';
+import { resolveUserId } from '$lib/server/auth.js';
 
 export const GET: RequestHandler = async (event) => {
-	const userId = await requireUser(event);
+	const userId = await resolveUserId(event);
 	const { rows } = await withUser(userId, async (c) => {
 		return c.query('SELECT id, label, query, coords, created_at FROM presets WHERE user_id = current_user_id() ORDER BY created_at DESC');
 	});
@@ -13,7 +13,7 @@ export const GET: RequestHandler = async (event) => {
 };
 
 export const POST: RequestHandler = async (event) => {
-	const userId = await requireUser(event);
+	const userId = await resolveUserId(event);
 	const body = await event.request.json().catch(() => null);
 	if (!body || typeof body.label !== 'string' || typeof body.query !== 'string' || !body.label.trim() || !body.query.trim()) {
 		throw error(400, 'label and query are required strings');
