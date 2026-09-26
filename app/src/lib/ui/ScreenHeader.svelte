@@ -39,11 +39,16 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		min-width: 2rem;
-		min-height: 2rem;
+		min-width: 44px;
+		min-height: 44px;
 		text-decoration: none;
 		font: var(--type-heading);
 		color: var(--text-secondary);
+	}
+
+	.back:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 
 	.header-action {

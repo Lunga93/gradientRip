@@ -33,12 +33,19 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+		justify-content: center;
 		gap: 0.25rem;
+		min-height: 44px;
 		padding: 0.625rem 0.25rem 0.5rem;
 		text-decoration: none;
 		color: var(--text-secondary);
 		font: var(--type-label);
 		letter-spacing: 0.02em;
+	}
+
+	.tab:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 
 	.tab.active {

@@ -60,13 +60,18 @@
 	.sheet-close {
 		display: block;
 		margin-left: auto;
-		min-width: 2rem;
-		min-height: 2rem;
+		min-width: 44px;
+		min-height: 44px;
 		background: transparent;
 		border: none;
 		border-radius: var(--radius-sm);
 		font: var(--type-heading);
 		color: var(--text-secondary);
 		cursor: pointer;
+	}
+
+	.sheet-close:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 </style>

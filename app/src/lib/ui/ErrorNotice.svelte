@@ -36,6 +36,11 @@
 
 	.error-retry {
 		flex-shrink: 0;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 44px;
+		min-height: 44px;
 		padding: 0.375rem 0.875rem;
 		border: 1px solid var(--line-strong);
 		border-radius: var(--radius-sm);
@@ -44,5 +49,10 @@
 		font: var(--type-label);
 		letter-spacing: 0.02em;
 		cursor: pointer;
+	}
+
+	.error-retry:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 </style>

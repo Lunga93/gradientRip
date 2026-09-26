@@ -33,6 +33,10 @@
 
 	.segment {
 		flex: 1 1 0;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 44px;
 		text-align: center;
 		text-decoration: none;
 		padding: 0.5rem 0.75rem;
@@ -41,6 +45,11 @@
 		font: var(--type-label);
 		letter-spacing: 0.02em;
 		color: var(--text-secondary);
+	}
+
+	.segment:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 
 	.segment.active {

@@ -15,7 +15,7 @@
 <section class="empty-state">
 	<h2 class="empty-title">{title}</h2>
 	<p class="empty-body">{body}</p>
-	{#if actionLabel}
+	{#if actionLabel && onAction}
 		<button type="button" class="empty-action" onclick={() => onAction?.()}>
 			{actionLabel}
 		</button>
@@ -47,6 +47,11 @@
 
 	.empty-action {
 		margin-top: 0.5rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 44px;
+		min-height: 44px;
 		padding: 0.625rem 1.25rem;
 		border: 1px solid transparent;
 		border-radius: var(--radius-md);
@@ -54,5 +59,10 @@
 		color: var(--text-on-accent);
 		font: var(--type-body-strong);
 		cursor: pointer;
+	}
+
+	.empty-action:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 </style>

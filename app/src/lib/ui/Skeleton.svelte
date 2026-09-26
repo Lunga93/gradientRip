@@ -37,4 +37,10 @@
 			opacity: 0.5;
 		}
 	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.skeleton-line {
+			animation: none;
+		}
+	}
 </style>
