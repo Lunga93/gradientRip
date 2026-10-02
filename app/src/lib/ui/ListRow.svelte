@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { Snippet } from 'svelte';
 
 	let {
@@ -32,7 +33,7 @@
 {/snippet}
 
 {#if href}
-	<a class="list-row" {href}>{@render rowInner()}</a>
+	<a class="list-row" href={resolve(href)}>{@render rowInner()}</a>
 {:else}
 	<div class="list-row">{@render rowInner()}</div>
 {/if}

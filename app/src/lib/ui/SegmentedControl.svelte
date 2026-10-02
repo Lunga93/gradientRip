@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	let {
 		segments,
 		current
@@ -12,7 +14,7 @@
 	{#each segments as segment (segment.href)}
 		{@const active = segment.href === current}
 		<a
-			href={segment.href}
+			href={resolve(segment.href)}
 			class="segment"
 			class:active
 			aria-current={active ? 'page' : undefined}

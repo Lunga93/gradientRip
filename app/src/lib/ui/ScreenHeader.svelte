@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { Snippet } from 'svelte';
 
 	let {
@@ -10,7 +11,7 @@
 
 <header class="screen-header">
 	{#if backHref}
-		<a class="back" href={backHref} aria-label="Back"><span aria-hidden="true">←</span></a>
+		<a class="back" href={resolve(backHref)} aria-label="Back"><span aria-hidden="true">←</span></a>
 	{/if}
 	<h1 class="title">{title}</h1>
 	{#if action}

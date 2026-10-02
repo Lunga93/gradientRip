@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { TABS, isTabActive } from './nav.js';
 </script>
@@ -7,7 +8,7 @@
 	{#each TABS as tab (tab.key)}
 		{@const active = isTabActive(tab.href, page.url.pathname)}
 		<a
-			href={tab.href}
+			href={resolve(tab.href)}
 			class="tab"
 			class:active
 			aria-current={active ? 'page' : undefined}
