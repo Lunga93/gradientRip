@@ -518,14 +518,17 @@ git commit -m "feat: explore segments and detail routes"
 ### Task 9: `/home` feed + legacy deletion + offline + visual pass
 
 **Files:**
+- Create: `app/src/lib/ui/FeedItem.svelte` (+ cases in `app/src/lib/ui/primitives.test.ts`)
 - Modify: `app/src/routes/(tabs)/home/+page.svelte`, `app/src/routes/+page.svelte` (delete → replaced by `+page.ts` redirect from Task 4; delete the file here), `app/src/lib/components/TabBar.svelte` (delete), `PanelHeader.svelte` (delete)
 - Delete: any remaining `.view`-class usage, leftover `var(--ink-*)` references
 
 **Interfaces:**
-- Consumes: `GET /api/feed` (auth-required: signed-out users get an `EmptyState` with sign-in action → `/me`), kudos endpoints, `MediaCard`/`ListRow`/`relTime`/`fmtCount`.
-- Produces: populated `/home` (route cards with fit badge + kudos, event cards with RSVP shortcut), signed-out state, and a codebase with zero references to the old shell.
+- Consumes: `GET /api/feed` (auth-required: signed-out users get an `EmptyState` with sign-in action → `/me`), kudos endpoints, `FeedItem` (header/body/action slots)/`relTime`/`fmtCount`.
+- Produces: `FeedItem` component with props `{ header: Snippet; body: Snippet; actions: Snippet }` (slots, so Phase B post content drops in with no structural change); populated `/home` (route cards with fit badge + kudos, event cards with RSVP shortcut), signed-out state, and a codebase with zero references to the old shell.
 
-- [ ] **Step 1: Build `/home`** — fetch `/api/feed`, render `route` entries as `MediaCard` (title, sport, saves/rides, fit `StateBadge`, kudos button) and `event` entries as `ListRow` with an RSVP trailing action. Loading → `Skeleton lines={3}`; failure → `ErrorNotice` with retry; empty → `EmptyState`; signed-out → `EmptyState` (`See what the crew is riding` / action `Sign in` → `/me`). Tapping a card navigates to `/route/[id]` / `/event/[id]`.
+- [ ] **Step 0: Build + test `FeedItem`** — create `app/src/lib/ui/FeedItem.svelte` (header/body/actions slots, token styling per Task 3 rules, 44px action targets, `:focus-visible` outline) and add render tests to `primitives.test.ts` (header/body/actions all render; slots compose). Run `npm test -- src/lib/ui/` — Expected: PASS.
+
+- [ ] **Step 1: Build `/home`** — fetch `/api/feed`, render every entry inside the `FeedItem` shell (header row: source avatar + title + `relTime`; body slot; action row: kudos/comment/share). `route` bodies show sport, saves/rides and fit `StateBadge`; `event` bodies show time with an RSVP action. Loading → `Skeleton lines={3}`; failure → `ErrorNotice` with retry; empty → `EmptyState`; signed-out → `EmptyState` (`See what the crew is riding` / action `Sign in` → `/me`). Tapping a card navigates to `/route/[id]` / `/event/[id]`.
 
 - [ ] **Step 2: Delete legacy** — `+page.svelte`, old `TabBar.svelte`, `PanelHeader.svelte`. Then run `rg -n "activeTab|setTab|sheetOpen|panelVisible|chamfer|verdict-tag|var\(--ink-" src` — Expected: no output. Fix every hit before proceeding.
 

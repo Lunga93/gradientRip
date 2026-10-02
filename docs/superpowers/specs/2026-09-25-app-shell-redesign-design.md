@@ -69,6 +69,9 @@ service-worker offline shell, 129 pure-logic vitest tests, `npm run check/lint/t
 ### 4.3 Primitives (`app/src/lib/ui/`)
 
 `AppShell`, `TabBar`, `ScreenHeader`, `ListRow`, `MediaCard` (only card with a background),
+`FeedItem` (feed shell: header row [avatar + name + time] + body slot + action row
+[kudos/comment/share] — Phase A fills the body with route/event content, Phase B with
+post content, no structural change),
 `SegmentedControl`, `EmptyState`, `StateBadge`, `PrimaryButton`/`SecondaryButton` (44px min),
 `Skeleton`, `Sheet`, `ErrorNotice`, `nav.ts` (route table), `format.ts` (relative
 time/distance/counts). Cards-versus-list rule: cards only for media; everything else is a
@@ -110,8 +113,9 @@ Current → new: `PlanView`+`ResultsPanel`+`PresetChips`+`HomeCircuitBar` → `/
 Phase C); `ExploreView` → `/explore/routes`, `RouteDetail` → `/route/[id]`;
 `EventsView` → `/explore/events`, `EventDetail` → `/event/[id]`; `FriendsView` splits into
 `/activity` + `/me/friends`. Friend live pins stay as a map layer on `/map`.
-`/home` renders the existing feed API in Phase A so it ships populated; Phase B swaps the
-content model (posts) without redesigning the screen.
+`/home` renders the existing feed API in Phase A so it ships populated, using the
+`FeedItem` shell (header/body/action slots); Phase B swaps the content model (posts)
+without redesigning the screen.
 
 ## 6. Motion, accessibility, offline
 
