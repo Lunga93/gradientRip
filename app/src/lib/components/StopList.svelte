@@ -110,7 +110,7 @@
 					<div class="border-base-300 bg-base-100 rounded-box border px-3 py-2">
 						<div
 							class="font-mono2"
-							style="font-size: 0.6rem; letter-spacing: 0.1em; color: var(--text-tertiary); margin-bottom: 1px;"
+							style="font-size: 0.75rem; letter-spacing: 0.1em; color: var(--text-tertiary); margin-bottom: 1px;"
 						>
 							{stopKind(i, domain.stops.length)}
 						</div>

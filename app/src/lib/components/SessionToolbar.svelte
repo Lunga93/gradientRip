@@ -141,25 +141,25 @@
 			{#if session.trackingPaused}
 				<button type="button" class="grid cursor-pointer place-items-center gap-1 bg-transparent px-5 py-3" style="border: none; color: var(--color-primary);" onclick={resumeTracking} title="Resume GPS tracking">
 					<Mark name="play" cls="size-5" />
-					<span class="font-mono2 text-[0.58rem] tracking-widest">RESUME</span>
+					<span class="font-mono2 text-[0.75rem] tracking-widest">RESUME</span>
 				</button>
 			{:else}
 				<button type="button" class="grid cursor-pointer place-items-center gap-1 bg-transparent px-5 py-3" style="border: none; color: var(--text-secondary);" onclick={pauseTracking} title="Pause GPS tracking">
 					<Mark name="pause" cls="size-5" />
-					<span class="font-mono2 text-[0.58rem] tracking-widest">PAUSE</span>
+					<span class="font-mono2 text-[0.75rem] tracking-widest">PAUSE</span>
 				</button>
 			{/if}
 			<button type="button" class="grid cursor-pointer place-items-center gap-1 bg-transparent px-5 py-3" style="border: none; border-left: 1px solid var(--panel-line); color: var(--text-secondary);" onclick={() => recenter()} title="Re-center on live position">
 				<Mark name="crosshair" cls="size-5" />
-				<span class="font-mono2 text-[0.58rem] tracking-widest">CENTER</span>
+				<span class="font-mono2 text-[0.75rem] tracking-widest">CENTER</span>
 			</button>
 			<button type="button" class="grid cursor-pointer place-items-center gap-1 bg-transparent px-5 py-3" style="border: none; border-left: 1px solid var(--panel-line); color: var(--color-error);" onclick={() => stopTracking()} title="Stop tracking">
 				<Mark name="stop" cls="size-5" />
-				<span class="font-mono2 text-[0.58rem] tracking-widest">STOP</span>
+				<span class="font-mono2 text-[0.75rem] tracking-widest">STOP</span>
 			</button>
 			<button type="button" class="grid cursor-pointer place-items-center gap-1 px-5 py-3" style="border: none; border-left: 1px solid var(--panel-line); background: color-mix(in srgb, var(--color-primary) 22%, transparent); color: var(--color-primary);" onclick={() => finishRide()} title="Finish the ride">
 				<Mark name="check" cls="size-5" />
-				<span class="font-mono2 text-[0.58rem] tracking-widest">FINISH</span>
+				<span class="font-mono2 text-[0.75rem] tracking-widest">FINISH</span>
 			</button>
 		</div>
 	</div>

@@ -164,7 +164,7 @@
 				<div style="font: var(--type-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 0.625rem;">Live tracking</div>
 				{#if !session.trackingActive}
 					<div style="display: grid;">
-						<PrimaryButton label="Start live tracking" onclick={() => startTracking()} />
+						<SecondaryButton label="Start live tracking" onclick={() => startTracking()} />
 					</div>
 				{/if}
 				{#if session.trackingStats}

@@ -31,11 +31,21 @@
 		flex-direction: column;
 		height: 100dvh;
 		background: var(--surface-page);
+		position: relative;
+	}
+
+	/* Review fix: fixed tracking/record HUDs (z-20) overlay the header at
+		390px. Keep the back link visible AND tappable by painting the header
+		above them. */
+	.ride-page :global(.screen-header) {
+		position: relative;
+		z-index: 30;
 	}
 
 	.ride-body {
 		flex: 1 1 auto;
 		min-height: 0;
 		overflow-y: auto;
+		padding-top: 0.5rem;
 	}
 </style>

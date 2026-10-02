@@ -4,6 +4,7 @@
 	import PresetChips from '$lib/components/PresetChips.svelte';
 	import ModePicker from '$lib/components/ModePicker.svelte';
 	import PrimaryButton from '$lib/ui/PrimaryButton.svelte';
+	import SecondaryButton from '$lib/ui/SecondaryButton.svelte';
 	import Mark from '$lib/components/Mark.svelte';
 	import { domain } from '$lib/state/domain.svelte.js';
 	import { ui } from '$lib/state/ui.svelte.js';
@@ -131,7 +132,11 @@
 					</div>
 
 					<div class="mt-3" style="display: grid;">
-						<PrimaryButton type="submit" label={session.planning ? 'PLANNING…' : 'PLAN ROUTE'} disabled={session.planning} />
+						{#if domain.results}
+							<SecondaryButton type="submit" label={session.planning ? 'PLANNING…' : 'PLAN ROUTE'} disabled={session.planning} />
+						{:else}
+							<PrimaryButton type="submit" label={session.planning ? 'PLANNING…' : 'PLAN ROUTE'} disabled={session.planning} />
+						{/if}
 					</div>
 						<div class="mt-2 flex gap-2">
 							<button

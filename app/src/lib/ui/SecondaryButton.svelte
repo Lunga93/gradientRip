@@ -4,12 +4,13 @@
 		onclick?: () => void;
 		type?: 'button' | 'submit';
 		disabled?: boolean;
+		title?: string;
 	}
 
-	let { label, onclick, type = 'button', disabled = false }: ButtonProps = $props();
+	let { label, onclick, type = 'button', disabled = false, title }: ButtonProps = $props();
 </script>
 
-<button class="ui-btn ui-btn-secondary" type={type} {disabled} onclick={onclick}>{label}</button>
+<button class="ui-btn ui-btn-secondary" type={type} {disabled} onclick={onclick} title={title}>{label}</button>
 
 <style>
 	.ui-btn {

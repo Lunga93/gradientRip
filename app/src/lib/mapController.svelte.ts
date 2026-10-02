@@ -165,15 +165,25 @@ export const destroyMap = (): void => {
 		// unmounting mid-zoom (plan → fitBounds → /ride on every scored
 		// route) would otherwise throw inside its handler after remove().
 		// Resetting the flag makes the late callback a no-op.
+		// Leaflet 1.9.4 (see package.json): `_animatingZoom` is private state
+		// with no public reset. Follow-up: replace with a public API once
+		// upstream fixes the `_leaflet_pos` crash.
 		try {
 			map.stop();
-			(map as unknown as { _animatingZoom?: boolean })._animatingZoom = false;
+			if ('_animatingZoom' in map) {
+				(map as unknown as { _animatingZoom?: boolean })._animatingZoom = false;
+			}
 		} catch {
 			/* already torn down — remove() below still runs */
 		}
 		map.remove();
 		map = null;
 	}
+	// Lifecycle fix: friend-pin cache must not outlive unmount. `pendingPins`
+	// doubles as the pre-init cache (flushed by createMap) and the latest
+	// rendered set (refreshed by every renderFriendMarkers call), so a remount
+	// without this clear would flush stale pins onto the fresh map.
+	pendingPins = null;
 	tileLayer = null;
 	activeStyleId = null;
 	routeLayer = null;
@@ -566,8 +576,10 @@ export interface FriendPin {
 }
 
 let friendLayer: L.LayerGroup | null = null;
-// Latest pins, cached so a remount (or a call that lands before map init)
-// re-renders instead of dropping them. Cleared by clearFriendMarkers.
+// Lifecycle fix: latest pins, cached so a remount (or a call that lands
+// before map init) re-renders instead of dropping them. Written by every
+// renderFriendMarkers call, flushed once by createMap, cleared by
+// clearFriendMarkers and destroyMap (no stale pins outliving unmount).
 let pendingPins: FriendPin[] | null = null;
 
 const escHtml = (s: string): string =>

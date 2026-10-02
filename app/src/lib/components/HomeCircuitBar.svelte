@@ -2,7 +2,6 @@
 	import { buildHomeCircuit, CIRCUIT_KMS } from '$lib/circuits.js';
 	import { domain } from '$lib/state/domain.svelte.js';
 	import { verdictColor, verdictLabel } from '$lib/verdictTheme.js';
-	import PrimaryButton from '$lib/ui/PrimaryButton.svelte';
 	import SecondaryButton from '$lib/ui/SecondaryButton.svelte';
 
 	// Null home is null-by-design (onboarding skip allowed) — render nothing.
@@ -131,15 +130,17 @@
 			<p class="m-0 mb-2 text-[0.78rem]" style="color: var(--text-secondary);" role="status">{status}</p>
 		{/if}
 		<div class="flex gap-2">
-			<PrimaryButton
+			<SecondaryButton
 				label={savedKm === km ? 'Saved ✓' : busy ? '…' : 'Save'}
 				disabled={busy}
 				onclick={save}
+				title="Save this circuit"
 			/>
 			<SecondaryButton
 				label={publishedId ? 'Published ✓' : 'Publish'}
 				disabled={busy || !canPublish}
 				onclick={() => void publish()}
+				title={savedKm === km ? 'Share this circuit' : 'Save first, then publish'}
 			/>
 		</div>
 	</div>
