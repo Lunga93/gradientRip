@@ -5,7 +5,6 @@
 	import PanelHeader from '$lib/components/PanelHeader.svelte';
 	import PlanView from '$lib/components/PlanView.svelte';
 	import SavedView from '$lib/components/SavedView.svelte';
-	import RideView from '$lib/components/RideView.svelte';
 	import ChannelsView from '$lib/components/ChannelsView.svelte';
 	import ExploreView from '$lib/components/ExploreView.svelte';
 	import EventsView from '$lib/components/EventsView.svelte';
@@ -121,7 +120,6 @@
 		<div class="panel-scroll" id="panelScroll" bind:this={panelScrollEl} onscroll={onPanelScroll}>
 			<PlanView />
 			<SavedView />
-			<RideView />
 			<div class="view {ui.activeTab === 'channels' ? 'active' : ''}">
 				<ChannelsView />
 				<ExploreView />

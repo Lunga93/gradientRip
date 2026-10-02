@@ -3,12 +3,13 @@
 		label: string;
 		onclick?: () => void;
 		type?: 'button' | 'submit';
+		disabled?: boolean;
 	}
 
-	let { label, onclick, type = 'button' }: ButtonProps = $props();
+	let { label, onclick, type = 'button', disabled = false }: ButtonProps = $props();
 </script>
 
-<button class="ui-btn ui-btn-primary" type={type} onclick={onclick}>{label}</button>
+<button class="ui-btn ui-btn-primary" type={type} {disabled} onclick={onclick}>{label}</button>
 
 <style>
 	.ui-btn {
@@ -33,6 +34,11 @@
 
 	.ui-btn-primary:hover {
 		background: var(--accent-hover);
+	}
+
+	.ui-btn-primary:disabled {
+		opacity: 0.55;
+		cursor: not-allowed;
 	}
 
 	.ui-btn:focus-visible {

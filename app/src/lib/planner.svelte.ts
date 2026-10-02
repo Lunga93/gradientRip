@@ -1,3 +1,5 @@
+import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
 import { MODES } from './engine/index.js';
 import { elevations, reverseGeocode, detectCountry, route as fetchRoute } from './api.js';
 import { geoState } from './geo-state.svelte.js';
@@ -74,8 +76,6 @@ export const finalisePlan = (packet: PlanPacket) => {
 	});
 	renderRoute(packet.segs, packet.line, packet.coords, verdictHex(packet.verdict.level));
 
-	if (isMobileView()) ui.setSheet(true);
-
 	domain.addTrip({
 		ts: Date.now(),
 		modeId: packet.modeId,
@@ -99,7 +99,7 @@ export const finalisePlan = (packet: PlanPacket) => {
 
 	startTracking();
 	ui.setStatus('');
-	ui.setTab('ride');
+	void goto(resolve('/ride'));
 }
 
 export const loadTrip = (t: Trip): void => {
@@ -143,9 +143,8 @@ export const loadTrip = (t: Trip): void => {
 	});
 	renderRoute(segs, line, (t.coords ?? []) as LatLon[], verdictHex(v.level));
 
-	if (isMobileView()) ui.setSheet(true);
 	ui.setStatus('Loaded from saved trips — no network used.');
-	ui.setTab('ride');
+	void goto(resolve('/ride'));
 };
 export const scoreAndSaveCustomRoute = async (tapped: LatLon[], name: string, source: PlanSource) => {
 	const boardVal = domain.boardVal || domain.boards[0].value;

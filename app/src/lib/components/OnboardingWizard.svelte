@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { tick } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { domain, BOARD_RANGES } from '$lib/state/domain.svelte.js';
-	import { ui } from '$lib/state/ui.svelte.js';
 	import { social } from '$lib/social.svelte.js';
 	import ModePicker from './ModePicker.svelte';
 	import SlashButton from '$lib/components/SlashButton.svelte';
@@ -193,7 +194,7 @@
 			/* stay local-only */
 		}
 		domain.completeOnboarding();
-		ui.setTab('plan');
+		void goto(resolve('/map'));
 	};
 
 	const next = (): void => {

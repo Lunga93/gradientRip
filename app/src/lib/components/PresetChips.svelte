@@ -16,8 +16,8 @@
 
 {#if !domain.presets.length}
 	<div class="flex items-center gap-2 py-1">
-		<Mark name="bookmark" cls="size-3.5 opacity-40" />
-		<span class="text-base-content/70 text-[0.78rem]">
+		<Mark name="bookmark" cls="size-3.5" style="color: var(--text-disabled);" />
+		<span class="text-[0.78rem]" style="color: var(--text-tertiary);">
 			No saved places yet — tap the bookmark icon on any stop to save it here.
 		</span>
 	</div>

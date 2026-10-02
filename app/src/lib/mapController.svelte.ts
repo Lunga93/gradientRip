@@ -142,6 +142,13 @@ export const createMap = async (container: HTMLElement, center: LatLon): Promise
 	});
 
 	map.on('click', onMapClick);
+	// Flush any friend pins that arrived while the map was down (remounts
+	// destroy every layer, so pins set before init would otherwise be lost).
+	if (pendingPins) {
+		const pending = pendingPins;
+		pendingPins = null;
+		renderFriendMarkers(pending);
+	}
 	return map;
 };
 
@@ -153,6 +160,17 @@ const l = (): L => {
 export const destroyMap = (): void => {
 	unwatchTheme();
 	if (map) {
+		// Halt any in-flight pan/zoom animation first: Leaflet schedules the
+		// zoom-transition end via an uncancellable 250 ms timeout, so
+		// unmounting mid-zoom (plan → fitBounds → /ride on every scored
+		// route) would otherwise throw inside its handler after remove().
+		// Resetting the flag makes the late callback a no-op.
+		try {
+			map.stop();
+			(map as unknown as { _animatingZoom?: boolean })._animatingZoom = false;
+		} catch {
+			/* already torn down — remove() below still runs */
+		}
 		map.remove();
 		map = null;
 	}
@@ -548,6 +566,9 @@ export interface FriendPin {
 }
 
 let friendLayer: L.LayerGroup | null = null;
+// Latest pins, cached so a remount (or a call that lands before map init)
+// re-renders instead of dropping them. Cleared by clearFriendMarkers.
+let pendingPins: FriendPin[] | null = null;
 
 const escHtml = (s: string): string =>
 	s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -560,11 +581,12 @@ const friendIconHtml = (f: FriendPin): string => {
 };
 
 export const renderFriendMarkers = (friends: FriendPin[]): void => {
+	pendingPins = friends;
 	let m: L.Map;
 	try {
 		m = ensureMap();
 	} catch {
-		return;
+		return; // map not ready yet — flushed by createMap, next call re-renders
 	}
 	if (!friendLayer) friendLayer = l().layerGroup().addTo(m);
 	friendLayer.clearLayers();
@@ -594,5 +616,6 @@ export const renderFriendMarkers = (friends: FriendPin[]): void => {
 };
 
 export const clearFriendMarkers = (): void => {
+	pendingPins = null;
 	if (friendLayer) friendLayer.clearLayers();
 };

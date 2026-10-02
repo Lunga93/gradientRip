@@ -2,7 +2,8 @@
 	import { buildHomeCircuit, CIRCUIT_KMS } from '$lib/circuits.js';
 	import { domain } from '$lib/state/domain.svelte.js';
 	import { verdictColor, verdictLabel } from '$lib/verdictTheme.js';
-	import SlashButton from '$lib/components/SlashButton.svelte';
+	import PrimaryButton from '$lib/ui/PrimaryButton.svelte';
+	import SecondaryButton from '$lib/ui/SecondaryButton.svelte';
 
 	// Null home is null-by-design (onboarding skip allowed) — render nothing.
 	let { home }: { home: { lat: number; lon: number; label: string } | null } = $props();
@@ -90,11 +91,8 @@
 </script>
 
 {#if home && circuit}
-	<div class="chamfer-card p-3.5" style="--vt: {vc};">
-		<span
-			class="font-mono2 mb-2 block"
-			style="font-size: 0.62rem; letter-spacing: 0.16em; color: var(--ink-2);"
-		>
+	<div class="p-3.5" style="--vt: {vc}; background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md);">
+		<span style="display: block; margin-bottom: 0.5rem; font: var(--type-label); letter-spacing: 0.12em; color: var(--text-tertiary);">
 			HOME CIRCUITS · START ~200M FROM HOME
 		</span>
 		<div class="mb-2.5 flex gap-1.5" role="group" aria-label="Circuit distance">
@@ -113,7 +111,7 @@
 			{/each}
 		</div>
 		<div class="mb-2.5 flex items-center gap-2">
-			<span class="text-[0.85rem] font-bold tabular-nums" style="color: var(--ink-0);">
+			<span class="text-[0.85rem] font-bold tabular-nums" style="color: var(--text-primary);">
 				{distKm.toFixed(1)} km
 			</span>
 			<span
@@ -123,28 +121,24 @@
 				{fitLabel}
 			</span>
 		</div>
-		<p class="m-0 mb-2.5 text-[0.75rem] leading-relaxed" style="color: var(--ink-2);">
+		<p class="m-0 mb-2.5 text-[0.75rem] leading-relaxed" style="color: var(--text-tertiary);">
 			{circuit.verdict.text}
 		</p>
-		<p class="m-0 mb-2.5 text-[0.7rem] leading-relaxed" style="color: var(--ink-2);">
+		<p class="m-0 mb-2.5 text-[0.7rem] leading-relaxed" style="color: var(--text-tertiary);">
 			Flat estimate — hills not included.
 		</p>
 		{#if status}
-			<p class="m-0 mb-2 text-[0.78rem]" style="color: var(--ink-1);" role="status">{status}</p>
+			<p class="m-0 mb-2 text-[0.78rem]" style="color: var(--text-secondary);" role="status">{status}</p>
 		{/if}
 		<div class="flex gap-2">
-			<SlashButton
+			<PrimaryButton
 				label={savedKm === km ? 'Saved ✓' : busy ? '…' : 'Save'}
-				size="sm"
 				disabled={busy}
 				onclick={save}
 			/>
-			<SlashButton
+			<SecondaryButton
 				label={publishedId ? 'Published ✓' : 'Publish'}
-				size="sm"
-				variant="secondary"
 				disabled={busy || !canPublish}
-				title={savedKm === km ? 'Share this circuit' : 'Save first, then publish'}
 				onclick={() => void publish()}
 			/>
 		</div>

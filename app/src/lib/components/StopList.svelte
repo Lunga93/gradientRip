@@ -109,13 +109,15 @@
 				<div class="relative min-w-0 flex-1">
 					<div class="border-base-300 bg-base-100 rounded-box border px-3 py-2">
 						<div
-							class="font-mono2 text-base-content/60 mb-px text-[0.6rem] tracking-[0.1em]"
+							class="font-mono2"
+							style="font-size: 0.6rem; letter-spacing: 0.1em; color: var(--text-tertiary); margin-bottom: 1px;"
 						>
 							{stopKind(i, domain.stops.length)}
 						</div>
 						<input
 							type="text"
-							class="input input-ghost w-full px-0 text-[0.85rem] font-medium outline-none placeholder:text-base-content/50"
+							class="w-full border-none bg-transparent text-base-content outline-none placeholder:[color:var(--text-tertiary)]"
+							style="font-size: 0.85rem; font-weight: 500; padding-right: 1.4rem;"
 							placeholder={stopPlaceholder(i, domain.stops.length)}
 							autocomplete="off"
 							role="combobox"

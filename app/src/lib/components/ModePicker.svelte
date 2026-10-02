@@ -58,10 +58,9 @@
 						aria-checked={picked}
 						name="omode"
 						value={id}
-						class="btn"
-						class:btn-active={picked}
-						class:btn-primary={picked}
-						class:btn-soft={!picked}
+						class="mode-cell"
+						class:mode-cell-picked={picked}
+						style="--mc: {modeColor(id)}; color: {picked ? modeColor(id) : 'var(--text-tertiary)'};"
 						onclick={() => domain.selectMode(id)}
 					>
 						{@html MODE_ICONS[id]}
