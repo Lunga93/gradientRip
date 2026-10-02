@@ -1,8 +1,38 @@
 <script lang="ts">
 	import '../app.css';
+	import { onMount } from 'svelte';
+	import OnboardingWizard from '$lib/components/OnboardingWizard.svelte';
+	import LegalNote from '$lib/components/LegalNote.svelte';
+	import { ui } from '$lib/state/ui.svelte.js';
+	import { initCloudBackup } from '$lib/planner.svelte.js';
 
 	let { children }: { children?: import('svelte').Snippet } = $props();
 
+	const updateNet = (): void => {
+		ui.netOnline = navigator.onLine;
+	};
+
+	onMount(() => {
+		updateNet();
+		initCloudBackup();
+		window.addEventListener('online', updateNet);
+		window.addEventListener('offline', updateNet);
+		const mq = window.matchMedia('(max-width:640px)');
+		const applyMq = () => {
+			ui.isMobile = mq.matches;
+		};
+		applyMq();
+		mq.addEventListener('change', applyMq);
+		return () => {
+			window.removeEventListener('online', updateNet);
+			window.removeEventListener('offline', updateNet);
+			mq.removeEventListener('change', applyMq);
+		};
+	});
+
+	// The built src/service-worker.js is emitted as /service-worker.js by the
+	// SvelteKit build — register it so the offline app shell engages. Dev has
+	// no service worker build, so only register in production.
 	$effect(() => {
 		if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 			navigator.serviceWorker.register('/service-worker.js').catch(() => {
@@ -29,3 +59,5 @@
 </svelte:head>
 
 {@render children?.()}
+<OnboardingWizard />
+<LegalNote />
