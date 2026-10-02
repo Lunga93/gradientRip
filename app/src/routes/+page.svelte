@@ -4,7 +4,6 @@
 	import OnboardingWizard from '$lib/components/OnboardingWizard.svelte';
 	import PanelHeader from '$lib/components/PanelHeader.svelte';
 	import PlanView from '$lib/components/PlanView.svelte';
-	import SavedView from '$lib/components/SavedView.svelte';
 	import ChannelsView from '$lib/components/ChannelsView.svelte';
 	import ExploreView from '$lib/components/ExploreView.svelte';
 	import EventsView from '$lib/components/EventsView.svelte';
@@ -119,7 +118,6 @@
 		<TabBar />
 		<div class="panel-scroll" id="panelScroll" bind:this={panelScrollEl} onscroll={onPanelScroll}>
 			<PlanView />
-			<SavedView />
 			<div class="view {ui.activeTab === 'channels' ? 'active' : ''}">
 				<ChannelsView />
 				<ExploreView />

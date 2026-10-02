@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { domain } from '$lib/state/domain.svelte.js';
 	import { ui } from '$lib/state/ui.svelte.js';
 	import { social } from '$lib/social.svelte.js';
@@ -10,8 +12,8 @@
 	import type { Trip } from '$lib/storage.js';
 	import { verdictColor, verdictLabel } from '$lib/verdictTheme.js';
 	import BattRing from '$lib/components/BattRing.svelte';
-	import SlashButton from '$lib/components/SlashButton.svelte';
-	import Mark from '$lib/components/Mark.svelte';
+	import PrimaryButton from '$lib/ui/PrimaryButton.svelte';
+	import SecondaryButton from '$lib/ui/SecondaryButton.svelte';
 
 	const tripLabel = (t: Trip): string => t.queries.join(' → ');
 
@@ -53,14 +55,30 @@
 		domain.deleteTrip(idx);
 	};
 
+	const goPlan = (): void => {
+		void goto(resolve('/map'));
+	};
+
+	// loadTrip renders onto the map, which isn't mounted on /me/rides — the
+	// throw happens after domain.results is set, so fall back to the same
+	// /ride landing (ResultsPanel reads domain.results; /map restores the
+	// render on next mount).
+	const openTrip = (t: Trip): void => {
+		try {
+			loadTrip(t);
+		} catch {
+			void goto(resolve('/ride'));
+		}
+	};
+
 	const toggleShare = async (t: Trip): Promise<void> => {
 		if (!social.signedIn) {
-			ui.setStatus('Sign in on the Friends tab to share trips with buddies.', true);
-			ui.setTab('friends');
+			ui.setStatus('Sign in on your profile to share trips with buddies.', true);
+			void goto(resolve('/me'));
 			return;
 		}
 		const next = !t.shared;
-		t.shared = next;
+		t.shared = next; // optimistic — reverted below on failure
 		const ok = await social.toggleShare(t.ts, next);
 		if (!ok) {
 			t.shared = !next;
@@ -77,51 +95,56 @@
 		<svg width="80" height="50" viewBox="0 0 80 50" fill="none" aria-hidden="true">
 			<path
 				d="M8 44 Q 16 36 24 28 Q 36 18 48 12 Q 60 6 72 4"
-				stroke="var(--ink-3)"
+				stroke="var(--text-disabled)"
 				stroke-width="2.5"
 				stroke-linecap="round"
 				stroke-dasharray="5 4"
 			/>
-			<circle cx="8" cy="44" r="5" stroke="var(--ink-3)" stroke-width="2" fill="none" />
-			<circle cx="72" cy="4" r="5" stroke="var(--ink-3)" stroke-width="2" fill="none" />
+			<circle cx="8" cy="44" r="5" stroke="var(--text-disabled)" stroke-width="2" fill="none" />
+			<circle cx="72" cy="4" r="5" stroke="var(--text-disabled)" stroke-width="2" fill="none" />
 		</svg>
-		<h3 class="font-display m-0 text-base font-bold">No saved trips yet</h3>
-		<p class="m-0 text-sm leading-relaxed text-base-content/70">
+		<h3 class="font-display m-0 text-base font-bold" style="color: var(--text-primary);">No saved trips yet</h3>
+		<p class="m-0 text-sm leading-relaxed" style="color: var(--text-secondary);">
 			Plan your first route and it lands here, ready to reopen offline — no connection needed.
 		</p>
-		<SlashButton label="Plan a route" size="sm" onclick={() => ui.setTab('plan')} />
+		<PrimaryButton label="Plan a route" onclick={goPlan} />
 	</div>
 {:else}
 	<div class="flex flex-col gap-2.5">
-		<span class="font-mono2 text-[0.62rem] tracking-[0.16em] text-base-content/60">
+		<span style="font: var(--type-label); letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary);">
 			SAVED TRIPS · {domain.trips.length}
 		</span>
 		{#each domain.trips as t, i (t.ts + '-' + i)}
 			{@const level = tripLevel(t)}
 			{@const vc = verdictColor(level)}
 			<div
-				class="card border-base-300 bg-base-100 list-rise border shadow-sm"
-				style="animation-delay: {Math.min(i * 35, 280)}ms;"
+				class="list-rise p-3.5"
+				style="animation-delay: {Math.min(i * 35, 280)}ms; background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md);"
 			>
-				<div class="card-body gap-2.5 p-3.5">
 				<button
 					type="button"
-					class="flex w-full cursor-pointer items-start justify-between gap-2 text-left"
-					onclick={() => loadTrip(t)}
+					class="flex w-full cursor-pointer items-start justify-between gap-2 bg-transparent text-left"
+					style="border: none;"
+					onclick={() => openTrip(t)}
 					title="Open this saved trip"
 					aria-label="Open saved trip {tripLabel(t)}"
 				>
 					<span class="min-w-0">
-						<span class="font-display block truncate text-[1.05rem] leading-tight font-bold">
+						<span class="font-display block truncate text-[1.05rem] leading-tight font-bold" style="color: var(--text-primary);">
 							{tripLabel(t)}
 						</span>
-						<span class="mt-1 block text-[0.7rem] text-base-content/60">
+						<span class="mt-1 block text-[0.7rem]" style="color: var(--text-secondary);">
 							{MODES[t.modeId] ? MODES[t.modeId].label : t.modeId} · {tripType(t)}
 						</span>
 					</span>
-					<span class="badge badge-soft shrink-0" style="color: {vc};">{verdictLabel(level)}</span>
+					<span
+						class="font-mono2 shrink-0 rounded-full px-2 py-1"
+						style="font-size: 0.62rem; font-weight: 700; background: color-mix(in srgb, {vc} 16%, transparent); color: {vc};"
+					>
+						{verdictLabel(level)}
+					</span>
 				</button>
-				<div class="flex items-center gap-3">
+				<div class="mt-2.5 flex items-center gap-3">
 					<BattRing pct={battLeft(t)} color={vc} size={46} />
 					<svg width="48" height="32" viewBox="0 0 48 32" fill="none" class="shrink-0" aria-hidden="true">
 						<path
@@ -136,44 +159,33 @@
 					</svg>
 					<div class="flex flex-1 gap-3.5">
 						<div>
-							<div class="font-mono2 text-[0.58rem] tracking-widest text-base-content/60">DIST</div>
-							<div class="font-display text-sm font-bold">{t.totalKm.toFixed(1)} km</div>
+							<div style="font: var(--type-label); color: var(--text-tertiary);">DIST</div>
+							<div class="font-display text-sm font-bold" style="color: var(--text-primary);">{t.totalKm.toFixed(1)} km</div>
 						</div>
 						<div>
-							<div class="font-mono2 text-[0.58rem] tracking-widest text-base-content/60">CLIMB</div>
-							<div class="font-display text-sm font-bold">+{t.totalClimb.toFixed(0)} m</div>
+							<div style="font: var(--type-label); color: var(--text-tertiary);">CLIMB</div>
+							<div class="font-display text-sm font-bold" style="color: var(--text-primary);">+{t.totalClimb.toFixed(0)} m</div>
 						</div>
 						<div>
-							<div class="font-mono2 text-[0.58rem] tracking-widest text-base-content/60">DATE</div>
-							<div class="font-display text-sm font-bold">{tripDay(t.ts)}</div>
+							<div style="font: var(--type-label); color: var(--text-tertiary);">DATE</div>
+							<div class="font-display text-sm font-bold" style="color: var(--text-primary);">{tripDay(t.ts)}</div>
 						</div>
 					</div>
 				</div>
-				<div class="flex gap-1.5">
-					<SlashButton label="▶ Replay" size="xs" variant="secondary" style="flex: 1;" onclick={() => loadTrip(t)} />
-					<button
-						type="button"
-						class="btn btn-xs flex-1"
-						class:btn-success={t.shared}
-						class:btn-soft={t.shared}
-						class:btn-ghost={!t.shared}
-						title={t.shared ? 'Visible to your buddies — tap to make private' : 'Private — tap to share with buddies'}
-						aria-label="{t.shared ? 'Unshare' : 'Share'} saved trip {tripLabel(t)}"
-						aria-pressed={t.shared}
-						onclick={() => toggleShare(t)}
-					>
-						{t.shared ? '★ Shared' : '☆ Share'}
-					</button>
-					<button
-						type="button"
-						class="btn btn-error btn-soft btn-xs flex-1"
-						title="Delete saved trip"
-						aria-label="Delete saved trip {tripLabel(t)}"
-						onclick={() => deleteTrip(i)}
-					>
-						<Mark name="x" cls="size-3" /> Delete
-					</button>
-				</div>
+				<div class="mt-2.5 flex gap-1.5">
+					<div style="flex: 1; display: grid;">
+						<PrimaryButton label="▶ Replay" onclick={() => openTrip(t)} />
+					</div>
+					<div style="flex: 1; display: grid;">
+						<SecondaryButton
+							label={t.shared ? '★ Shared' : '☆ Share'}
+							title={t.shared ? 'Visible to your buddies — tap to make private' : 'Private — tap to share with buddies'}
+							onclick={() => toggleShare(t)}
+						/>
+					</div>
+					<div style="flex: 1; display: grid;">
+						<SecondaryButton label="Delete" title="Delete saved trip" onclick={() => deleteTrip(i)} />
+					</div>
 				</div>
 			</div>
 		{/each}
