@@ -28,3 +28,9 @@ export const detailParent = (pathname: string): string | null => {
 	}
 	return null;
 };
+
+export const stripParams = (href: string, names: string[]): string => {
+	const url = new URL(href);
+	for (const name of names) url.searchParams.delete(name);
+	return url.pathname + url.search + url.hash;
+};

@@ -4,6 +4,7 @@
 	import OnboardingWizard from '$lib/components/OnboardingWizard.svelte';
 	import LegalNote from '$lib/components/LegalNote.svelte';
 	import { ui } from '$lib/state/ui.svelte.js';
+	import { stripParams } from '$lib/ui/nav.js';
 	import { initCloudBackup } from '$lib/planner.svelte.js';
 
 	let { children }: { children?: import('svelte').Snippet } = $props();
@@ -17,7 +18,7 @@
 		const login = params.get('login');
 		if (login === 'ok') {
 			ui.setStatus('Signed in — welcome back, rider.');
-			history.replaceState(null, '', window.location.pathname);
+			history.replaceState(null, '', stripParams(window.location.href, ['login', 'reason']));
 		} else if (login === 'error') {
 			const reason = params.get('reason');
 			ui.setStatus(
@@ -28,7 +29,7 @@
 						: 'Could not reach Google — check your connection and retry.',
 				true
 			);
-			history.replaceState(null, '', window.location.pathname);
+			history.replaceState(null, '', stripParams(window.location.href, ['login', 'reason']));
 		}
 		updateNet();
 		initCloudBackup();
