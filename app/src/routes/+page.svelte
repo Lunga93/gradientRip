@@ -4,9 +4,6 @@
 	import OnboardingWizard from '$lib/components/OnboardingWizard.svelte';
 	import PanelHeader from '$lib/components/PanelHeader.svelte';
 	import PlanView from '$lib/components/PlanView.svelte';
-	import ChannelsView from '$lib/components/ChannelsView.svelte';
-	import ExploreView from '$lib/components/ExploreView.svelte';
-	import EventsView from '$lib/components/EventsView.svelte';
 	import LegalNote from '$lib/components/LegalNote.svelte';
 	import TabBar from '$lib/components/TabBar.svelte';
 	import MapFabs from '$lib/components/MapFabs.svelte';
@@ -118,11 +115,6 @@
 		<TabBar />
 		<div class="panel-scroll" id="panelScroll" bind:this={panelScrollEl} onscroll={onPanelScroll}>
 			<PlanView />
-			<div class="view {ui.activeTab === 'channels' ? 'active' : ''}">
-				<ChannelsView />
-				<ExploreView />
-				<EventsView />
-			</div>
 		</div>
 		<LegalNote />
 	</div>

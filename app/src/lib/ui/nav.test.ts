@@ -10,6 +10,13 @@ describe('route table', () => {
 		expect(isTabActive('/explore', '/explore/crews')).toBe(true);
 		expect(isTabActive('/map', '/explore/crews')).toBe(false);
 	});
+	it('keeps Explore active on its detail pages', () => {
+		expect(isTabActive('/explore', '/route/abc')).toBe(true);
+		expect(isTabActive('/explore', '/event/abc')).toBe(true);
+		expect(isTabActive('/map', '/route/abc')).toBe(false);
+		expect(isTabActive('/map', '/event/abc')).toBe(false);
+		expect(isTabActive('/explore', '/me/rides')).toBe(false);
+	});
 	it('resolves detail parents', () => {
 		expect(detailParent('/crew/abc')).toBe('/explore/crews');
 		expect(detailParent('/route/abc')).toBe('/explore/routes');
