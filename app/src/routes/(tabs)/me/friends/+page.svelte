@@ -10,6 +10,7 @@
 	import Mark from '$lib/components/Mark.svelte';
 	import { social, friendName } from '$lib/social.svelte.js';
 	import { ui } from '$lib/state/ui.svelte.js';
+	import { domain } from '$lib/state/domain.svelte.js';
 	import { loadTrip } from '$lib/planner.svelte.js';
 	import { getOwnFix } from '$lib/tracker.js';
 	import { haversine } from '$lib/util.js';
@@ -19,7 +20,6 @@
 	let email = $state('');
 	let sending = $state(false);
 	let sentMsg = $state('');
-	let loginError = $state('');
 	let expandedTrips = $state(false);
 
 	const tripLabel = (t: Trip): string => t.queries.join(' → ') || 'Untitled route';
@@ -61,20 +61,18 @@
 	};
 
 	const openFriendTrip = (t: Trip, name: string): void => {
-		// loadTrip renders onto the map, which isn't mounted here — the throw
-		// happens after domain.results is set, so /map restores the render
-		// from domain state on mount either way.
 		try {
 			loadTrip(t);
-		} catch {
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : '';
+			const fresh = !!domain.results && domain.results.line === (t.line as [number, number][]);
+			if (!msg.includes('Map not initialised') || !fresh) throw err;
+			// Cleaner long-term fix: a pending-route queue in mapController
+			// flushed on createMap, instead of relying on applyResult ordering.
 			/* no map mounted — landing below restores from domain.results */
 		}
 		ui.setStatus(`Opened ${name}’s route.`);
 		void goto(resolve('/map'));
-	};
-
-	const signInWithGoogle = (): void => {
-		window.location.href = '/api/auth/google';
 	};
 
 	onMount(() => {
@@ -103,10 +101,7 @@
 				Google login links your saved trips to a real identity — nothing is lost, and
 				anonymous riding keeps working when signed out.
 			</p>
-			{#if loginError}
-				<ErrorNotice message={loginError} />
-			{/if}
-			<PrimaryButton label="Continue with Google" onclick={signInWithGoogle} />
+			<a href="/api/auth/google" rel="external" class="ui-btn ui-btn-primary">Continue with Google</a>
 		</div>
 	{:else}
 		<!-- live now -->
@@ -181,10 +176,10 @@
 				<div class="mt-2"><ErrorNotice message={social.lastError} /></div>
 			{/if}
 			{#if sentMsg}
-				<p class="m-0 mt-2 text-[0.78rem] font-bold" style="color: var(--state-live);" role="status">{sentMsg}</p>
+				<p class="m-0 mt-2 text-[0.78rem] font-bold" style="color: var(--state-live); font-weight: 700;" role="status">{sentMsg}</p>
 			{/if}
 			{#if social.outgoing.length > 0}
-				<p class="m-0 mt-2 text-[0.75rem]" style="color: var(--text-secondary);">
+				<p class="m-0 mt-2" style="font: var(--type-label); color: var(--text-secondary);">
 					Waiting on: {social.outgoing.map((o) => friendName(o)).join(', ')}
 				</p>
 			{/if}
@@ -216,7 +211,12 @@
 							{/snippet}
 							{#snippet trailing()}
 								<span class="request-actions">
-									<PrimaryButton label="Accept" onclick={() => social.respond(req.id, true)} />
+									<SecondaryButton
+										label="Accept"
+										ariaLabel="Accept {friendName(req)}"
+										title="Accept {friendName(req)}"
+										onclick={() => social.respond(req.id, true)}
+									/>
 									<button
 										type="button"
 										class="icon-btn"
@@ -273,18 +273,19 @@
 									{friendName(f)[0]?.toUpperCase()}
 								</span>
 							{/if}
-							<button
+						<button
 								type="button"
-								class="min-w-0 flex-1 cursor-pointer bg-transparent text-left"
-								style="border: none;"
+								class="buddy-expand min-w-0 flex-1 cursor-pointer bg-transparent text-left"
+								style="border: none; min-height: 44px;"
 								onclick={() => social.toggleExpand(f.id)}
 								aria-expanded={expanded}
+								aria-label="Show {friendName(f)}'s shared routes"
 								title="Show {friendName(f)}'s shared routes"
 							>
 								<span class="block truncate text-[0.95rem] font-bold" style="color: var(--text-primary);">
 									{friendName(f)}
 								</span>
-								<span class="block text-[0.7rem]" style="color: {peer ? 'var(--state-live)' : 'var(--text-tertiary)'};">
+								<span class="block" style="font: var(--type-label); color: {peer ? 'var(--state-live)' : 'var(--text-tertiary)'};">
 									{peer ? (peer.freshness === 'live' ? '● riding now' : '○ recently active') : 'offline'}
 								</span>
 							</button>
@@ -304,7 +305,7 @@
 							<div class="shared-trips" style="border-top: 1px solid var(--line);">
 								<span class="section-label">SHARED ROUTES · {trips.length}</span>
 								{#if trips.length === 0}
-									<p class="m-0 text-[0.78rem]" style="color: var(--text-secondary);">
+									<p class="m-0" style="font: var(--type-label); color: var(--text-secondary);">
 										{friendName(f)} hasn't shared any routes yet.
 									</p>
 								{:else}
@@ -315,7 +316,12 @@
 												meta="{t.totalKm.toFixed(1)} km · +{t.totalClimb.toFixed(0)} m · {tripDay(t.ts)}"
 											>
 												{#snippet trailing()}
-													<SecondaryButton label="Open" onclick={() => openFriendTrip(t, friendName(f))} />
+													<SecondaryButton
+														label="Open"
+														ariaLabel="Open {friendName(f)}'s route {tripLabel(t)}"
+														title="Open {friendName(f)}'s route"
+														onclick={() => openFriendTrip(t, friendName(f))}
+													/>
 												{/snippet}
 											</ListRow>
 										{/each}
@@ -332,15 +338,15 @@
 		<div class="mt-3">
 			<button
 				type="button"
-				class="hint-toggle w-full cursor-pointer bg-transparent text-left text-[0.78rem]"
-				style="border: none; color: var(--text-secondary);"
+				class="hint-toggle w-full cursor-pointer bg-transparent text-left"
+				style="border: none; font: var(--type-label); color: var(--text-secondary);"
 				onclick={() => (expandedTrips = !expandedTrips)}
 				aria-expanded={expandedTrips}
 			>
 				{expandedTrips ? '▾' : '▸'} How do my buddies see my routes?
 			</button>
 			{#if expandedTrips}
-				<p class="m-0 mt-1 text-[0.78rem] leading-relaxed" style="color: var(--text-secondary);">
+				<p class="m-0 mt-1 leading-relaxed" style="font: var(--type-label); color: var(--text-secondary);">
 					Open My rides and flip <strong>Share</strong> on any trip — it becomes
 					visible to your accepted buddies only. Flip it off any time to go private again.
 				</p>
@@ -419,8 +425,7 @@
 	.live-pill {
 		border-radius: 9999px;
 		padding: 0.25rem 0.5rem;
-		font-size: 0.62rem;
-		font-weight: 700;
+		font: var(--type-label);
 		flex-shrink: 0;
 	}
 
@@ -494,5 +499,29 @@
 
 	.hint-toggle {
 		min-height: 44px;
+	}
+
+	.ui-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 44px;
+		min-height: 44px;
+		padding: 0.625rem 1.25rem;
+		border: 1px solid transparent;
+		border-radius: var(--radius-md);
+		font: var(--type-body-strong);
+		letter-spacing: 0.02em;
+		cursor: pointer;
+		text-decoration: none;
+	}
+
+	.ui-btn-primary {
+		background: var(--accent);
+		color: var(--text-on-accent);
+	}
+
+	.ui-btn-primary:hover {
+		background: var(--accent-hover);
 	}
 </style>

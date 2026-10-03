@@ -13,6 +13,23 @@
 	};
 
 	onMount(() => {
+		const params = new URLSearchParams(window.location.search);
+		const login = params.get('login');
+		if (login === 'ok') {
+			ui.setStatus('Signed in — welcome back, rider.');
+			history.replaceState(null, '', window.location.pathname);
+		} else if (login === 'error') {
+			const reason = params.get('reason');
+			ui.setStatus(
+				reason === 'denied'
+					? 'Google sign-in was cancelled.'
+					: reason === 'state'
+						? 'Sign-in expired — please try again.'
+						: 'Could not reach Google — check your connection and retry.',
+				true
+			);
+			history.replaceState(null, '', window.location.pathname);
+		}
 		updateNet();
 		initCloudBackup();
 		window.addEventListener('online', updateNet);

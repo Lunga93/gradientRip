@@ -63,10 +63,18 @@
 	// throw happens after domain.results is set, so fall back to the same
 	// /ride landing (ResultsPanel reads domain.results; /map restores the
 	// render on next mount).
+	const isFreshResults = (t: Trip): boolean => {
+		const r = domain.results;
+		return !!r && r.line === (t.line as LatLon[]);
+	};
 	const openTrip = (t: Trip): void => {
 		try {
 			loadTrip(t);
-		} catch {
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : '';
+			if (!msg.includes('Map not initialised') || !isFreshResults(t)) throw err;
+			// Cleaner long-term fix: a pending-route queue in mapController
+			// flushed on createMap, instead of relying on applyResult ordering.
 			void goto(resolve('/ride'));
 		}
 	};
@@ -121,29 +129,29 @@
 				class="list-rise p-3.5"
 				style="animation-delay: {Math.min(i * 35, 280)}ms; background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md);"
 			>
-				<button
-					type="button"
-					class="flex w-full cursor-pointer items-start justify-between gap-2 bg-transparent text-left"
-					style="border: none;"
-					onclick={() => openTrip(t)}
-					title="Open this saved trip"
-					aria-label="Open saved trip {tripLabel(t)}"
+			<button
+				type="button"
+				class="trip-open flex w-full cursor-pointer items-start justify-between gap-2 bg-transparent text-left"
+				style="border: none; min-height: 44px;"
+				onclick={() => openTrip(t)}
+				title="Open this saved trip"
+				aria-label="Open saved trip {tripLabel(t)}"
+			>
+				<span class="min-w-0">
+					<span class="font-display block truncate text-[1.05rem] leading-tight font-bold" style="color: var(--text-primary);">
+						{tripLabel(t)}
+					</span>
+					<span class="mt-1 block" style="font: var(--type-label); color: var(--text-secondary);">
+						{MODES[t.modeId] ? MODES[t.modeId].label : t.modeId} · {tripType(t)}
+					</span>
+				</span>
+				<span
+					class="font-mono2 shrink-0 rounded-full px-2 py-1"
+					style="font: var(--type-label); background: color-mix(in srgb, {vc} 16%, transparent); color: {vc};"
 				>
-					<span class="min-w-0">
-						<span class="font-display block truncate text-[1.05rem] leading-tight font-bold" style="color: var(--text-primary);">
-							{tripLabel(t)}
-						</span>
-						<span class="mt-1 block text-[0.7rem]" style="color: var(--text-secondary);">
-							{MODES[t.modeId] ? MODES[t.modeId].label : t.modeId} · {tripType(t)}
-						</span>
-					</span>
-					<span
-						class="font-mono2 shrink-0 rounded-full px-2 py-1"
-						style="font-size: 0.62rem; font-weight: 700; background: color-mix(in srgb, {vc} 16%, transparent); color: {vc};"
-					>
-						{verdictLabel(level)}
-					</span>
-				</button>
+					{verdictLabel(level)}
+				</span>
+			</button>
 				<div class="mt-2.5 flex items-center gap-3">
 					<BattRing pct={battLeft(t)} color={vc} size={46} />
 					<svg width="48" height="32" viewBox="0 0 48 32" fill="none" class="shrink-0" aria-hidden="true">
@@ -172,21 +180,33 @@
 						</div>
 					</div>
 				</div>
-				<div class="mt-2.5 flex gap-1.5">
-					<div style="flex: 1; display: grid;">
-						<PrimaryButton label="▶ Replay" onclick={() => openTrip(t)} />
-					</div>
-					<div style="flex: 1; display: grid;">
-						<SecondaryButton
-							label={t.shared ? '★ Shared' : '☆ Share'}
-							title={t.shared ? 'Visible to your buddies — tap to make private' : 'Private — tap to share with buddies'}
-							onclick={() => toggleShare(t)}
-						/>
-					</div>
-					<div style="flex: 1; display: grid;">
-						<SecondaryButton label="Delete" title="Delete saved trip" onclick={() => deleteTrip(i)} />
-					</div>
+			<div class="mt-2.5 flex gap-1.5">
+				<div style="flex: 1; display: grid;">
+					<SecondaryButton
+						label="▶ Replay"
+						ariaLabel="Replay trip {tripLabel(t)}"
+						title="Replay trip {tripLabel(t)}"
+						onclick={() => openTrip(t)}
+					/>
 				</div>
+				<div style="flex: 1; display: grid;">
+					<SecondaryButton
+						label={t.shared ? '★ Shared' : '☆ Share'}
+						title={t.shared ? 'Visible to your buddies — tap to make private' : 'Private — tap to share with buddies'}
+						ariaLabel="Share saved trip {tripLabel(t)}"
+						ariaPressed={!!t.shared}
+						onclick={() => toggleShare(t)}
+					/>
+				</div>
+				<div style="flex: 1; display: grid;">
+					<SecondaryButton
+						label="Delete"
+						title="Delete saved trip"
+						ariaLabel="Delete saved trip {tripLabel(t)}"
+						onclick={() => deleteTrip(i)}
+					/>
+				</div>
+			</div>
 			</div>
 		{/each}
 	</div>

@@ -5,12 +5,29 @@
 		type?: 'button' | 'submit';
 		disabled?: boolean;
 		title?: string;
+		ariaLabel?: string;
+		ariaPressed?: boolean;
 	}
 
-	let { label, onclick, type = 'button', disabled = false, title }: ButtonProps = $props();
+	let {
+		label,
+		onclick,
+		type = 'button',
+		disabled = false,
+		title,
+		ariaLabel,
+		ariaPressed
+	}: ButtonProps = $props();
 </script>
 
-<button class="ui-btn ui-btn-secondary" type={type} {disabled} onclick={onclick} title={title}>{label}</button>
+<button
+	class="ui-btn ui-btn-secondary"
+	type={type}
+	{disabled}
+	onclick={onclick}
+	title={title}
+	aria-label={ariaLabel}
+	aria-pressed={ariaPressed}>{label}</button>
 
 <style>
 	.ui-btn {

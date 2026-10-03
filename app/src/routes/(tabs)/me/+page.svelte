@@ -2,40 +2,17 @@
 	import { onMount } from 'svelte';
 	import ScreenHeader from '$lib/ui/ScreenHeader.svelte';
 	import ListRow from '$lib/ui/ListRow.svelte';
-	import PrimaryButton from '$lib/ui/PrimaryButton.svelte';
 	import SecondaryButton from '$lib/ui/SecondaryButton.svelte';
-	import ErrorNotice from '$lib/ui/ErrorNotice.svelte';
 	import Mark from '$lib/components/Mark.svelte';
 	import { social } from '$lib/social.svelte.js';
 	import { ui } from '$lib/state/ui.svelte.js';
 	import { domain } from '$lib/state/domain.svelte.js';
 
-	let loginError = $state('');
-
 	const themeName = $derived(
 		ui.theme === 'auto' ? 'Auto' : ui.theme === 'light' ? 'Light' : 'Dark'
 	);
 
-	const signInWithGoogle = (): void => {
-		window.location.href = '/api/auth/google';
-	};
-
 	onMount(() => {
-		const params = new URLSearchParams(window.location.search);
-		const login = params.get('login');
-		if (login === 'ok') {
-			ui.setStatus('Signed in — welcome back, rider.');
-			history.replaceState(null, '', window.location.pathname);
-		} else if (login === 'error') {
-			const reason = params.get('reason');
-			loginError =
-				reason === 'denied'
-					? 'Google sign-in was cancelled.'
-					: reason === 'state'
-						? 'Sign-in expired — please try again.'
-						: 'Could not reach Google — check your connection and retry.';
-			history.replaceState(null, '', window.location.pathname);
-		}
 		void social.probeMe();
 	});
 </script>
@@ -57,14 +34,11 @@
 				G
 			</span>
 			<h2 class="signin-title">Sign in to ride with friends</h2>
-			<p class="signin-copy">
-				Google login links your saved trips to a real identity — nothing is lost, and
-				anonymous riding keeps working when signed out.
-			</p>
-			{#if loginError}
-				<ErrorNotice message={loginError} />
-			{/if}
-			<PrimaryButton label="Continue with Google" onclick={signInWithGoogle} />
+		<p class="signin-copy">
+			Google login links your saved trips to a real identity — nothing is lost, and
+			anonymous riding keeps working when signed out.
+		</p>
+		<a href="/api/auth/google" rel="external" class="ui-btn ui-btn-primary">Continue with Google</a>
 		</div>
 	{:else if social.me}
 		{@const me = social.me}
@@ -271,5 +245,47 @@
 		border: none;
 		border-radius: var(--radius-sm);
 		cursor: pointer;
+	}
+
+	.net-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.375rem 0.75rem;
+		border-radius: 9999px;
+		font: var(--type-label);
+		letter-spacing: 0.08em;
+	}
+
+	.net-badge i {
+		width: 8px;
+		height: 8px;
+		border-radius: 9999px;
+		background: currentcolor;
+		flex: none;
+	}
+
+	.ui-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 44px;
+		min-height: 44px;
+		padding: 0.625rem 1.25rem;
+		border: 1px solid transparent;
+		border-radius: var(--radius-md);
+		font: var(--type-body-strong);
+		letter-spacing: 0.02em;
+		cursor: pointer;
+		text-decoration: none;
+	}
+
+	.ui-btn-primary {
+		background: var(--accent);
+		color: var(--text-on-accent);
+	}
+
+	.ui-btn-primary:hover {
+		background: var(--accent-hover);
 	}
 </style>
