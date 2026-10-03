@@ -107,7 +107,7 @@
 			});
 			if (!res.ok) return;
 			const data = (await res.json()) as { invite_token: string };
-			inviteLink = `${location.origin}/events/${id}?invite=${data.invite_token}`;
+			inviteLink = `${location.origin}/event/${id}?invite=${data.invite_token}`;
 		} finally {
 			regenBusy = false;
 		}

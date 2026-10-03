@@ -16,7 +16,7 @@ export const TABS: Tab[] = [
 export const isTabActive = (tabHref: string, pathname: string): boolean =>
 	pathname === tabHref ||
 	pathname.startsWith(`${tabHref}/`) ||
-	(detailParent(pathname)?.startsWith(tabHref) ?? false);
+	(detailParent(pathname) === tabHref || (detailParent(pathname)?.startsWith(`${tabHref}/`) ?? false));
 
 const DETAIL_PARENTS: [prefix: string, parent: string][] = [
 	['/crew/', '/explore/crews'],

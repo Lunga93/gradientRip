@@ -13,8 +13,10 @@ describe('route table', () => {
 	it('keeps Explore active on its detail pages', () => {
 		expect(isTabActive('/explore', '/route/abc')).toBe(true);
 		expect(isTabActive('/explore', '/event/abc')).toBe(true);
+		expect(isTabActive('/explore', '/crew/abc')).toBe(true);
 		expect(isTabActive('/map', '/route/abc')).toBe(false);
 		expect(isTabActive('/map', '/event/abc')).toBe(false);
+		expect(isTabActive('/map', '/crew/abc')).toBe(false);
 		expect(isTabActive('/explore', '/me/rides')).toBe(false);
 	});
 	it('resolves detail parents', () => {
