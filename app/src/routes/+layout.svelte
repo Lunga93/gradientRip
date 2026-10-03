@@ -6,6 +6,8 @@
 	import { ui } from '$lib/state/ui.svelte.js';
 	import { stripParams } from '$lib/ui/nav.js';
 	import { initCloudBackup } from '$lib/planner.svelte.js';
+	import { social } from '$lib/social.svelte.js';
+	import { feed } from '$lib/feed.svelte.js';
 
 	let { children }: { children?: import('svelte').Snippet } = $props();
 
@@ -33,6 +35,7 @@
 		}
 		updateNet();
 		initCloudBackup();
+		void social.probeMe();
 		window.addEventListener('online', updateNet);
 		window.addEventListener('offline', updateNet);
 		const mq = window.matchMedia('(max-width:640px)');
@@ -54,18 +57,35 @@
 	$effect(() => {
 		if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 			navigator.serviceWorker.register('/service-worker.js').catch(() => {
+				/* offline shell is a progressive enhancement — ignore */
 			});
 		}
+		// Leaflet rides a dynamic import so the first paint stays lean — warm
+		// that chunk once the browser idles so the map is ready when asked.
 		const warmLeaflet = (): void => {
 			import('$lib/mapController.svelte.js')
 				.then((m) => m.ensureLeaflet())
 				.catch(() => {
+					/* offline on first paint — MapCanvas loads it on demand */
 				});
 		};
 		const idle = (window as Window & { requestIdleCallback?: (cb: () => void) => void })
 			.requestIdleCallback;
 		if (idle) idle(warmLeaflet);
 		else setTimeout(warmLeaflet, 2000);
+	});
+
+	// Live ownership (single owner): pins (/map), counts (/activity) and
+	// status (/me/friends) consume live state simultaneously — starting here
+	// avoids start/stop thrash on tab switches. Mirrors the legacy friends
+	// logic (probeMe on mount above + start/stop here), without the
+	// activeTab gate.
+	$effect(() => {
+		if (social.signedIn) {
+			social.startLive();
+			void feed.loadNotifications();
+			return () => social.stopLive();
+		}
 	});
 </script>
 

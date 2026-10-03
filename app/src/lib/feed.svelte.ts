@@ -208,7 +208,10 @@ class FeedState {
 		}
 	}
 
-	// --- Phase 2 (gated behind feedPhase2; endpoints stay live) ---
+	// --- Phase 2 (comments gated behind feedPhase2; endpoints stay live) ---
+	// Notifications UI lives on /activity (Task 7 owns it read-only), so
+	// loadNotifications/markNotificationsRead stay ungated even while
+	// feedPhase2 is false. Comments remain gated until Phase 1 is stable.
 
 	commentsFor(targetId: string): FeedComment[] {
 		return this.comments[targetId] ?? [];
@@ -259,7 +262,6 @@ class FeedState {
 	}
 
 	async loadNotifications(): Promise<void> {
-		if (!feedPhase2) return;
 		try {
 			const resp = await fetch('/api/notifications');
 			if (!resp.ok) return;
@@ -272,7 +274,6 @@ class FeedState {
 	}
 
 	async markNotificationsRead(): Promise<void> {
-		if (!feedPhase2) return;
 		try {
 			const resp = await fetch('/api/notifications', { method: 'POST' });
 			if (!resp.ok) return;

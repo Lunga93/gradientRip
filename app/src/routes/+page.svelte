@@ -7,7 +7,6 @@
 	import ChannelsView from '$lib/components/ChannelsView.svelte';
 	import ExploreView from '$lib/components/ExploreView.svelte';
 	import EventsView from '$lib/components/EventsView.svelte';
-	import FriendsView from '$lib/components/FriendsView.svelte';
 	import LegalNote from '$lib/components/LegalNote.svelte';
 	import TabBar from '$lib/components/TabBar.svelte';
 	import MapFabs from '$lib/components/MapFabs.svelte';
@@ -99,11 +98,12 @@
 <MapFabs />
 <SessionToolbar />
 
+<!-- panel -->
 {#if ui.panelVisible}
 	<div class="panel" class:sheet-open={ui.sheetOpen} style={panelEdge}>
 		<button
 			type="button"
-			class="grabber min-[641px]:hidden"
+			class="grabber"
 			aria-expanded={ui.sheetOpen}
 			aria-controls="panelScroll"
 			aria-label={ui.sheetOpen ? 'Collapse route panel' : 'Expand route panel'}
@@ -123,7 +123,6 @@
 				<ExploreView />
 				<EventsView />
 			</div>
-			<FriendsView />
 		</div>
 		<LegalNote />
 	</div>

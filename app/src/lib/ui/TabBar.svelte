@@ -2,18 +2,25 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { TABS, isTabActive } from './nav.js';
+	import { social } from '$lib/social.svelte.js';
+	import { feed } from '$lib/feed.svelte.js';
 </script>
 
 <nav class="tabbar" aria-label="Primary">
 	{#each TABS as tab (tab.key)}
 		{@const active = isTabActive(tab.href, page.url.pathname)}
+		{@const badge = tab.key === 'activity' ? social.incoming.length + feed.unread : 0}
 		<a
 			href={resolve(tab.href)}
 			class="tab"
 			class:active
 			aria-current={active ? 'page' : undefined}
 		>
-			<span class="tab-label">{tab.label}</span>
+			<span class="tab-label">{tab.label}{#if badge > 0}<span
+						class="tab-badge"
+						aria-label="{badge} activity updates"
+					>{badge > 9 ? '9+' : badge}</span
+				>{/if}</span>
 			<span class="tab-indicator" aria-hidden="true"></span>
 		</a>
 	{/each}
@@ -62,5 +69,23 @@
 
 	.tab.active .tab-indicator {
 		background: var(--accent);
+	}
+
+	.tab-label {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.375rem;
+	}
+
+	.tab-badge {
+		display: inline-grid;
+		place-items: center;
+		min-width: 20px;
+		min-height: 20px;
+		padding: 0 0.375rem;
+		border-radius: 9999px;
+		background: var(--state-stop);
+		color: #fff;
+		font: var(--type-label);
 	}
 </style>
