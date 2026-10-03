@@ -36,9 +36,7 @@
 	};
 
 	onMount(() => {
-		void social.probeMe().then(() => {
-			if (social.signedIn) void feed.loadNotifications();
-		});
+		void social.probeMe();
 	});
 
 	$effect(() => {

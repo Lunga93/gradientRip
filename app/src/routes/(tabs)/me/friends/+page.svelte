@@ -4,9 +4,7 @@
 	import { resolve } from '$app/paths';
 	import ScreenHeader from '$lib/ui/ScreenHeader.svelte';
 	import ListRow from '$lib/ui/ListRow.svelte';
-	import PrimaryButton from '$lib/ui/PrimaryButton.svelte';
 	import SecondaryButton from '$lib/ui/SecondaryButton.svelte';
-	import ErrorNotice from '$lib/ui/ErrorNotice.svelte';
 	import Mark from '$lib/components/Mark.svelte';
 	import { social, friendName } from '$lib/social.svelte.js';
 	import { ui } from '$lib/state/ui.svelte.js';
@@ -14,12 +12,10 @@
 	import { loadTrip } from '$lib/planner.svelte.js';
 	import { getOwnFix } from '$lib/tracker.js';
 	import { haversine } from '$lib/util.js';
+	import { fmtCount } from '$lib/ui/format.js';
 	import type { Trip } from '$lib/storage.js';
 	import type { LivePeer } from '$lib/live.js';
 
-	let email = $state('');
-	let sending = $state(false);
-	let sentMsg = $state('');
 	let expandedTrips = $state(false);
 
 	const tripLabel = (t: Trip): string => t.queries.join(' → ') || 'Untitled route';
@@ -47,18 +43,6 @@
 
 	const speedText = (peer: LivePeer): string =>
 		peer.speed != null && peer.speed > 0.5 ? ` at ${(peer.speed * 3.6).toFixed(0)} km/h` : '';
-
-	const sendRequest = async (): Promise<void> => {
-		if (!email.trim() || sending) return;
-		sending = true;
-		sentMsg = '';
-		const res = await social.sendRequest(email.trim());
-		sending = false;
-		if (res.ok) {
-			email = '';
-			sentMsg = res.message;
-		}
-	};
 
 	const openFriendTrip = (t: Trip, name: string): void => {
 		try {
@@ -147,91 +131,15 @@
 			</div>
 		{/if}
 
-		<!-- add friend -->
-		<div
-			class="section-card"
-			style="background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md);"
-		>
-			<span class="section-label">ADD A RIDING BUDDY</span>
-			<form
-				class="flex gap-1.5"
-				onsubmit={(e) => {
-					e.preventDefault();
-					void sendRequest();
-				}}
-			>
-				<input
-					type="email"
-					required
-					placeholder="buddy@gmail.com"
-					autocomplete="email"
-					bind:value={email}
-					aria-label="Friend's Google email"
-					class="buddy-input min-w-0 flex-1"
-					style="background: var(--surface-sunken); color: var(--text-primary); box-shadow: inset 0 0 0 1px var(--line);"
-				/>
-				<PrimaryButton label={sending ? '…' : 'Add'} type="submit" />
-			</form>
-			{#if social.lastError}
-				<div class="mt-2"><ErrorNotice message={social.lastError} /></div>
-			{/if}
-			{#if sentMsg}
-				<p class="m-0 mt-2 text-[0.78rem] font-bold" style="color: var(--state-live); font-weight: 700;" role="status">{sentMsg}</p>
-			{/if}
-			{#if social.outgoing.length > 0}
-				<p class="m-0 mt-2" style="font: var(--type-label); color: var(--text-secondary);">
-					Waiting on: {social.outgoing.map((o) => friendName(o)).join(', ')}
-				</p>
-			{/if}
-		</div>
-
-		<!-- incoming requests -->
+		<!-- pending requests live on /activity -->
 		{#if social.incoming.length > 0}
-			<div
-				class="section-card"
-				style="background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md);"
-			>
-				<span class="section-label" style="color: var(--state-caution);">
-					REQUESTS · {social.incoming.length}
-				</span>
-				<div class="stack">
-					{#each social.incoming as req (req.id)}
-						<ListRow title={friendName(req)}>
-							{#snippet avatar()}
-								{#if req.avatar_url}
-									<img
-										src={req.avatar_url}
-										alt=""
-										width="32"
-										height="32"
-										class="avatar-32"
-										referrerpolicy="no-referrer"
-									/>
-								{/if}
-							{/snippet}
-							{#snippet trailing()}
-								<span class="request-actions">
-									<SecondaryButton
-										label="Accept"
-										ariaLabel="Accept {friendName(req)}"
-										title="Accept {friendName(req)}"
-										onclick={() => social.respond(req.id, true)}
-									/>
-									<button
-										type="button"
-										class="icon-btn"
-										style="border: 1px solid var(--line); color: var(--text-secondary);"
-										aria-label="Decline {friendName(req)}"
-										onclick={() => social.respond(req.id, false)}
-									>
-										<Mark name="x" cls="size-3" />
-									</button>
-								</span>
-							{/snippet}
-						</ListRow>
-					{/each}
-				</div>
-			</div>
+			<ListRow
+				href="/activity"
+				title="{fmtCount(social.incoming.length)} friend {social.incoming.length === 1
+					? 'request'
+					: 'requests'} waiting"
+				meta="Review on Activity"
+			/>
 		{/if}
 
 		<!-- friends list -->

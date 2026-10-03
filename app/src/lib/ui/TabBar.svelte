@@ -18,6 +18,7 @@
 		>
 			<span class="tab-label">{tab.label}{#if badge > 0}<span
 						class="tab-badge"
+						role="status"
 						aria-label="{badge} activity updates"
 					>{badge > 9 ? '9+' : badge}</span
 				>{/if}</span>
