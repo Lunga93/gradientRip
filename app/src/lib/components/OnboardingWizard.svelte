@@ -237,7 +237,7 @@
 					>
 						<span class="wordmark">GradientRip</span>
 					</h1>
-					<p class="font-mono2 m-0" style="font-size: 0.68rem; letter-spacing: 0.14em; color: var(--ink-2); line-height: 1.5;">
+					<p class="font-mono2 m-0" style="font-size: 0.68rem; letter-spacing: 0.14em; color: var(--text-tertiary); line-height: 1.5;">
 						STEP {step} OF 3 — {stepLabel}
 					</p>
 				</div>
@@ -280,9 +280,9 @@
 						<ModePicker variant="onboard" />
 					</div>
 
-					<div class="anim-slide-up chamfer-card w-full" style="animation-delay: 0.18s;">
+					<div class="anim-slide-up w-full" style="animation-delay: 0.18s; background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md);">
 						<div class="flex items-center justify-between gap-2 px-4 py-3" style="border-bottom: 1px solid var(--panel-line);">
-							<span class="font-mono2" style="font-size: 0.62rem; letter-spacing: 0.14em; color: var(--ink-2);"
+							<span class="font-mono2" style="font-size: 0.62rem; letter-spacing: 0.14em; color: var(--text-tertiary);"
 								>BOARD CONFIGURATION</span
 							>
 							<span class="font-mono2 truncate" style="font-size: 0.6rem; letter-spacing: 0.1em; color: var(--color-primary);">{presetLabel.toUpperCase()}</span>
@@ -290,7 +290,7 @@
 						<div class="flex flex-col gap-2.5 px-4 py-3">
 							{#each spec as cfg (cfg.l)}
 								<div class="flex items-center gap-2.5">
-									<span class="font-mono2 w-24 shrink-0" style="font-size: 0.62rem; letter-spacing: 0.08em; color: var(--ink-2);">{cfg.l}</span>
+									<span class="font-mono2 w-24 shrink-0" style="font-size: 0.62rem; letter-spacing: 0.08em; color: var(--text-tertiary);">{cfg.l}</span>
 									<div class="h-[3px] flex-1" style="background: var(--panel-line); border-radius: 2px;">
 										<div
 											style="width: {Math.min(100, Math.max(4, cfg.pct * 100))}%; height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--color-primary), var(--color-accent)); box-shadow: 0 0 6px var(--brand-glow);"
@@ -358,7 +358,7 @@
 							<p class="mt-1.5 text-[0.75rem] text-error" role="alert">{homeError}</p>
 						{/if}
 						{#if home}
-							<p class="mt-1.5 text-[0.75rem]" style="color: var(--ink-2);">
+							<p class="mt-1.5 text-[0.75rem]" style="color: var(--text-tertiary);">
 								Home base: {home.label}
 							</p>
 						{/if}
@@ -383,7 +383,7 @@
 				<button
 					type="button"
 					class="font-mono2"
-					style="font-size: 0.68rem; letter-spacing: 0.12em; color: var(--ink-2); background: transparent; border: none; cursor: pointer;"
+					style="font-size: 0.68rem; letter-spacing: 0.12em; color: var(--text-tertiary); background: transparent; border: none; cursor: pointer;"
 					onclick={finish}
 				>
 					SKIP FOR NOW

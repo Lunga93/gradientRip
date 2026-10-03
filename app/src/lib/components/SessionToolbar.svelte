@@ -42,7 +42,9 @@
 
 {#if session.drawMode}
 	<div class="draw-toolbar" role="status" aria-live="polite">
-		<span class="verdict-tag" style="--vt: var(--color-primary);">
+		<span
+			style="display: inline-flex; align-items: center; padding: 0.375rem 0.75rem; border-radius: 999px; background: color-mix(in srgb, var(--color-primary) 16%, transparent); border: 1px solid var(--line); color: var(--color-primary); font: var(--type-label);"
+		>
 			{#if session.drawPoints.length === 1}1 point{:else}{session.drawPoints.length} points{/if}
 		</span>
 		<span class="hidden text-[0.78rem] sm:inline" style="color: var(--text-tertiary);">Tap the map to trace your route</span>
@@ -75,7 +77,7 @@
 			</span>
 		</div>
 	</div>
-	<div class="hud-band clip-chamfer-tr fixed top-16 left-4 z-20 flex-col md:left-[424px]" aria-label="Recording stats">
+	<div class="hud-band fixed top-16 left-4 z-20 flex-col md:left-[424px]" aria-label="Recording stats">
 		<div class="hud-cell hud-cell-left px-4 py-2.5">
 			<span class="k">DISTANCE</span>
 			<span class="v" style="color: var(--text-primary); font-size: 1.1rem;">{session.recordKm.toFixed(2)}<small>km</small></span>
@@ -104,7 +106,7 @@
 
 {#if session.trackingActive}
 	<div
-		class="hud-band clip-chamfer-bl fixed top-4 left-1/2 z-20 max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-x-auto md:left-[calc(50%+206px)]"
+		class="hud-band fixed top-4 left-1/2 z-20 max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-x-auto md:left-[calc(50%+206px)]"
 		role="status"
 		aria-live="polite"
 		aria-label="Live ride stats"

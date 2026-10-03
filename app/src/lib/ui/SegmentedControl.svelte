@@ -5,7 +5,7 @@
 		segments,
 		current
 	}: {
-		segments: { label: string; href: string }[];
+		segments: { label: string; href: '/explore/routes' | '/explore/crews' | '/explore/events' }[];
 		current: string;
 	} = $props();
 </script>

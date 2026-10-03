@@ -2,7 +2,7 @@
 export interface Tab {
 	key: 'home' | 'map' | 'explore' | 'activity' | 'me';
 	label: string;
-	href: string;
+	href: '/home' | '/map' | '/explore' | '/activity' | '/me';
 }
 
 export const TABS: Tab[] = [

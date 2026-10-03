@@ -6,7 +6,7 @@
 		title,
 		backHref,
 		action
-	}: { title: string; backHref?: string; action?: Snippet } = $props();
+	}: { title: string; backHref?: '/explore/routes' | '/explore/crews' | '/explore/events' | '/map' | '/me'; action?: Snippet } = $props();
 </script>
 
 <header class="screen-header">

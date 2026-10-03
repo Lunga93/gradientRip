@@ -78,8 +78,8 @@
 	// Live ownership (single owner): pins (/map), counts (/activity) and
 	// status (/me/friends) consume live state simultaneously — starting here
 	// avoids start/stop thrash on tab switches. Mirrors the legacy friends
-	// logic (probeMe on mount above + start/stop here), without the
-	// activeTab gate.
+	// logic (probeMe on mount above + start/stop here), without gating on
+	// the selected tab.
 	$effect(() => {
 		if (social.signedIn) {
 			social.startLive();

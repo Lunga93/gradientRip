@@ -28,7 +28,7 @@
 		going_count: number;
 	}
 
-	const SEGMENTS = [
+	const SEGMENTS: { label: string; href: '/explore/routes' | '/explore/crews' | '/explore/events' }[] = [
 		{ label: 'Routes', href: '/explore/routes' },
 		{ label: 'Crews', href: '/explore/crews' },
 		{ label: 'Events', href: '/explore/events' }

@@ -91,13 +91,13 @@ export const profileSVG = (
 	let lastD = 0;
 	for (let d = 0; d <= totalDist; d += distStep) {
 		const xi = x(d);
-		xGrid += `<line x1="${xi.toFixed(1)}" y1="${baseY}" x2="${xi.toFixed(1)}" y2="${baseY + 6}" stroke="var(--ink-3)" stroke-width="1.5"/>`;
+		xGrid += `<line x1="${xi.toFixed(1)}" y1="${baseY}" x2="${xi.toFixed(1)}" y2="${baseY + 6}" stroke="var(--line)" stroke-width="1.5"/>`;
 		xTicks.push({ pct: (xi / W) * 100, label: d === 0 ? '0' : `${(d / 1000).toFixed(1)} km` });
 		lastD = d;
 	}
 	if (lastD === 0 || totalDist - lastD > distStep * 0.4) {
 		const xi = x(totalDist);
-		xGrid += `<line x1="${xi.toFixed(1)}" y1="${baseY}" x2="${xi.toFixed(1)}" y2="${baseY + 6}" stroke="var(--ink-3)" stroke-width="1.5"/>`;
+		xGrid += `<line x1="${xi.toFixed(1)}" y1="${baseY}" x2="${xi.toFixed(1)}" y2="${baseY + 6}" stroke="var(--line)" stroke-width="1.5"/>`;
 		xTicks.push({ pct: (xi / W) * 100, label: `${(totalDist / 1000).toFixed(1)} km` });
 	}
 
@@ -107,7 +107,7 @@ export const profileSVG = (
 	const tickStart = minE >= 0 ? 0 : Math.ceil(lo / elevStep) * elevStep;
 	for (let e = tickStart; e <= hi; e += elevStep) {
 		const yi = y(e);
-		yGrid += `<line x1="0" y1="${yi.toFixed(1)}" x2="${W}" y2="${yi.toFixed(1)}" stroke="var(--ink-3)" stroke-width="1.5" opacity="0.5"/>`;
+		yGrid += `<line x1="0" y1="${yi.toFixed(1)}" x2="${W}" y2="${yi.toFixed(1)}" stroke="var(--line)" stroke-width="1.5" opacity="0.5"/>`;
 		yTicks.push({ pct: (yi / H) * 100, label: `${Math.round(e)} m` });
 	}
 

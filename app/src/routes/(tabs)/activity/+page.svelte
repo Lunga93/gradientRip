@@ -161,7 +161,7 @@
 			style="background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md);"
 		>
 			<span class="section-label">
-				NOTIFICATIONS{#if feed.unread > 0} · {feed.unread} UNREAD{/if}
+				NOTIFICATIONS{#if feed.unread > 0}&nbsp;&middot;&nbsp;{feed.unread} UNREAD{/if}
 			</span>
 			{#if feed.notifications.length === 0}
 				<p class="m-0" style="font: var(--type-body); color: var(--text-secondary);">

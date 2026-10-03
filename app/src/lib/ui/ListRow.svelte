@@ -13,7 +13,7 @@
 		meta?: string;
 		avatar?: Snippet;
 		trailing?: Snippet;
-		href?: string;
+		href?: '/me/rides' | '/me/friends' | '/activity';
 	} = $props();
 </script>
 

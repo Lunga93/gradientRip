@@ -1,11 +1,13 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/svelte';
+import { createRawSnippet } from 'svelte';
 import EmptyState from './EmptyState.svelte';
 import StateBadge from './StateBadge.svelte';
 import ErrorNotice from './ErrorNotice.svelte';
 import PrimaryButton from './PrimaryButton.svelte';
 import SecondaryButton from './SecondaryButton.svelte';
+import FeedItem from './FeedItem.svelte';
 
 describe('EmptyState', () => {
 	it('renders title, body and action, and fires onAction', async () => {
@@ -50,5 +52,36 @@ describe('Buttons', () => {
 	it('renders secondary button with submit type', () => {
 		render(SecondaryButton, { props: { label: 'Cancel', type: 'submit' } });
 		expect(screen.getByRole('button', { name: 'Cancel' }).getAttribute('type')).toBe('submit');
+	});
+});
+
+describe('FeedItem', () => {
+	it('renders header, body and actions slots', () => {
+		render(FeedItem, {
+			props: {
+				header: createRawSnippet(() => ({ render: () => '<span>Feed header</span>' })),
+				body: createRawSnippet(() => ({ render: () => '<p>Feed body</p>' })),
+				actions: createRawSnippet(() => ({ render: () => '<button>Kudos</button>' }))
+			}
+		});
+		expect(screen.getByText('Feed header')).toBeTruthy();
+		expect(screen.getByText('Feed body')).toBeTruthy();
+		expect(screen.getByRole('button', { name: 'Kudos' })).toBeTruthy();
+	});
+
+	it('composes nested Phase-B-style content in the body slot', () => {
+		render(FeedItem, {
+			props: {
+				header: createRawSnippet(() => ({ render: () => '<span>H</span>' })),
+				body: createRawSnippet(() => ({
+					render: () =>
+						'<div><p>Sunrise Loop <strong>12 riders</strong></p><span>GOING</span></div>'
+				})),
+				actions: createRawSnippet(() => ({ render: () => '<span>A</span>' }))
+			}
+		});
+		expect(screen.getByText('Sunrise Loop')).toBeTruthy();
+		expect(screen.getByText('12 riders')).toBeTruthy();
+		expect(screen.getByText('GOING')).toBeTruthy();
 	});
 });
