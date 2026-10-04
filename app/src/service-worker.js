@@ -1,3 +1,7 @@
+// Gradient — service worker (SvelteKit build).
+// Rule (see ../SPEC.md "Constraints"): tiles and elevation cache permanently
+// (terrain height doesn't change). Routing and geocoding responses must
+// NEVER be cached — a cached route can hide a closed road.
 
 /// <reference types="@sveltejs/kit" />
 /// <reference no-default-lib="true"/>
@@ -8,6 +12,8 @@ import { build, files, version } from '$service-worker';
 
 const self = /** @type {ServiceWorkerGlobalScope} */ (/** @type {unknown} */ (globalThis));
 
+// Unique cache name per deployment — replaces the legacy hand-bumped
+// 'gradient-static-v17' (SvelteKit invalidates via the version string).
 const STATIC_CACHE = `gradient-static-${version}`;
 const TERRAIN_CACHE = 'gradient-terrain-v1';
 
@@ -34,6 +40,9 @@ self.addEventListener('activate', (event) => {
 });
 
 const isNeverCache = (url) => {
+	// Our own /api/autocomplete endpoint (it proxies Photon) plus the
+	// direct provider hosts — always go to network when used. Remote
+	// functions (plan/geo) are POSTs and bypass via the method check below.
 	if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) return true;
 	return (
 		url.hostname.includes('nominatim.openstreetmap.org') ||
@@ -44,6 +53,7 @@ const isNeverCache = (url) => {
 }
 
 const isTerrain = (url) => {
+	// Map tiles and elevation — safe to cache forever.
 	return (
 		url.hostname.includes('tile.openstreetmap.org') ||
 		url.hostname.includes('api.open-meteo.com')
@@ -73,6 +83,12 @@ self.addEventListener('fetch', (event) => {
 		return;
 	}
 
+	// App shell: network-first so edits during development (and future
+	// deploys) show up immediately, falling back to cache only when offline.
+	// Only cache successful responses — never persist error pages.
+	// Navigations fall back to the cached /home shell: '/' is a 307 redirect
+	// (never cached since only resp.ok is stored), so it can never serve an
+	// offline cold-open to a deep link.
 	event.respondWith(
 		fetch(event.request)
 			.then((resp) => {
@@ -86,7 +102,7 @@ self.addEventListener('fetch', (event) => {
 				const cached = await caches.match(event.request);
 				if (cached) return cached;
 				if (event.request.mode === 'navigate') {
-					const shell = await caches.match('/');
+					const shell = await caches.match('/home');
 					if (shell) return shell;
 				}
 				throw new Error('offline');

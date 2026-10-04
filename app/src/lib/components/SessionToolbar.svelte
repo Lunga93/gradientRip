@@ -43,7 +43,7 @@
 {#if session.drawMode}
 	<div class="draw-toolbar" role="status" aria-live="polite">
 		<span
-			style="display: inline-flex; align-items: center; padding: 0.375rem 0.75rem; border-radius: 999px; background: color-mix(in srgb, var(--color-primary) 16%, transparent); border: 1px solid var(--line); color: var(--color-primary); font: var(--type-label);"
+			style="display: inline-flex; align-items: center; padding: 0.375rem 0.75rem; border-radius: 999px; background: var(--surface-sunken); border: 1px solid var(--line); color: var(--color-primary); font: var(--type-label);"
 		>
 			{#if session.drawPoints.length === 1}1 point{:else}{session.drawPoints.length} points{/if}
 		</span>

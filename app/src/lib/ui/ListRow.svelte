@@ -13,7 +13,7 @@
 		meta?: string;
 		avatar?: Snippet;
 		trailing?: Snippet;
-		href?: '/me/rides' | '/me/friends' | '/activity';
+		href?: string;
 	} = $props();
 </script>
 
@@ -33,7 +33,7 @@
 {/snippet}
 
 {#if href}
-	<a class="list-row" href={resolve(href)}>{@render rowInner()}</a>
+	<a class="list-row" href={resolve(href as '/home')}>{@render rowInner()}</a>
 {:else}
 	<div class="list-row">{@render rowInner()}</div>
 {/if}

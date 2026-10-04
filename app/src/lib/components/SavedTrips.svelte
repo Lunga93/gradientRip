@@ -147,7 +147,7 @@
 				</span>
 				<span
 					class="font-mono2 shrink-0 rounded-full px-2 py-1"
-					style="font: var(--type-label); background: color-mix(in srgb, {vc} 16%, transparent); color: {vc};"
+					style="font: var(--type-label); background: var(--surface-sunken); color: {vc};"
 				>
 					{verdictLabel(level)}
 				</span>

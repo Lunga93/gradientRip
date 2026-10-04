@@ -115,7 +115,7 @@
 			</span>
 			<span
 				class="font-mono2 rounded-full px-2 py-1"
-				style="font-size: 0.62rem; font-weight: 700; background: color-mix(in srgb, {vc} 16%, transparent); color: {vc};"
+				style="font-size: 0.62rem; font-weight: 700; background: var(--surface-sunken); color: {vc};"
 			>
 				{fitLabel}
 			</span>

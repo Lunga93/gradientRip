@@ -28,7 +28,7 @@
 		>
 			<span
 				class="font-display signin-badge"
-				style="background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent);"
+				style="background: var(--surface-sunken); color: var(--accent);"
 				aria-hidden="true"
 			>
 				G
@@ -102,7 +102,7 @@
 				class="net-badge"
 				style="color: {ui.netOnline
 					? 'var(--state-live)'
-					: 'var(--state-caution)'}; background: color-mix(in srgb, currentcolor 12%, transparent);"
+					: 'var(--state-caution)'}; background: var(--surface-sunken);"
 				title={ui.netOnline ? 'Connected' : 'Offline — saved trips still open.'}
 			>
 				<i aria-hidden="true"></i>

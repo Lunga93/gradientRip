@@ -28,12 +28,9 @@
 
 /* ─── Light theme tokens ──────────────────────────────────────────── */
 :root {
-	--brand-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-	--brand-gradient-hover: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
 	--brand-glow: rgba(37, 99, 235, 0.4);
 	--app-bg: #dbeafe;
 	--panel-bg: #f8faff;
-	--panel-edge: #c7d2fe;
 	--panel-soft: #f0f2f5;
 	--panel-line: rgba(15, 23, 42, 0.09);
 	--v-fly: #2563eb;
@@ -52,8 +49,6 @@
 	--band-work: #65a30d;
 	--band-hard: #ea580c;
 	--band-limit: #dc2626;
-	--profile-line: #0f172a;
-	--trail-accent: #0891b2;
 }
 
 [data-theme="dark"] {
@@ -78,12 +73,9 @@
 	--color-base-300: #1e293b;
 	--color-base-content: #f1f5f9;
 
-	--brand-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-	--brand-gradient-hover: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
 	--brand-glow: rgba(96, 165, 250, 0.5);
 	--app-bg: #020617;
 	--panel-bg: #0e0e1c;
-	--panel-edge: #1e3a5f;
 	--panel-soft: #1a1a2e;
 	--panel-line: rgba(255, 255, 255, 0.09);
 	--v-fly: #93c5fd;
@@ -102,8 +94,6 @@
 	--band-work: #a3e635;
 	--band-hard: #fb923c;
 	--band-limit: #f87171;
-	--profile-line: #f1f5f9;
-	--trail-accent: #22d3ee;
 }
 
 /* ─── base ────────────────────────────────────────────────────────────── */
@@ -117,8 +107,6 @@ body {
 	padding: 0;
 	height: 100%;
 	background: var(--app-bg);
-	--font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Inter',
-		'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	--font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter',
 		'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	--font-mono: 'SF Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;

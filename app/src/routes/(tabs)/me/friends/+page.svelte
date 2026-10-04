@@ -75,7 +75,7 @@
 		>
 			<span
 				class="font-display signin-badge"
-				style="background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent);"
+				style="background: var(--surface-sunken); color: var(--accent);"
 				aria-hidden="true"
 			>
 				G
@@ -120,7 +120,7 @@
 							{#snippet trailing()}
 								<span
 									class="font-mono2 live-pill"
-									style="background: color-mix(in srgb, var(--state-live) 16%, transparent); color: var(--state-live);"
+									style="background: var(--surface-sunken); color: var(--state-live);"
 								>
 									LIVE
 								</span>

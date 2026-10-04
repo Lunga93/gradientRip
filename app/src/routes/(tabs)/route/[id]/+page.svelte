@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import ScreenHeader from '$lib/ui/ScreenHeader.svelte';
 	import PrimaryButton from '$lib/ui/PrimaryButton.svelte';
 	import Skeleton from '$lib/ui/Skeleton.svelte';
 	import ErrorNotice from '$lib/ui/ErrorNotice.svelte';
+	import EmptyState from '$lib/ui/EmptyState.svelte';
 	import StateBadge from '$lib/ui/StateBadge.svelte';
 	import { verdictColor, verdictLabel } from '$lib/verdictTheme.js';
 
@@ -23,16 +26,16 @@
 
 	const id = $derived(page.params.id ?? '');
 
-	let routes = $state<ExploreRoute[]>([]);
+	let route = $state<ExploreRoute | null>(null);
 	let loading = $state(true);
 	let loadError = $state('');
+	let notFound = $state(false);
 
 	let saving = $state(false);
 	let saved = $state(false);
 	let serverSaves = $state<number | null>(null);
 	let saveError = $state('');
 
-	const route = $derived(routes.find((r) => r.id === id) ?? null);
 	const saves = $derived(serverSaves ?? route?.saves ?? 0);
 
 	const fitTone = (fit: ExploreRoute['fit']): 'accent' | 'go' | 'caution' | 'stop' | 'neutral' => {
@@ -48,13 +51,19 @@
 	const load = async (): Promise<void> => {
 		loading = true;
 		loadError = '';
+		notFound = false;
 		try {
-			const res = await fetch('/api/routes/explore');
+			const res = await fetch(`/api/routes/${encodeURIComponent(id)}`);
+			if (res.status === 404) {
+				route = null;
+				notFound = true;
+				return;
+			}
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			const data = (await res.json()) as { routes: ExploreRoute[] };
-			routes = data.routes;
+			route = (await res.json()) as ExploreRoute;
 		} catch {
-			loadError = 'Could not load community routes — check your connection.';
+			route = null;
+			loadError = 'Could not load this route — check your connection.';
 		} finally {
 			loading = false;
 		}
@@ -87,12 +96,17 @@
 
 <ScreenHeader title="Route" backHref="/explore/routes" />
 <div class="detail-body">
-	{#if loading && !route}
+	{#if loading && !route && !notFound}
 		<Skeleton lines={3} />
 	{:else if loadError && !route}
 		<ErrorNotice message={loadError} onRetry={() => void load()} />
-	{:else if !route}
-		<ErrorNotice message="Route not found." onRetry={() => void load()} />
+	{:else if notFound || !route}
+		<EmptyState
+			title="Route not found"
+			body="This route may have been removed or is private."
+			actionLabel="Back to routes"
+			onAction={() => void goto(resolve('/explore/routes'))}
+		/>
 	{:else}
 		<div
 			class="detail-card"

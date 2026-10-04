@@ -126,7 +126,7 @@
 		>
 			<span
 				class="font-display signin-badge"
-				style="background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent);"
+				style="background: var(--surface-sunken); color: var(--accent);"
 				aria-hidden="true"
 			>
 				G

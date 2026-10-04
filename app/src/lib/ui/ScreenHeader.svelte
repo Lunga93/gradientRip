@@ -6,12 +6,12 @@
 		title,
 		backHref,
 		action
-	}: { title: string; backHref?: '/explore/routes' | '/explore/crews' | '/explore/events' | '/map' | '/me'; action?: Snippet } = $props();
+	}: { title: string; backHref?: string; action?: Snippet } = $props();
 </script>
 
 <header class="screen-header">
 	{#if backHref}
-		<a class="back" href={resolve(backHref)} aria-label="Back"><span aria-hidden="true">←</span></a>
+		<a class="back" href={resolve(backHref as '/home')} aria-label="Back"><span aria-hidden="true">←</span></a>
 	{/if}
 	<h1 class="title">{title}</h1>
 	{#if action}
