@@ -40,15 +40,22 @@ CREATE TABLE IF NOT EXISTS post_kudos (
 	PRIMARY KEY (post_id, user_id)
 );
 
--- kudos bump trigger (byte-mirror of bump_route_kudos, counting on posts.kudos directly)
+-- kudos bump trigger (byte-mirror of bump_route_kudos, counting on posts.kudos directly,
+-- plus a DELETE branch so unkudos/admin cleanup cannot leave the counter inflated; floor at 0)
 CREATE OR REPLACE FUNCTION bump_post_kudos() RETURNS trigger AS $$
 BEGIN
-	UPDATE posts SET kudos = kudos + 1 WHERE id = NEW.post_id;
-	RETURN NEW;
+	IF TG_OP = 'INSERT' THEN
+		UPDATE posts SET kudos = kudos + 1 WHERE id = NEW.post_id;
+		RETURN NEW;
+	ELSIF TG_OP = 'DELETE' THEN
+		UPDATE posts SET kudos = GREATEST(kudos - 1, 0) WHERE id = OLD.post_id;
+		RETURN OLD;
+	END IF;
+	RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 DROP TRIGGER IF EXISTS trg_post_kudos_bump ON post_kudos;
-CREATE TRIGGER trg_post_kudos_bump AFTER INSERT ON post_kudos FOR EACH ROW EXECUTE FUNCTION bump_post_kudos();
+CREATE TRIGGER trg_post_kudos_bump AFTER INSERT OR DELETE ON post_kudos FOR EACH ROW EXECUTE FUNCTION bump_post_kudos();
 
 -- transcode_jobs (spec §5 verbatim)
 CREATE TABLE IF NOT EXISTS transcode_jobs (
@@ -68,7 +75,7 @@ ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY posts_read ON posts FOR SELECT TO PUBLIC USING (
 	visibility = 'public' OR author = current_user_id() OR (visibility = 'friends' AND is_friend(author))
 );
-CREATE POLICY posts_self_write ON posts FOR ALL TO PUBLIC USING (author = current_user_id());
+CREATE POLICY posts_self_write ON posts FOR ALL TO PUBLIC USING (author = current_user_id()) WITH CHECK (author = current_user_id());
 
 -- Extend comment/report/notification kinds to accept 'post' (constraints exist per social-v1)
 ALTER TABLE comments DROP CONSTRAINT IF EXISTS comments_feed_kind_check;
