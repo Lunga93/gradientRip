@@ -40,7 +40,7 @@
 	let sharedId = $state<string | null>(null);
 	let rsvpBusy = $state<string | null>(null);
 	let rsvpDone = $state<Record<string, boolean>>({});
-	let rsvpError = $state('');
+	let rsvpErrors = $state<Record<string, string>>({});
 
 	const detailHref = (entry: HomeFeedEntry): `/route/${string}` | `/event/${string}` | null => {
 		if (entry.kind === 'route') return `/route/${entry.id}`;
@@ -140,7 +140,7 @@
 	const shareEntry = async (entry: HomeFeedEntry): Promise<void> => {
 		const href = detailHref(entry);
 		if (!href) return;
-		const url = `${location.origin}${href}`;
+		const url = new URL(resolve(href), location.origin).href;
 		try {
 			if (navigator.share) {
 				await navigator.share({ title: entry.title, url });
@@ -159,7 +159,7 @@
 	const rsvpGoing = async (entry: HomeFeedEntry): Promise<void> => {
 		if (rsvpBusy || rsvpDone[entry.id]) return;
 		rsvpBusy = entry.id;
-		rsvpError = '';
+		rsvpErrors = { ...rsvpErrors, [entry.id]: '' };
 		try {
 			const res = await fetch(`/api/events/${encodeURIComponent(entry.id)}/rsvp`, {
 				method: 'POST',
@@ -168,13 +168,20 @@
 			});
 			const data = (await res.json().catch(() => ({}))) as { message?: string };
 			if (!res.ok) {
-				rsvpError = typeof data.message === 'string' ? data.message : 'Could not save your RSVP.';
+				rsvpErrors = {
+					...rsvpErrors,
+					[entry.id]:
+						typeof data.message === 'string' ? data.message : 'Could not save your RSVP.'
+				};
 				return;
 			}
 			rsvpDone = { ...rsvpDone, [entry.id]: true };
 			entry.going_count += 1;
 		} catch {
-			rsvpError = 'Could not save your RSVP — check your connection.';
+			rsvpErrors = {
+				...rsvpErrors,
+				[entry.id]: 'Could not save your RSVP — check your connection.'
+			};
 		} finally {
 			rsvpBusy = null;
 		}
@@ -216,7 +223,32 @@
 	{:else}
 		{#each entries as entry (entry.kind + entry.id)}
 			{@const href = detailHref(entry)}
-			<FeedItem>
+			{#snippet entryActions()}
+				{#if entry.kind === 'route'}
+					<SecondaryButton
+						label="♥ {fmtCount(entry.kudos)}"
+						ariaLabel="Give kudos to {entry.title}"
+						title="Give kudos to {entry.title}"
+						disabled={kudosBusy === entry.id}
+						onclick={() => void giveKudos(entry)}
+					/>
+				{/if}
+				{#if href}
+					<SecondaryButton
+						label="Share"
+						ariaLabel="Share {entry.title}"
+						title="Share {entry.title}"
+						onclick={() => void shareEntry(entry)}
+					/>
+				{/if}
+				{#if sharedId === entry.id}
+					<span class="feed-note" role="status">Link copied</span>
+				{/if}
+				{#if actionError}
+					<span class="feed-note">{actionError}</span>
+				{/if}
+			{/snippet}
+			<FeedItem actions={entry.kind !== 'activity' ? entryActions : undefined}>
 				{#snippet header()}
 					{#if entry.author_avatar}
 						<img
@@ -252,50 +284,23 @@
 							{eventWhen(entry.start_at)} · {entry.going_count} going
 						</p>
 						<span class="feed-rsvp">
-							<SecondaryButton
-								label={rsvpDone[entry.id] ? 'Going ✓' : rsvpBusy === entry.id ? '…' : 'Going'}
-								ariaLabel="RSVP going to {entry.title}"
-								title="RSVP going to {entry.title}"
-								disabled={rsvpDone[entry.id] === true}
-								onclick={() => void rsvpGoing(entry)}
-							/>
+							{#if rsvpDone[entry.id] && href}
+								<a class="feed-rsvp-link" href={resolve(href)}>Going ✓</a>
+							{:else}
+								<SecondaryButton
+									label={rsvpBusy === entry.id ? '…' : 'Going'}
+									ariaLabel="RSVP going to {entry.title}"
+									title="RSVP going to {entry.title}"
+									disabled={rsvpBusy === entry.id}
+									onclick={() => void rsvpGoing(entry)}
+								/>
+							{/if}
 						</span>
-						{#if rsvpError && rsvpBusy === null}
-							<span class="feed-note">{rsvpError}</span>
+						{#if rsvpErrors[entry.id]}
+							<span class="feed-note">{rsvpErrors[entry.id]}</span>
 						{/if}
 					{:else}
 						<p class="feed-meta">Activity update</p>
-					{/if}
-				{/snippet}
-				{#snippet actions()}
-					{#if entry.kind === 'route'}
-						<SecondaryButton
-							label="♥ {fmtCount(entry.kudos)}"
-							ariaLabel="Give kudos to {entry.title}"
-							title="Give kudos to {entry.title}"
-							disabled={kudosBusy === entry.id}
-							onclick={() => void giveKudos(entry)}
-						/>
-					{/if}
-					{#if href}
-						<SecondaryButton
-							label="Comment"
-							ariaLabel="Comment on {entry.title}"
-							title="Comment on {entry.title}"
-							onclick={() => goto(resolve(href))}
-						/>
-						<SecondaryButton
-							label="Share"
-							ariaLabel="Share {entry.title}"
-							title="Share {entry.title}"
-							onclick={() => void shareEntry(entry)}
-						/>
-					{/if}
-					{#if sharedId === entry.id}
-						<span class="feed-note" role="status">Link copied</span>
-					{/if}
-					{#if actionError}
-						<span class="feed-note">{actionError}</span>
 					{/if}
 				{/snippet}
 			</FeedItem>
@@ -353,6 +358,12 @@
 		text-decoration: none;
 	}
 
+	a.feed-title {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+	}
+
 	a.feed-title:hover {
 		text-decoration: underline;
 	}
@@ -381,6 +392,27 @@
 	.feed-rsvp {
 		display: inline-block;
 		margin-top: 0.5rem;
+	}
+
+	.feed-rsvp-link {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 44px;
+		min-height: 44px;
+		padding: 0.625rem 1.25rem;
+		border: 1px solid var(--line-strong);
+		border-radius: var(--radius-md);
+		background: var(--surface-raised);
+		color: var(--text-primary);
+		font: var(--type-body-strong);
+		letter-spacing: 0.02em;
+		text-decoration: none;
+	}
+
+	.feed-rsvp-link:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 
 	.feed-note {

@@ -12,14 +12,16 @@
 	}: {
 		header: Snippet;
 		body: Snippet;
-		actions: Snippet;
+		actions?: Snippet;
 	} = $props();
 </script>
 
 <article class="feed-item">
 	<div class="feed-header">{@render header()}</div>
 	<div class="feed-body">{@render body()}</div>
-	<div class="feed-actions">{@render actions()}</div>
+	{#if actions}
+		<div class="feed-actions">{@render actions()}</div>
+	{/if}
 </article>
 
 <style>
@@ -54,10 +56,14 @@
 	}
 
 	.feed-actions :global(button) {
+		display: inline-flex;
+		align-items: center;
 		min-height: 44px;
 	}
 
 	.feed-actions :global(a) {
+		display: inline-flex;
+		align-items: center;
 		min-height: 44px;
 	}
 
