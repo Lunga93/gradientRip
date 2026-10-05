@@ -13,9 +13,10 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'node:crypto';
+import { env } from '$env/dynamic/private';
 
-const BUCKET = process.env.S3_BUCKET ?? 'gradientrip-media';
-const REGION = process.env.S3_REGION ?? 'us-east-1';
+const BUCKET = env.S3_BUCKET || process.env.S3_BUCKET || 'gradientrip-media';
+const REGION = env.S3_REGION || process.env.S3_REGION || 'us-east-1';
 
 export const PUT_EXPIRES_IN = 900;
 export const GET_EXPIRES_IN = 3600;
@@ -25,11 +26,11 @@ export const s3 = (): S3Client => {
 	if (!client) {
 		client = new S3Client({
 			region: REGION,
-			endpoint: process.env.S3_ENDPOINT,
+			endpoint: env.S3_ENDPOINT || process.env.S3_ENDPOINT,
 			forcePathStyle: true,
 			credentials: {
-				accessKeyId: process.env.S3_ACCESS_KEY ?? '',
-				secretAccessKey: process.env.S3_SECRET_KEY ?? ''
+				accessKeyId: env.S3_ACCESS_KEY || process.env.S3_ACCESS_KEY || '',
+				secretAccessKey: env.S3_SECRET_KEY || process.env.S3_SECRET_KEY || ''
 			}
 		});
 	}
