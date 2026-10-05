@@ -70,6 +70,11 @@ const errDetail = (e: unknown): string => {
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
+// Poster rule: keep the verbatim 1s seek for normal videos; sub-1s clips use their midpoint (always exists).
+export function posterSeekSeconds(duration: number): number {
+	return Math.min(1, duration / 2);
+}
+
 async function pollOnce(pool: Pool): Promise<string | null> {
 	const client = await pool.connect();
 	try {
@@ -242,6 +247,7 @@ async function processJob(pool: Pool, jobId: string): Promise<void> {
 		}
 
 		const t0 = Date.now();
+		const ss = posterSeekSeconds(duration);
 		try {
 			await execFileAsync('ffmpeg', [
 				'-y',
@@ -290,7 +296,7 @@ async function processJob(pool: Pool, jobId: string): Promise<void> {
 			await execFileAsync('ffmpeg', [
 				'-y',
 				'-ss',
-				'1',
+				String(ss),
 				'-i',
 				tmpIn,
 				'-vframes',
@@ -411,7 +417,12 @@ async function main(): Promise<void> {
 	console.log('[worker] stage=shutdown msg="exiting, no new poll"');
 }
 
-void main().catch((e: unknown) => {
-	console.error(`[worker] stage=failed error="${e instanceof Error ? e.message : String(e)}"`);
-	process.exit(1);
-});
+// Guarded so unit tests can import the pure helper above without booting the
+// poll loop (vitest sets VITEST / VITEST_WORKER_ID; the worker never does).
+const isTestEnv = process.env.VITEST === 'true' || Boolean(process.env.VITEST_WORKER_ID);
+if (!isTestEnv) {
+	void main().catch((e: unknown) => {
+		console.error(`[worker] stage=failed error="${e instanceof Error ? e.message : String(e)}"`);
+		process.exit(1);
+	});
+}
