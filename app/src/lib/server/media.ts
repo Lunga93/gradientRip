@@ -63,8 +63,19 @@ export const ensureBucket = async (): Promise<void> => {
 	try {
 		await s3().send(new HeadBucketCommand({ Bucket: BUCKET }));
 	} catch (e: unknown) {
-		if (statusOf(e) === 404 || nameOf(e) === 'NotFound') {
-			await s3().send(new CreateBucketCommand({ Bucket: BUCKET }));
+		if (statusOf(e) === 404 || nameOf(e) === 'NotFound' || nameOf(e) === 'NoSuchBucket') {
+			try {
+				await s3().send(new CreateBucketCommand({ Bucket: BUCKET }));
+			} catch (e2: unknown) {
+				const n = nameOf(e2);
+				if (
+					n === 'BucketAlreadyOwnedByYou' ||
+					n === 'BucketAlreadyExists' ||
+					statusOf(e2) === 409
+				)
+					return;
+				throw e2;
+			}
 			return;
 		}
 		throw e;
@@ -110,8 +121,16 @@ export const contentTypeForExt = (ext: string): string | null => {
 			return 'image/png';
 		case 'webp':
 			return 'image/webp';
+		case 'gif':
+			return 'image/gif';
+		case 'avif':
+			return 'image/avif';
 		case 'mp4':
 			return 'video/mp4';
+		case 'webm':
+			return 'video/webm';
+		case 'm4v':
+			return 'video/x-m4v';
 		case 'mov':
 			return 'video/quicktime';
 		default:
@@ -138,6 +157,7 @@ export const setContentType = async (key: string, contentType: string): Promise<
 };
 
 export const presignGet = async (key: string): Promise<string> => {
+	// Caller enforces ownership (see assertOwnedKey).
 	assertValidKey(key);
 	return getSignedUrl(s3(), new GetObjectCommand({ Bucket: BUCKET, Key: key }), {
 		expiresIn: GET_EXPIRES_IN
@@ -147,6 +167,7 @@ export const presignGet = async (key: string): Promise<string> => {
 export const headObject = async (
 	key: string
 ): Promise<{ bytes: number; contentType: string } | null> => {
+	// Caller enforces ownership (see assertOwnedKey).
 	assertValidKey(key);
 	try {
 		const out = await s3().send(new HeadObjectCommand({ Bucket: BUCKET, Key: key }));
@@ -163,6 +184,7 @@ export const headObject = async (
 };
 
 export const deleteObjects = async (keys: string[]): Promise<void> => {
+	// Caller enforces ownership (see assertOwnedKey).
 	if (keys.length === 0) return;
 	for (const key of keys) assertValidKey(key);
 	await s3().send(
