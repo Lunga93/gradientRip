@@ -22,3 +22,10 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/static ./static
 EXPOSE 3000
 CMD ["node", "build/index.js"]
+
+FROM base AS worker
+COPY package*.json ./
+RUN npm ci
+RUN apk add --no-cache ffmpeg
+COPY . .
+CMD ["npm", "run", "worker"]
