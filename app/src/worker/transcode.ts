@@ -15,6 +15,7 @@
 // terminal `failed` + post `failed`. SIGTERM/SIGINT finishes the current job
 // then exits (no new poll).
 import { execFile } from 'node:child_process';
+import { createReadStream } from 'node:fs';
 import { promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -181,17 +182,17 @@ async function probeDims(path: string): Promise<{ width: number; height: number 
 }
 
 async function putFile(key: string, path: string, contentType: string): Promise<number> {
-	const body = await fs.readFile(path);
+	const { size } = await fs.stat(path);
 	await s3().send(
 		new PutObjectCommand({
 			Bucket: BUCKET,
 			Key: key,
-			Body: body,
+			Body: createReadStream(path),
 			ContentType: contentType,
-			ContentLength: body.length
+			ContentLength: size
 		})
 	);
-	return body.length;
+	return size;
 }
 
 async function recordFailure(pool: Pool, job: JobDetail, message: string): Promise<void> {
@@ -223,10 +224,14 @@ async function recordDurationGate(pool: Pool, job: JobDetail, duration: number):
 	log(job.id, 'failed', `reason=duration_gate duration_s=${duration.toFixed(2)} error="${lastError}"`);
 }
 
-async function processJob(pool: Pool, jobId: string): Promise<void> {
+export async function processJob(pool: Pool, jobId: string): Promise<void> {
 	const job = await loadJob(pool, jobId);
 	if (!job) {
-		log(jobId, 'failed', 'job rows vanished after claim, skipping');
+		await pool.query(
+			`UPDATE transcode_jobs SET status='failed', last_error='post or source vanished', updated_at=now() WHERE id=$1`,
+			[jobId]
+		);
+		log(jobId, 'failed', 'post or source vanished');
 		return;
 	}
 	const prefix = `transcode-${job.id}`;
@@ -340,13 +345,13 @@ async function processJob(pool: Pool, jobId: string): Promise<void> {
 					job.post_id,
 					key720,
 					dims720?.width ?? null,
-					dims720?.height ?? 720,
+					dims720?.height ?? null,
 					duration,
 					bytes720,
 					base,
 					key480,
 					dims480?.width ?? null,
-					dims480?.height ?? 480,
+					dims480?.height ?? null,
 					bytes480,
 					base + 1,
 					keyPoster,
@@ -400,7 +405,8 @@ async function main(): Promise<void> {
 				jobId = await pollOnce(pool);
 			} catch (e) {
 				log(null, 'poll', `error="${errDetail(e)}"`);
-				await sleep(IDLE_SLEEP_MS);
+				const deadline = Date.now() + IDLE_SLEEP_MS;
+				while (!shuttingDown && Date.now() < deadline) await sleep(250);
 				continue;
 			}
 			if (!jobId) {
