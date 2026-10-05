@@ -9,7 +9,8 @@ import {
 	HeadObjectCommand,
 	DeleteObjectsCommand,
 	PutObjectCommand,
-	GetObjectCommand
+	GetObjectCommand,
+	CopyObjectCommand
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'node:crypto';
@@ -70,23 +71,70 @@ export const ensureBucket = async (): Promise<void> => {
 	}
 };
 
+// presignPut mints an UNSIGNED-payload PUT URL: ContentType/ContentLength are
+// deliberately NOT embedded in the PutObjectCommand signature. WHY: MinIO here
+// rejects PutBucketCors (501) and its preflight answers Allow-Origin +
+// Allow-Methods PUT but NO Allow-Headers, so a browser PUT carrying a
+// non-safelisted header like Content-Type fails preflight. The browser
+// (Task 5 composer) must send raw bytes with NO Content-Type header.
+// contentType/bytes params are still validated at mint time (cap checks live
+// in the upload-urls endpoint); they just aren't part of the SigV4 signature.
 export const presignPut = async (
 	key: string,
 	contentType: string,
 	bytes: number
 ): Promise<{ url: string; key: string; expiresIn: number }> => {
 	assertValidKey(key);
+	if (!contentType || typeof contentType !== 'string') throw new Error('contentType required');
+	if (!Number.isInteger(bytes) || bytes <= 0) throw new Error('bytes must be a positive integer');
 	const url = await getSignedUrl(
 		s3(),
 		new PutObjectCommand({
 			Bucket: BUCKET,
-			Key: key,
-			ContentType: contentType,
-			ContentLength: bytes
+			Key: key
 		}),
 		{ expiresIn: PUT_EXPIRES_IN }
 	);
 	return { url, key, expiresIn: PUT_EXPIRES_IN };
+};
+
+// Server-controlled ext -> content-type map. setContentType/post-create take
+// their type from here, never raw client input.
+export const contentTypeForExt = (ext: string): string | null => {
+	const e = ext.trim().replace(/^\.+/, '').toLowerCase();
+	switch (e) {
+		case 'jpg':
+		case 'jpeg':
+			return 'image/jpeg';
+		case 'png':
+			return 'image/png';
+		case 'webp':
+			return 'image/webp';
+		case 'mp4':
+			return 'video/mp4';
+		case 'mov':
+			return 'video/quicktime';
+		default:
+			return null;
+	}
+};
+
+// Post-upload fixup: the object was PUT header-less (no Content-Type, see
+// presignPut), so copy it onto itself with the validated type. contentType
+// must come from contentTypeForExt(), never directly from client input.
+// Task 4's post-create calls this after upload, then HEAD-verifies.
+export const setContentType = async (key: string, contentType: string): Promise<void> => {
+	assertValidKey(key);
+	if (!contentType || typeof contentType !== 'string') throw new Error('contentType required');
+	await s3().send(
+		new CopyObjectCommand({
+			Bucket: BUCKET,
+			CopySource: `${BUCKET}/${key}`,
+			Key: key,
+			MetadataDirective: 'REPLACE',
+			ContentType: contentType
+		})
+	);
 };
 
 export const presignGet = async (key: string): Promise<string> => {
