@@ -12,7 +12,8 @@
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
 		"format": "prettier --write .",
-		"format:check": "prettier --check ."
+		"format:check": "prettier --check .",
+		"worker": "tsx --tsconfig tsconfig.worker.json src/worker/transcode.ts"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
