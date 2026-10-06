@@ -14,22 +14,32 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const DURATION_GATE_ERROR = 'Video exceeds 60 seconds';
 const MAX_ATTEMPTS = 3;
 
+// Same posts_read rule as the GET ([id]/+server.ts): invisibility reads as
+// missing (404); only a visible foreign post reaches the author-only 403.
+const VISIBLE = `(p.visibility = 'public' OR p.author = current_user_id() OR (p.visibility = 'friends' AND is_friend(p.author))) AND (p.status = 'live' OR p.author = current_user_id())`;
+
 export const POST: RequestHandler = async (event) => {
 	const me = await requireAuth(event);
 	const id = event.params.id ?? '';
 	if (!UUID_RE.test(id)) throw error(400, 'Invalid post id');
 	const data = await withUser(me.id, async (c) => {
+		// Visibility first: strangers probing an invisible friends-post id
+		// get 404, not 403 (no existence oracle). Author-only semantics
+		// stay: non-author on a VISIBLE post still gets 403 below.
+		const { rows: vis } = await c.query(
+			`SELECT p.id, p.author FROM posts p WHERE p.id = $1 AND ${VISIBLE}`,
+			[id]
+		);
+		if (vis.length === 0) throw error(404, 'Post not found');
+		if ((vis[0].author as string) !== me.id) throw error(403, 'Only the author can retry a video');
 		const { rows } = await c.query(
-			`SELECT p.author, j.id AS job_id, j.status, j.attempts, j.last_error
-			 FROM posts p LEFT JOIN transcode_jobs j ON j.post_id = p.id
-			 WHERE p.id = $1
+			`SELECT j.id AS job_id, j.status, j.attempts, j.last_error
+			 FROM transcode_jobs j WHERE j.post_id = $1
 			 ORDER BY j.created_at DESC NULLS LAST LIMIT 1`,
 			[id]
 		);
-		if (rows.length === 0) throw error(404, 'Post not found');
+		if (rows.length === 0) throw error(422, 'Nothing to retry — this post has no video to process');
 		const row = rows[0];
-		if ((row.author as string) !== me.id) throw error(403, 'Only the author can retry a video');
-		if (!row.job_id) throw error(422, 'Nothing to retry — this post has no video to process');
 		const status = row.status as string;
 		const attempts = Number(row.attempts) || 0;
 		const lastError = (row.last_error as string | null) ?? null;

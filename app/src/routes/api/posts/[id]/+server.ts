@@ -107,10 +107,20 @@ export const DELETE: RequestHandler = async (event) => {
 	const id = event.params.id ?? '';
 	if (!UUID_RE.test(id)) throw error(400, 'Invalid post id');
 	const keys = await withUser(me.id, async (c) => {
-		const found = await c.query('SELECT id, author FROM posts WHERE id = $1', [id]);
+		// Visibility first (same VISIBLE fragment as GET): invisible to the
+		// caller reads as missing (404) so strangers cannot probe for
+		// existing-but-invisible friends/processing posts; only a visible
+		// foreign post (or own post) reaches the author-only 403 below.
+		const found = await c.query('SELECT p.id, p.author FROM posts p WHERE p.id = $1 AND ' + VISIBLE, [id]);
 		if (found.rows.length === 0) throw error(404, 'Post not found');
 		if ((found.rows[0].author as string) !== me.id) throw error(403, 'You can only delete your own posts');
 		const { rows: mediaRows } = await c.query('SELECT s3_key FROM post_media WHERE post_id = $1', [id]);
+		// Polymorphic fan-out: comments/reports/notifications reference the
+		// post by (kind, target_id) with no FK, so they survive the post
+		// delete unless removed explicitly. Same txn = atomic.
+		await c.query(`DELETE FROM comments WHERE feed_kind = 'post' AND target_id = $1`, [id]);
+		await c.query(`DELETE FROM reports WHERE target_kind = 'post' AND target_id = $1`, [id]);
+		await c.query(`DELETE FROM notifications WHERE feed_kind = 'post' AND target_id = $1`, [id]);
 		// Row delete cascades post_media, post_kudos and transcode_jobs
 		// (pending jobs die with the post — the worker's EXISTS guard also
 		// skips orphaned queued rows).

@@ -184,7 +184,13 @@ export const POST: RequestHandler = async (event) => {
 					'SELECT id FROM trips WHERE id = $1 AND user_id = current_user_id()',
 					[ride.id]
 				);
-				if (found.rows.length === 0) throw error(404, 'Trip not found');
+				if (found.rows.length === 0) {
+					// Same stray-cleanup contract as the 400 paths: the S3
+					// objects were already CopyObject+HEAD verified above, so
+					// a bogus ride id must not strand them.
+					cleanupOwned(ownedKeys);
+					throw error(404, 'Trip not found');
+				}
 				rideKind = 'trip';
 				rideTripId = ride.id as number;
 			} else {
@@ -192,7 +198,11 @@ export const POST: RequestHandler = async (event) => {
 					'SELECT id FROM public_routes WHERE id = $1 AND hidden = false',
 					[ride.id]
 				);
-				if (found.rows.length === 0) throw error(404, 'Route not found');
+				if (found.rows.length === 0) {
+					// Same stray-cleanup contract as the 400 paths (see above).
+					cleanupOwned(ownedKeys);
+					throw error(404, 'Route not found');
+				}
 				rideKind = 'route';
 				rideRouteId = ride.id as string;
 			}
