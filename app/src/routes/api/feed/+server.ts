@@ -1,6 +1,8 @@
 // GET /api/feed — Feed Phase 1 list combining public routes (with kudos
-// from route_stats, cf. explore endpoint) and upcoming events the caller can
-// see (open + member-private channels, cf. events RSVP). Shape
+// from route_stats, cf. explore endpoint), upcoming events the caller can
+// see (open + member-private channels, cf. events RSVP), and Phase B posts
+// (public+live for all signed-in; friends+live iff author is me or friend;
+// own processing/failed always). Shape
 // { kind: 'activity'|'route'|'event'; id; title; kudos } is consumed by
 // Task 9 comments. No 'activity' rows exist in v1 — the kind stays in the
 // union as forward-compat.
@@ -14,9 +16,15 @@ import { json, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
 import { requireAuth } from '$lib/server/auth.js';
 import { fitBadge } from '$lib/community/scoring.js';
+import { presignGet } from '$lib/server/media.js';
+
+export interface FeedPostMedia {
+	kind: string;
+	url: string;
+}
 
 export interface FeedEntry {
-	kind: 'activity' | 'route' | 'event';
+	kind: 'activity' | 'route' | 'event' | 'post';
 	id: string;
 	title: string;
 	kudos: number;
@@ -30,6 +38,13 @@ export interface FeedEntry {
 	channel: string | null;
 	author_name: string | null;
 	author_avatar: string | null;
+	// Post-only fields (null for route/event entries): excerpt is the first
+	// 140 chars of the body (title mirrors it so card shells keep working);
+	// media holds presigned GETs minted ONLY for rows this caller can see.
+	excerpt: string | null;
+	status: string | null;
+	visibility: string | null;
+	media: FeedPostMedia[] | null;
 }
 
 const isFiniteNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -85,7 +100,11 @@ export const GET: RequestHandler = async (event) => {
 				going_count: 0,
 				channel: null,
 				author_name: (r.author_name as string | null) ?? null,
-				author_avatar: (r.author_avatar as string | null) ?? null
+				author_avatar: (r.author_avatar as string | null) ?? null,
+				excerpt: null,
+				status: null,
+				visibility: null,
+				media: null
 			})),
 			...events.rows.map((e) => ({
 				kind: 'event' as const,
@@ -101,9 +120,67 @@ export const GET: RequestHandler = async (event) => {
 				going_count: Number(e.going_count) || 0,
 				channel: (e.channel as string | null) ?? null,
 				author_name: (e.author_name as string | null) ?? null,
-				author_avatar: (e.author_avatar as string | null) ?? null
+				author_avatar: (e.author_avatar as string | null) ?? null,
+				excerpt: null,
+				status: null,
+				visibility: null,
+				media: null
 			}))
 		];
+		// Posts: public+live for every signed-in caller; friends+live iff the
+		// author is me or a friend; my own processing/failed rows always (the
+		// author-only processing card). Strangers never see friends-only or
+		// unfinished rows — enforced here, in the same query that gates the
+		// presigned media URLs below.
+		const posts = await c.query(
+			`SELECT p.id, p.body, LEFT(p.body, 140) AS excerpt, p.visibility, p.status,
+			        p.kudos, p.created_at,
+			        u.display_name AS author_name, u.avatar_url AS author_avatar
+			 FROM posts p LEFT JOIN users u ON u.id = p.author
+			 WHERE (p.status = 'live'
+			        AND (p.visibility = 'public'
+			             OR (p.visibility = 'friends' AND is_friend(p.author))))
+			    OR p.author = current_user_id()
+			 ORDER BY p.created_at DESC LIMIT 50`
+		);
+		if (posts.rows.length > 0) {
+			const ids = posts.rows.map((r) => r.id as string);
+			const { rows: mediaRows } = await c.query(
+				`SELECT post_id, kind, s3_key FROM post_media
+				 WHERE post_id = ANY($1::uuid[]) ORDER BY sort ASC`,
+				[ids]
+			);
+			const mediaByPost = new Map<string, { kind: string; url: string }[]>();
+			for (const r of mediaRows) {
+				const pid = r.post_id as string;
+				if (!mediaByPost.has(pid)) mediaByPost.set(pid, []);
+				mediaByPost.get(pid)?.push({ kind: r.kind as string, url: await presignGet(r.s3_key as string) });
+			}
+			for (const p of posts.rows) {
+				const excerpt = (p.excerpt as string | null) ?? null;
+				out.push({
+					kind: 'post' as const,
+					id: p.id as string,
+					title: excerpt ?? '',
+					kudos: Number(p.kudos) || 0,
+					created_at: (p.created_at as Date).toISOString(),
+					sport: null,
+					saves: 0,
+					rides: 0,
+					fit: null,
+					start_at: null,
+					going_count: 0,
+					channel: null,
+					author_name: (p.author_name as string | null) ?? null,
+					author_avatar: (p.author_avatar as string | null) ?? null,
+					excerpt,
+					status: p.status as string,
+					visibility: p.visibility as string,
+					media: mediaByPost.get(p.id as string) ?? []
+				});
+			}
+		}
+		out.sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0));
 		return out;
 	});
 	return json({ items }, { headers: { 'Cache-Control': 'no-store' } });

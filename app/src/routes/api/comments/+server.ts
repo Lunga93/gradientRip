@@ -1,5 +1,5 @@
 // /api/comments — Phase 2 threaded comments on feed items (Task 8 kinds:
-// 'activity'|'route'|'event'). Endpoints are live; the UI stays behind the
+// 'activity'|'route'|'event', plus Phase B 'post'). Endpoints are live; the UI stays behind the
 // feedPhase2 flag until Phase 1 is stable (cf. feed.svelte.ts).
 //
 // GET  /api/comments?kind=<kind>&id=<uuid> — flat list, created_at ASC;
@@ -13,15 +13,16 @@ import { requireAuth } from '$lib/server/auth.js';
 import { parseComment } from '$lib/community/comments.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const KINDS = ['activity', 'route', 'event'] as const;
+const KINDS = ['activity', 'route', 'event', 'post'] as const;
 
 // One focused insert gate: at most this many comments per user per window.
 const COMMENTS_PER_WINDOW = 10;
 const WINDOW_INTERVAL = "interval '60 seconds'";
 
 // Resolve the user to notify for a new comment on a visible target:
-// route author / event creator. Null when there is nobody (activity has no
-// rows in v1) or the target is not visible to the caller.
+// route author / event creator / post author (iff the post is visible to the
+// caller, else 404 — mirrors the event visibility branch). Null when there
+// is nobody (activity has no rows in v1) or the target is not visible.
 const findOwner = async (
 	c: { query: (q: string, p?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> },
 	kind: string,
@@ -46,6 +47,17 @@ const findOwner = async (
 		if (rows.length === 0) throw error(404, 'Event not found');
 		return rows[0].id as string;
 	}
+	if (kind === 'post') {
+		const { rows } = await c.query(
+			`SELECT p.author AS id FROM posts p WHERE p.id = $1
+			 AND (p.visibility = 'public' OR p.author = current_user_id()
+			    OR (p.visibility = 'friends' AND is_friend(p.author)))
+			 AND (p.status = 'live' OR p.author = current_user_id())`,
+			[targetId]
+		);
+		if (rows.length === 0) throw error(404, 'Post not found');
+		return rows[0].id as string;
+	}
 	throw error(404, 'Activity not found');
 };
 
@@ -54,7 +66,7 @@ export const GET: RequestHandler = async (event) => {
 	const kind = event.url.searchParams.get('kind') ?? '';
 	const targetId = event.url.searchParams.get('id') ?? '';
 	if (!(KINDS as readonly string[]).includes(kind)) {
-		throw error(400, "kind must be 'activity', 'route' or 'event'");
+		throw error(400, "kind must be 'activity', 'route', 'event' or 'post'");
 	}
 	if (!UUID_RE.test(targetId)) throw error(400, 'Invalid target id');
 	const items = await withUser(me.id, async (c) => {
@@ -79,7 +91,7 @@ export const POST: RequestHandler = async (event) => {
 	const targetId = typeof body?.target_id === 'string' ? body.target_id : '';
 	const text = parseComment(body?.body);
 	if (!(KINDS as readonly string[]).includes(kind)) {
-		throw error(400, "kind must be 'activity', 'route' or 'event'");
+		throw error(400, "kind must be 'activity', 'route', 'event' or 'post'");
 	}
 	if (!UUID_RE.test(targetId)) throw error(400, 'Invalid target id');
 	if (text === null) throw error(400, 'body must be 1-500 chars');

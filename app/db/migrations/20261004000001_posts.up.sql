@@ -10,11 +10,19 @@ CREATE TABLE IF NOT EXISTS posts (
 	body TEXT,
 	visibility TEXT NOT NULL CHECK (visibility IN ('public', 'friends')),
 	ride_kind TEXT CHECK (ride_kind IN ('trip', 'route')),
-	ride_id UUID,
+	ride_trip_id BIGINT NULL,
+	ride_route_id UUID NULL,
 	status TEXT NOT NULL DEFAULT 'live' CHECK (status IN ('live', 'processing', 'failed')),
 	kudos INT NOT NULL DEFAULT 0,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	-- trips.id is BIGINT, routes are UUID: two typed columns, never a
+	-- polymorphic key (branch ruling 1). Exactly one set iff ride_kind set.
+	CHECK (
+		(ride_kind IS NULL AND ride_trip_id IS NULL AND ride_route_id IS NULL)
+		OR (ride_kind = 'trip' AND ride_trip_id IS NOT NULL AND ride_route_id IS NULL)
+		OR (ride_kind = 'route' AND ride_route_id IS NOT NULL AND ride_trip_id IS NULL)
+	)
 );
 CREATE INDEX IF NOT EXISTS idx_posts_visibility_created ON posts (visibility, created_at DESC);
 

@@ -6,10 +6,18 @@
 import { queueKudos, flushQueue } from './feed-queue.js';
 
 export interface FeedItem {
-	kind: 'activity' | 'route' | 'event';
+	kind: 'activity' | 'route' | 'event' | 'post';
 	id: string;
 	title: string;
 	kudos: number;
+	// Post-only fields (absent on route/event entries; Task 6 PostCard reads them).
+	excerpt?: string | null;
+	author_name?: string | null;
+	author_avatar?: string | null;
+	created_at?: string;
+	status?: string | null;
+	visibility?: string | null;
+	media?: { kind: string; url: string }[];
 }
 
 // Phase 2 gate — the comments + notifications UI stays hidden until Phase 1
@@ -41,7 +49,7 @@ export interface FeedNotification {
 }
 
 const CACHE_KEY = 'gradient-feed-v1';
-const FEED_KINDS = ['activity', 'route', 'event'] as const;
+const FEED_KINDS = ['activity', 'route', 'event', 'post'] as const;
 
 // Debounced refresh — mutations call scheduleFeedRefresh with no args; only
 // the most recent refresh within the window fires (cf. scheduleBackup).

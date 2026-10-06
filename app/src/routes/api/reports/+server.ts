@@ -1,15 +1,18 @@
-// POST /api/reports { target_kind: 'route'|'event', target_id, reason } —
+// POST /api/reports { target_kind: 'route'|'event'|'post', target_id, reason } —
 // inserts a moderation report. The trg_reports_autohide trigger hides a
 // route once reports for it reach the threshold (3); no direct UPDATE here.
 // Event reports are rejected for now: there is no events.hidden column or
-// hide branch in the trigger, so accepting them would be a no-op. Follow-up
-// to add event hiding should re-enable target_kind='event' here.
+// hide branch in the trigger, so accepting them would be a no-op. Post
+// reports are accepted and stored (UNIQUE per reporter), but likewise do NOT
+// auto-hide: posts have no hidden column, so the trigger has no post branch.
+// A post-moderation follow-up (hide/status threshold) should extend the
+// trigger before claiming threshold behaviour for posts.
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
 import { requireAuth } from '$lib/server/auth.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const KINDS = ['route', 'event'] as const;
+const KINDS = ['route', 'event', 'post'] as const;
 
 export const POST: RequestHandler = async (event) => {
 	const me = await requireAuth(event);
@@ -18,7 +21,7 @@ export const POST: RequestHandler = async (event) => {
 	const targetId = typeof body?.target_id === 'string' ? body.target_id : '';
 	const reason = typeof body?.reason === 'string' ? body.reason.trim() : '';
 	if (!(KINDS as readonly string[]).includes(targetKind)) {
-		throw error(400, "target_kind must be 'route' or 'event'");
+		throw error(400, "target_kind must be 'route', 'event' or 'post'");
 	}
 	// No events.hidden column / trigger branch exists — accepting event
 	// reports would store rows that never action. Reject explicitly until
@@ -34,6 +37,15 @@ export const POST: RequestHandler = async (event) => {
 				targetId
 			]);
 			if (found.rows.length === 0) throw error(404, 'Route not found');
+		} else if (targetKind === 'post') {
+			const found = await c.query(
+				`SELECT id FROM posts p WHERE p.id = $1
+				 AND (p.visibility = 'public' OR p.author = current_user_id()
+				    OR (p.visibility = 'friends' AND is_friend(p.author)))
+				 AND (p.status = 'live' OR p.author = current_user_id())`,
+				[targetId]
+			);
+			if (found.rows.length === 0) throw error(404, 'Post not found');
 		} else {
 			const found = await c.query(
 				`SELECT e.id FROM events e JOIN channels ch ON ch.id = e.channel_id WHERE e.id = $1
