@@ -4,17 +4,19 @@
 	import { resolve } from '$app/paths';
 	import ScreenHeader from '$lib/ui/ScreenHeader.svelte';
 	import FeedItem from '$lib/ui/FeedItem.svelte';
+	import PostCard from '$lib/components/PostCard.svelte';
 	import StateBadge from '$lib/ui/StateBadge.svelte';
 	import SecondaryButton from '$lib/ui/SecondaryButton.svelte';
 	import EmptyState from '$lib/ui/EmptyState.svelte';
 	import Skeleton from '$lib/ui/Skeleton.svelte';
 	import ErrorNotice from '$lib/ui/ErrorNotice.svelte';
 	import { social } from '$lib/social.svelte.js';
+	import { reportRoute, type PostCardPost } from '$lib/posts.svelte.js';
 	import { relTime, fmtCount } from '$lib/ui/format.js';
 	import { verdictLabel } from '$lib/verdictTheme.js';
 
 	interface HomeFeedEntry {
-		kind: 'activity' | 'route' | 'event';
+		kind: 'activity' | 'route' | 'event' | 'post';
 		id: string;
 		title: string;
 		kudos: number;
@@ -28,6 +30,17 @@
 		channel: string | null;
 		author_name: string | null;
 		author_avatar: string | null;
+		// Post-only fields (null/absent on route/event entries): excerpt is the
+		// first 140 chars of the body (the card clamps + links to detail for
+		// the full text); media holds presigned GETs. The feed query does not
+		// select the attached ride, so home cards never carry one.
+		excerpt?: string | null;
+		status?: string | null;
+		visibility?: string | null;
+		media?: { kind: string; url: string }[] | null;
+		// Memoized card object for PostCard (in-place kudos target). Not from
+		// the API — built by buildCard in load().
+		_card?: PostCardPost;
 	}
 
 	let entries = $state<HomeFeedEntry[]>([]);
@@ -41,18 +54,50 @@
 	let rsvpBusy = $state<string | null>(null);
 	let rsvpDone = $state<Record<string, boolean>>({});
 	let rsvpErrors = $state<Record<string, string>>({});
+	// Minimal report affordance (Task 6): one inline reason form shared by all
+	// route cards — the SAME labels/copy/behaviour as the Report form inside
+	// PostCard. Routes had no report UI before; posts get theirs from PostCard.
+	// Event cards have none on purpose: POST /api/reports rejects event
+	// reports (no hide branch), so a button there would be fake UI.
+	let reportingFor = $state<{ kind: 'route'; id: string } | null>(null);
+	let reportReason = $state('');
+	let reportBusy = $state(false);
+	let reportMsg = $state('');
 
-	const detailHref = (entry: HomeFeedEntry): `/route/${string}` | `/event/${string}` | null => {
+	const detailHref = (entry: HomeFeedEntry): `/route/${string}` | `/event/${string}` | `/post/${string}` | null => {
 		if (entry.kind === 'route') return `/route/${entry.id}`;
 		if (entry.kind === 'event') return `/event/${entry.id}`;
+		if (entry.kind === 'post') return `/post/${entry.id}`;
 		return null;
 	};
 
 	const sourceLine = (entry: HomeFeedEntry): string => {
 		if (entry.kind === 'route') return entry.author_name?.trim() || entry.sport || 'Community route';
 		if (entry.kind === 'event') return entry.channel || entry.author_name?.trim() || 'Event';
+		if (entry.kind === 'post') return entry.author_name?.trim() || 'Post';
 		return 'Activity update';
 	};
+
+	// Feed excerpt rows mapped onto the card shape. Processing/failed posts
+	// are author-only by the feed query, so a non-live card on home is always
+	// mine — the retry affordance is safe to enable. Built once in load() (not
+	// in the template: the card mutates its post object in place for kudos,
+	// and Svelte forbids $state mutation inside render expressions).
+	const buildCard = (entry: HomeFeedEntry): PostCardPost => ({
+		id: entry.id,
+		body: entry.excerpt ?? null,
+		status: entry.status ?? 'live',
+		visibility: entry.visibility ?? null,
+		kudos: entry.kudos,
+		created_at: entry.created_at,
+		author_name: entry.author_name,
+		author_avatar: entry.author_avatar,
+		media: entry.media ?? [],
+		ride: null
+	});
+
+	const isOwnUnfinishedPost = (entry: HomeFeedEntry): boolean =>
+		entry.kind === 'post' && entry.status !== null && entry.status !== undefined && entry.status !== 'live';
 
 	const entryTime = (entry: HomeFeedEntry): string => {
 		const ts = new Date(entry.created_at).getTime();
@@ -107,7 +152,11 @@
 			}
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
 			const data = (await res.json()) as { items: HomeFeedEntry[] };
-			entries = Array.isArray(data.items) ? data.items : [];
+			const items = Array.isArray(data.items) ? data.items : [];
+			for (const item of items) {
+				if (item.kind === 'post') item._card = buildCard(item);
+			}
+			entries = items;
 		} catch {
 			loadError = 'Could not load the feed — check your connection.';
 		} finally {
@@ -187,6 +236,19 @@
 		}
 	};
 
+	const sendReport = async (): Promise<void> => {
+		if (reportBusy || !reportingFor || !reportReason.trim()) return;
+		reportBusy = true;
+		reportMsg = '';
+		const res = await reportRoute(reportingFor.id, reportReason.trim());
+		reportBusy = false;
+		reportMsg = res.message;
+		if (res.ok) {
+			reportingFor = null;
+			reportReason = '';
+		}
+	};
+
 	onMount(() => {
 		void social.probeMe();
 		void probeAuth().then((auth) => {
@@ -250,14 +312,61 @@
 						onclick={() => void shareEntry(entry)}
 					/>
 				{/if}
+				{#if entry.kind === 'route'}
+					<SecondaryButton
+						label="Report"
+						ariaLabel="Report this route"
+						title="Report this route"
+						onclick={() => {
+							reportingFor = reportingFor?.id === entry.id ? null : { kind: 'route', id: entry.id };
+							reportMsg = '';
+						}}
+					/>
+				{/if}
 				{#if sharedId === entry.id}
 					<span class="feed-note" role="status">Link copied</span>
 				{/if}
 				{#if actionError}
 					<span class="feed-note">{actionError}</span>
 				{/if}
+				{#if reportingFor?.id === entry.id}
+					<form
+						class="report-form"
+						onsubmit={(e) => {
+							e.preventDefault();
+							void sendReport();
+						}}
+					>
+						<label class="report-label" for="home-report-{entry.id}">Report reason</label>
+						<input
+							id="home-report-{entry.id}"
+							class="report-input"
+							type="text"
+							maxlength="500"
+							placeholder="Why are you reporting this?"
+							aria-label="Report reason"
+							bind:value={reportReason}
+							disabled={reportBusy}
+						/>
+						<span class="report-row">
+							<SecondaryButton label={reportBusy ? '…' : 'Send report'} type="submit" disabled={reportBusy || !reportReason.trim()} />
+							<SecondaryButton
+								label="Cancel"
+								ariaLabel="Cancel report"
+								onclick={() => {
+									reportingFor = null;
+									reportReason = '';
+									reportMsg = '';
+								}}
+							/>
+						</span>
+					</form>
+				{/if}
+				{#if reportMsg && !reportingFor}
+					<span class="feed-note" role="status">{reportMsg}</span>
+				{/if}
 			{/snippet}
-			<FeedItem actions={entry.kind !== 'activity' ? entryActions : undefined}>
+			<FeedItem actions={entry.kind === 'route' || entry.kind === 'event' ? entryActions : undefined}>
 				{#snippet header()}
 					{#if entry.author_avatar}
 						<img
@@ -283,7 +392,9 @@
 					</span>
 				{/snippet}
 				{#snippet body()}
-					{#if entry.kind === 'route'}
+					{#if entry.kind === 'post' && entry._card}
+						<PostCard post={entry._card} isAuthor={isOwnUnfinishedPost(entry)} />
+					{:else if entry.kind === 'route'}
 						<p class="feed-meta">
 							{entry.sport ?? 'Route'} · ♥ {entry.saves} saves · {entry.rides} rides
 						</p>
@@ -428,5 +539,43 @@
 		font: var(--type-meta);
 		color: var(--text-secondary);
 		align-self: center;
+	}
+
+	.report-form {
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
+		padding: 0.625rem 0.75rem;
+		background: var(--surface-sunken);
+		border: 1px solid var(--line);
+		border-radius: var(--radius-md);
+		flex-basis: 100%;
+	}
+
+	.report-label {
+		font: var(--type-label);
+		letter-spacing: 0.02em;
+		color: var(--text-secondary);
+	}
+
+	.report-input {
+		min-height: 44px;
+		padding: 0.625rem 0.75rem;
+		border: 1px solid var(--line-strong);
+		border-radius: var(--radius-md);
+		background: var(--surface-raised);
+		color: var(--text-primary);
+		font: var(--type-body);
+	}
+
+	.report-input:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+
+	.report-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.375rem;
 	}
 </style>

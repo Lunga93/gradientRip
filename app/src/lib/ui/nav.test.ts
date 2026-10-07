@@ -19,6 +19,11 @@ describe('route table', () => {
 		expect(isTabActive('/map', '/crew/abc')).toBe(false);
 		expect(isTabActive('/explore', '/me/rides')).toBe(false);
 	});
+	it('keeps Home active on post detail pages', () => {
+		expect(isTabActive('/home', '/post/abc')).toBe(true);
+		expect(isTabActive('/explore', '/post/abc')).toBe(false);
+		expect(detailParent('/post/abc')).toBe('/home');
+	});
 	it('resolves detail parents', () => {
 		expect(detailParent('/crew/abc')).toBe('/explore/crews');
 		expect(detailParent('/route/abc')).toBe('/explore/routes');

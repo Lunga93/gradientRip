@@ -20,10 +20,10 @@ export interface FeedItem {
 	media?: { kind: string; url: string }[];
 }
 
-// Phase 2 gate — the comments + notifications UI stays hidden until Phase 1
-// is stable. Flip to true to expose it. The /api/comments and
+// Phase 2 gate — the comments UI shipped with Task 6 (post cards, detail
+// thread, reports), so the flag is on. The /api/comments and
 // /api/notifications endpoints are live regardless of this flag.
-export const feedPhase2 = false;
+export const feedPhase2 = true;
 
 export interface FeedComment {
 	id: string;
@@ -163,6 +163,48 @@ class FeedState {
 		} catch {
 			if (item) item.kudos -= 1;
 			queueKudos(routeId);
+		}
+	}
+
+	// Post kudos (Task 6) — same optimistic +1 / reconcile / rollback shape as
+	// giveKudos, but against /api/posts/[id]/kudos and operating on the
+	// caller's object (home entries, card props, detail rows) rather than
+	// feed.items, so no parallel kudos cache is forked. The offline queue is
+	// route-kudos shaped, so offline post kudos revert with honest copy
+	// instead of queuing against the wrong endpoint.
+	async givePostKudos(item: { id: string; kudos: number; kudosed?: boolean }): Promise<{
+		ok: boolean;
+		message: string;
+	}> {
+		item.kudos += 1;
+		if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+			item.kudos -= 1;
+			return { ok: false, message: 'You appear to be offline' };
+		}
+		try {
+			const resp = await fetch(`/api/posts/${encodeURIComponent(item.id)}/kudos`, {
+				method: 'POST'
+			});
+			if (!resp.ok) {
+				item.kudos -= 1;
+				return { ok: false, message: 'Could not send kudos — try again.' };
+			}
+			const data = (await resp.json().catch(() => ({}))) as {
+				kudosed?: boolean;
+				kudos?: number;
+			};
+			// Authoritative server count reconciles the optimistic +1 —
+			// on re-kudos (kudosed:false) this reverts it.
+			if (typeof data.kudos === 'number' && Number.isFinite(data.kudos)) {
+				item.kudos = data.kudos;
+			} else if (data.kudosed === false) {
+				item.kudos -= 1;
+			}
+			if (data.kudosed === true) item.kudosed = true;
+			return { ok: true, message: '' };
+		} catch {
+			item.kudos -= 1;
+			return { ok: false, message: 'Could not send kudos — try again.' };
 		}
 	}
 

@@ -21,7 +21,8 @@ export const isTabActive = (tabHref: string, pathname: string): boolean =>
 const DETAIL_PARENTS: [prefix: string, parent: string][] = [
 	['/crew/', '/explore/crews'],
 	['/route/', '/explore/routes'],
-	['/event/', '/explore/events']
+	['/event/', '/explore/events'],
+	['/post/', '/home']
 ];
 
 export const detailParent = (pathname: string): string | null => {
