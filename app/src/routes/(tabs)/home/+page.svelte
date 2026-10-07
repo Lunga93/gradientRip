@@ -200,7 +200,16 @@
 	});
 </script>
 
-<ScreenHeader title="Home" />
+<ScreenHeader title="Home">
+	{#snippet action()}
+		<SecondaryButton
+			label="+ New post"
+			ariaLabel="Compose a new post"
+			title="Compose a new post"
+			onclick={() => goto(resolve('/compose'))}
+		/>
+	{/snippet}
+</ScreenHeader>
 <div class="home-body">
 	{#if checking}
 		<p class="home-checking">Checking sign-in…</p>
