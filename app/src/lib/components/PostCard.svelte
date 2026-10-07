@@ -180,10 +180,12 @@
 		</div>
 	{/if}
 
-	{#if parts.sd}
+	{#if parts.sd && post.status !== 'failed'}
 		<div class="post-video">
 			<!-- No captions track exists for user uploads: a bare track would be
-			     fake UI, so the a11y caption warning here is accepted. -->
+			     fake UI, so the a11y caption warning here is accepted. Failed posts
+			     skip the player entirely — the source never produced playable
+			     output, so a dead black box would sit above the failure note. -->
 			<video controls preload="metadata" src={src} poster={parts.poster?.url} aria-label="Attached video"></video>
 			{#if parts.hd}
 				<span class="post-quality">

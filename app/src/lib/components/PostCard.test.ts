@@ -203,6 +203,40 @@ describe('PostCard processing / failed states', () => {
 		await fireEvent.click(screen.getByRole('button', { name: 'Retry video processing' }));
 		expect(await screen.findByText('Video is still being processed — please wait')).toBeTruthy();
 	});
+
+	it('renders no video player on a failed post — the source never produced playable output', () => {
+		const { container } = render(
+			PostCard,
+			{
+				props: {
+					post: basePost({
+						status: 'failed',
+						media: [{ kind: 'video', url: 'https://cdn/v-src.mp4' }]
+					}),
+					isAuthor: true
+				}
+			}
+		);
+		expect(screen.getByText(/processing failed/)).toBeTruthy();
+		expect(container.querySelector('video')).toBeNull();
+	});
+
+	it('keeps the playable source on a processing post alongside the processing note', () => {
+		const { container } = render(
+			PostCard,
+			{
+				props: {
+					post: basePost({
+						status: 'processing',
+						media: [{ kind: 'video', url: 'https://cdn/v-src.mp4' }]
+					}),
+					isAuthor: true
+				}
+			}
+		);
+		expect(screen.getByText(/being processed/)).toBeTruthy();
+		expect(container.querySelector('video')).not.toBeNull();
+	});
 });
 
 describe('PostCard thread + composer', () => {
