@@ -11,7 +11,7 @@
 	import Skeleton from '$lib/ui/Skeleton.svelte';
 	import ErrorNotice from '$lib/ui/ErrorNotice.svelte';
 	import { social } from '$lib/social.svelte.js';
-	import { reportRoute, type PostCardPost } from '$lib/posts.svelte.js';
+	import { reportRoute, buildFeedCard, type PostCardPost, type PostCardRide } from '$lib/posts.svelte.js';
 	import { relTime, fmtCount } from '$lib/ui/format.js';
 	import { verdictLabel } from '$lib/verdictTheme.js';
 
@@ -32,12 +32,13 @@
 		author_avatar: string | null;
 		// Post-only fields (null/absent on route/event entries): excerpt is the
 		// first 140 chars of the body (the card clamps + links to detail for
-		// the full text); media holds presigned GETs. The feed query does not
-		// select the attached ride, so home cards never carry one.
+		// the full text); media holds presigned GETs; ride carries the
+		// attached trip/route display fields (same shape as PostCard expects).
 		excerpt?: string | null;
 		status?: string | null;
 		visibility?: string | null;
 		media?: { kind: string; url: string }[] | null;
+		ride?: PostCardRide | null;
 		// Memoized card object for PostCard (in-place kudos target). Not from
 		// the API — built by buildCard in load().
 		_card?: PostCardPost;
@@ -63,6 +64,7 @@
 	let reportReason = $state('');
 	let reportBusy = $state(false);
 	let reportMsg = $state('');
+	let reportedId = $state<string | null>(null);
 
 	const detailHref = (entry: HomeFeedEntry): `/route/${string}` | `/event/${string}` | `/post/${string}` | null => {
 		if (entry.kind === 'route') return `/route/${entry.id}`;
@@ -78,23 +80,11 @@
 		return 'Activity update';
 	};
 
-	// Feed excerpt rows mapped onto the card shape. Processing/failed posts
-	// are author-only by the feed query, so a non-live card on home is always
-	// mine — the retry affordance is safe to enable. Built once in load() (not
-	// in the template: the card mutates its post object in place for kudos,
-	// and Svelte forbids $state mutation inside render expressions).
-	const buildCard = (entry: HomeFeedEntry): PostCardPost => ({
-		id: entry.id,
-		body: entry.excerpt ?? null,
-		status: entry.status ?? 'live',
-		visibility: entry.visibility ?? null,
-		kudos: entry.kudos,
-		created_at: entry.created_at,
-		author_name: entry.author_name,
-		author_avatar: entry.author_avatar,
-		media: entry.media ?? [],
-		ride: null
-	});
+	// Feed excerpt rows mapped onto the card shape via the pure buildFeedCard
+	// helper (tested in posts.test.ts). Built once in load() (not in the
+	// template: the card mutates its post object in place for kudos, and
+	// Svelte forbids $state mutation inside render expressions).
+	const buildCard = (entry: HomeFeedEntry): PostCardPost => buildFeedCard(entry);
 
 	const isOwnUnfinishedPost = (entry: HomeFeedEntry): boolean =>
 		entry.kind === 'post' && entry.status !== null && entry.status !== undefined && entry.status !== 'live';
@@ -238,14 +228,17 @@
 
 	const sendReport = async (): Promise<void> => {
 		if (reportBusy || !reportingFor || !reportReason.trim()) return;
+		const targetId = reportingFor.id;
 		reportBusy = true;
 		reportMsg = '';
+		reportedId = null;
 		const res = await reportRoute(reportingFor.id, reportReason.trim());
 		reportBusy = false;
 		reportMsg = res.message;
 		if (res.ok) {
 			reportingFor = null;
 			reportReason = '';
+			reportedId = targetId;
 		}
 	};
 
@@ -320,6 +313,7 @@
 						onclick={() => {
 							reportingFor = reportingFor?.id === entry.id ? null : { kind: 'route', id: entry.id };
 							reportMsg = '';
+							reportedId = null;
 						}}
 					/>
 				{/if}
@@ -357,12 +351,13 @@
 									reportingFor = null;
 									reportReason = '';
 									reportMsg = '';
+									reportedId = null;
 								}}
 							/>
 						</span>
 					</form>
 				{/if}
-				{#if reportMsg && !reportingFor}
+				{#if reportMsg && !reportingFor && reportedId === entry.id}
 					<span class="feed-note" role="status">{reportMsg}</span>
 				{/if}
 			{/snippet}

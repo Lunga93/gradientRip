@@ -23,6 +23,22 @@ export interface FeedPostMedia {
 	url: string;
 }
 
+export interface FeedPostRideTrip {
+	kind: 'trip';
+	id: number;
+	ts: number | null;
+	total_km: number | null;
+}
+
+export interface FeedPostRideRoute {
+	kind: 'route';
+	id: string;
+	title: string | null;
+	sport: string | null;
+}
+
+export type FeedPostRide = FeedPostRideTrip | FeedPostRideRoute;
+
 export interface FeedEntry {
 	kind: 'activity' | 'route' | 'event' | 'post';
 	id: string;
@@ -45,6 +61,11 @@ export interface FeedEntry {
 	status: string | null;
 	visibility: string | null;
 	media: FeedPostMedia[] | null;
+	// Attached ride for post entries only (null for route/event rows and
+	// posts without one). Field list mirrors GET /api/posts/[id]: trip →
+	// id/ts/total_km, route → id/title/sport — exactly what PostCard's ride
+	// card renders, nothing more.
+	ride: FeedPostRide | null;
 }
 
 const isFiniteNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -104,7 +125,8 @@ export const GET: RequestHandler = async (event) => {
 				excerpt: null,
 				status: null,
 				visibility: null,
-				media: null
+				media: null,
+				ride: null
 			})),
 			...events.rows.map((e) => ({
 				kind: 'event' as const,
@@ -124,7 +146,8 @@ export const GET: RequestHandler = async (event) => {
 				excerpt: null,
 				status: null,
 				visibility: null,
-				media: null
+				media: null,
+				ride: null
 			}))
 		];
 		// Posts: public+live for every signed-in caller; friends+live iff the
@@ -134,7 +157,7 @@ export const GET: RequestHandler = async (event) => {
 		// presigned media URLs below.
 		const posts = await c.query(
 			`SELECT p.id, p.body, LEFT(p.body, 140) AS excerpt, p.visibility, p.status,
-			        p.kudos, p.created_at,
+			        p.kudos, p.created_at, p.ride_kind, p.ride_trip_id, p.ride_route_id,
 			        u.display_name AS author_name, u.avatar_url AS author_avatar
 			 FROM posts p LEFT JOIN users u ON u.id = p.author
 			 WHERE (p.status = 'live'
@@ -150,6 +173,70 @@ export const GET: RequestHandler = async (event) => {
 				 WHERE post_id = ANY($1::uuid[]) ORDER BY sort ASC`,
 				[ids]
 			);
+			// Ride card data, batched (same field list as GET /api/posts/[id]:
+			// trip → id/ts/total_km, route → id/title/sport). Stats stay
+			// visible to the post's audience; opening the full trip still
+			// requires its own visibility — no new access here.
+			const tripIds = [
+				...new Set(
+					posts.rows
+						.filter((r) => r.ride_kind === 'trip' && r.ride_trip_id !== null)
+						.map((r) => Number(r.ride_trip_id))
+						.filter((n) => Number.isFinite(n))
+				)
+			];
+			const routeIds = [
+				...new Set(
+					posts.rows
+						.filter((r) => r.ride_kind === 'route' && r.ride_route_id !== null)
+						.map((r) => r.ride_route_id as string)
+				)
+			];
+			const tripById = new Map<number, { ts: number | null; total_km: number | null }>();
+			if (tripIds.length > 0) {
+				const { rows: tripRows } = await c.query(
+					`SELECT id, ts, total_km FROM trips WHERE id = ANY($1::bigint[])`,
+					[tripIds]
+				);
+				for (const t of tripRows) {
+					const id = Number(t.id);
+					if (!Number.isFinite(id)) continue;
+					const ts = Number(t.ts);
+					const totalKm = Number(t.total_km);
+					tripById.set(id, {
+						ts: Number.isFinite(ts) ? ts : null,
+						total_km: Number.isFinite(totalKm) ? totalKm : null
+					});
+				}
+			}
+			const routeById = new Map<string, { title: string | null; sport: string | null }>();
+			if (routeIds.length > 0) {
+				const { rows: routeRows } = await c.query(
+					`SELECT id, title, sport FROM public_routes WHERE id = ANY($1::uuid[]) AND hidden = false`,
+					[routeIds]
+				);
+				for (const r of routeRows) {
+					routeById.set(r.id as string, {
+						title: (r.title as string | null) ?? null,
+						sport: (r.sport as string | null) ?? null
+					});
+				}
+			}
+			const rideOf = (p: Record<string, unknown>): FeedPostRide | null => {
+				if (p.ride_kind === 'trip' && p.ride_trip_id !== null) {
+					const id = Number(p.ride_trip_id);
+					const found = tripById.get(id);
+					if (found === undefined) return null;
+					return { kind: 'trip', id, ts: found.ts, total_km: found.total_km };
+				}
+				if (p.ride_kind === 'route' && p.ride_route_id !== null) {
+					const id = p.ride_route_id as string;
+					const found = routeById.get(id);
+					if (found === undefined) return null;
+					return { kind: 'route', id, title: found.title, sport: found.sport };
+				}
+				return null;
+			};
 			const mediaByPost = new Map<string, { kind: string; url: string }[]>();
 			for (const r of mediaRows) {
 				const pid = r.post_id as string;
@@ -176,7 +263,8 @@ export const GET: RequestHandler = async (event) => {
 					excerpt,
 					status: p.status as string,
 					visibility: p.visibility as string,
-					media: mediaByPost.get(p.id as string) ?? []
+					media: mediaByPost.get(p.id as string) ?? [],
+					ride: rideOf(p as Record<string, unknown>)
 				});
 			}
 		}

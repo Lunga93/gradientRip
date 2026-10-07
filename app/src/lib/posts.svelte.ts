@@ -40,8 +40,8 @@ export interface PostRideRoute {
 export type PostCardRide = PostRideTrip | PostRideRoute;
 
 // Superset covering both shapes that render a card: the /api/feed excerpt
-// rows (body = 140-char excerpt, no ride — the feed query does not select it)
-// and the full /api/posts/[id] rows.
+// rows (body = 140-char excerpt, ride attached by the feed query) and the
+// full /api/posts/[id] rows.
 export interface PostCardPost {
 	id: string;
 	body: string | null;
@@ -60,6 +60,57 @@ export interface PostCardPost {
 
 export interface PostDetail extends PostCardPost {
 	author: { id: string; name: string | null; avatar: string | null };
+}
+
+// Minimal /api/feed post-row shape that maps onto a card. Pure input for
+// buildFeedCard — kept structural so page entry types reuse it without
+// importing page code.
+export interface FeedPostEntry {
+	id: string;
+	excerpt?: string | null;
+	body?: string | null;
+	status?: string | null;
+	visibility?: string | null;
+	kudos: number;
+	created_at: string;
+	author_name?: string | null;
+	author_avatar?: string | null;
+	media?: PostCardMedia[] | null;
+	ride?: PostCardRide | null;
+}
+
+// Feed excerpt rows mapped onto the card shape. Processing/failed posts
+// are author-only by the feed query, so a non-live card on home is always
+// mine — the retry affordance is safe to enable. Pure (no Svelte state)
+// so it is unit-testable; home builds cards once in load(), not in the
+// template (the card mutates its post object in place for kudos, and Svelte
+// forbids $state mutation inside render expressions).
+export function buildFeedCard(entry: FeedPostEntry): PostCardPost {
+	let ride: PostCardRide | null = null;
+	const raw = entry.ride ?? null;
+	if (raw && raw.kind === 'trip') {
+		ride = {
+			kind: 'trip',
+			id: raw.id,
+			ts: raw.ts ?? null,
+			mode_id: 'mode_id' in raw ? (raw.mode_id ?? null) : null,
+			total_km: raw.total_km ?? null
+		};
+	} else if (raw && raw.kind === 'route') {
+		ride = { kind: 'route', id: raw.id, title: raw.title ?? null, sport: raw.sport ?? null };
+	}
+	return {
+		id: entry.id,
+		body: entry.excerpt ?? entry.body ?? null,
+		status: entry.status ?? 'live',
+		visibility: entry.visibility ?? null,
+		kudos: entry.kudos,
+		created_at: entry.created_at,
+		author_name: entry.author_name ?? null,
+		author_avatar: entry.author_avatar ?? null,
+		media: entry.media ?? [],
+		ride
+	};
 }
 
 export interface ThreadNode extends FeedComment {

@@ -1,0 +1,74 @@
+import { describe, expect, it } from 'vitest';
+import { buildFeedCard } from './posts.svelte.js';
+
+const base = {
+	id: '11111111-1111-4111-8111-111111111111',
+	kudos: 3,
+	created_at: new Date('2026-10-06T08:00:00Z').toISOString()
+};
+
+describe('buildFeedCard ride mapping', () => {
+	it('maps a route ride row onto the card ride prop', () => {
+		const card = buildFeedCard({
+			...base,
+			excerpt: 'Morning loop',
+			status: 'live',
+			visibility: 'public',
+			author_name: 'Lungy',
+			author_avatar: null,
+			media: [],
+			ride: {
+				kind: 'route',
+				id: '22222222-2222-4222-8222-222222222222',
+				title: 'Bay Loop',
+				sport: 'eskate'
+			}
+		});
+		expect(card.ride).toEqual({
+			kind: 'route',
+			id: '22222222-2222-4222-8222-222222222222',
+			title: 'Bay Loop',
+			sport: 'eskate'
+		});
+		expect(card.body).toBe('Morning loop');
+	});
+
+	it('maps a trip ride row onto the card ride prop', () => {
+		const card = buildFeedCard({
+			...base,
+			excerpt: 'Evening run',
+			status: 'live',
+			visibility: 'public',
+			author_name: 'Lungy',
+			author_avatar: null,
+			media: [],
+			ride: { kind: 'trip', id: 7, ts: 424242, total_km: 12.3 }
+		});
+		expect(card.ride).toEqual({
+			kind: 'trip',
+			id: 7,
+			ts: 424242,
+			mode_id: null,
+			total_km: 12.3
+		});
+	});
+
+	it('maps a missing ride to null', () => {
+		const card = buildFeedCard({
+			...base,
+			excerpt: 'Just words',
+			status: 'live',
+			visibility: 'public',
+			author_name: 'Lungy',
+			author_avatar: null,
+			media: [],
+			ride: null
+		});
+		expect(card.ride).toBeNull();
+	});
+
+	it('maps an absent ride field to null', () => {
+		const card = buildFeedCard({ ...base, excerpt: 'Just words' });
+		expect(card.ride).toBeNull();
+	});
+});
