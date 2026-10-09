@@ -194,6 +194,18 @@ describe('PostCard processing / failed states', () => {
 		expect(screen.queryByRole('button', { name: /retry/i })).toBeNull();
 	});
 
+	it('shows processing copy without retry even for the author (failed-only rule)', () => {
+		render(PostCard, { props: { post: basePost({ status: 'processing' }), isAuthor: true } });
+		expect(screen.getByText(/being processed/)).toBeTruthy();
+		expect(screen.queryByRole('button', { name: /retry/i })).toBeNull();
+	});
+
+	it('shows failed copy without retry for non-authors', () => {
+		render(PostCard, { props: { post: basePost({ status: 'failed' }), isAuthor: false } });
+		expect(screen.getByText(/processing failed/)).toBeTruthy();
+		expect(screen.queryByRole('button', { name: /retry/i })).toBeNull();
+	});
+
 	it('shows failed copy with author retry that surfaces the server message', async () => {
 		mockFetch((url) =>
 			url.includes('/retry') ? resp(422, { message: 'Video is still being processed — please wait' }) : resp(404, {})

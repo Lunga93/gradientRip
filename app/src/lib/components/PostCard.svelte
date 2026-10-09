@@ -228,18 +228,11 @@
 	{/if}
 
 	{#if post.status === 'processing'}
+		<!-- Retry is failed+author ONLY: POST /api/posts/[id]/retry refuses
+		     queued/processing with 422 "still being processed", so a Retry
+		     button here could only ever produce an error toast — dishonest
+		     affordance. Gate strictly instead of visible-but-disabled. -->
 		<p class="post-note" role="status">Video is being processed — it will appear here when ready.</p>
-		{#if isAuthor}
-			<span class="post-retry">
-				<SecondaryButton
-					label={retryBusy ? '…' : 'Retry video'}
-					ariaLabel="Retry video processing"
-					title="Retry video processing"
-					disabled={retryBusy}
-					onclick={() => void onRetry()}
-				/>
-			</span>
-		{/if}
 	{:else if post.status === 'failed'}
 		<p class="post-note" role="alert">Video processing failed.</p>
 		{#if isAuthor}
