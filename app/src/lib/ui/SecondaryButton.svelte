@@ -51,6 +51,15 @@
 		color: var(--text-primary);
 	}
 
+	/* Toggle-pressed state (composer Everyone/Friends, video quality):
+	   solid accent fill + inverted text, so the selected option is distinct
+	   by fill, not color-alone. */
+	.ui-btn-secondary[aria-pressed='true'] {
+		background: var(--accent);
+		border-color: transparent;
+		color: var(--text-on-accent);
+	}
+
 	.ui-btn-secondary:disabled {
 		opacity: 0.55;
 		cursor: not-allowed;

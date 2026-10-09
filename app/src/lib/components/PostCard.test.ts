@@ -100,6 +100,21 @@ describe('PostCard text variant', () => {
 	});
 });
 
+describe('PostCard detail author header', () => {
+	it('renders avatar fallback, name and relative time on detail only', () => {
+		const { container } = render(PostCard, { props: { post: basePost(), detail: true } });
+		const header = container.querySelector('.post-author');
+		expect(header).not.toBeNull();
+		expect(header?.textContent).toContain('Priya');
+		expect(header?.querySelectorAll('a')).toHaveLength(0);
+	});
+
+	it('renders no author header on the feed card', () => {
+		const { container } = render(PostCard, { props: { post: basePost() } });
+		expect(container.querySelector('.post-author')).toBeNull();
+	});
+});
+
 describe('PostCard media variants', () => {
 	it('renders a single photo large', () => {
 		const { container } = render(

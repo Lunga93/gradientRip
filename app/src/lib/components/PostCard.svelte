@@ -38,6 +38,19 @@
 	const showMore = $derived(!detail && bodyText.length > MORE_CHARS);
 	const postHref = $derived(`/post/${post.id}` as `/post/${string}`);
 	const title = $derived(bodyText ? bodyText.slice(0, 60) : 'Post');
+	// Detail author header mirrors the home card header content: the same
+	// display name (nested author first, flat feed field as fallback) and
+	// the same relTime(created_at) format. No profile route exists, so this
+	// stays non-interactive text — never a fake link.
+	const authorName = $derived(
+		post.author?.name?.trim() || post.author_name?.trim() || 'Rider'
+	);
+	const authorAvatar = $derived(post.author?.avatar ?? post.author_avatar ?? null);
+	const authorInitial = $derived(((authorName || 'R')[0] || 'R').toUpperCase());
+	const authorTime = $derived.by(() => {
+		const ts = new Date(post.created_at).getTime();
+		return Number.isFinite(ts) ? relTime(ts) : '';
+	});
 
 	let kudosBusy = $state(false);
 	let kudosMsg = $state('');
@@ -154,6 +167,28 @@
 </script>
 
 <div class="post-card">
+	{#if detail}
+		<div class="post-author">
+			{#if authorAvatar}
+				<img
+					src={authorAvatar}
+					alt=""
+					width="32"
+					height="32"
+					class="post-author-avatar"
+					referrerpolicy="no-referrer"
+				/>
+			{:else}
+				<span class="post-author-fallback" aria-hidden="true">{authorInitial}</span>
+			{/if}
+			<span class="post-author-text">
+				<span class="post-author-name">{authorName}</span>
+				{#if authorTime}
+					<span class="post-author-time">· {authorTime}</span>
+				{/if}
+			</span>
+		</div>
+	{/if}
 	{#if bodyText}
 		{#if detail}
 			<p class="post-text-full">{bodyText}</p>
@@ -416,6 +451,56 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.625rem;
+	}
+
+	.post-author {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+	}
+
+	.post-author-avatar {
+		width: 32px;
+		height: 32px;
+		object-fit: cover;
+		border-radius: 9999px;
+		flex-shrink: 0;
+	}
+
+	.post-author-fallback {
+		display: grid;
+		place-items: center;
+		width: 32px;
+		height: 32px;
+		flex-shrink: 0;
+		border-radius: 9999px;
+		background: var(--surface-sunken);
+		border: 1px solid var(--line);
+		color: var(--text-secondary);
+		font: var(--type-body-strong);
+	}
+
+	.post-author-text {
+		display: flex;
+		align-items: baseline;
+		gap: 0.375rem;
+		min-width: 0;
+		flex: 1 1 auto;
+	}
+
+	.post-author-name {
+		font: var(--type-body-strong);
+		color: var(--text-primary);
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.post-author-time {
+		font: var(--type-meta);
+		color: var(--text-secondary);
+		flex-shrink: 0;
 	}
 
 	.post-text-clamp,
