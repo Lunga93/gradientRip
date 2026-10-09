@@ -1,7 +1,3 @@
-// GET /api/live/friends — Server-Sent Events feed of accepted friends'
-// recent positions plus the pending-request count. Polls the DB every 4s;
-// riders older than LIVE_STALE_MS drop out of the payload automatically.
-// EventSource sends same-origin cookies, so requireAuth just works.
 import type { RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
 import { requireAuth } from '$lib/server/auth.js';
@@ -23,7 +19,6 @@ export const GET: RequestHandler = async (event) => {
 				try {
 					controller.close();
 				} catch {
-					/* already closed */
 				}
 			};
 			event.request.signal.addEventListener('abort', close);
@@ -57,7 +52,6 @@ export const GET: RequestHandler = async (event) => {
 					}));
 					send({ type: 'friends', ts: Date.now(), ...snapshot });
 				} catch {
-					// DB hiccup mid-stream — heartbeat so the client knows we're alive.
 					send({ type: 'ping', ts: Date.now() });
 				}
 				await new Promise((r) => setTimeout(r, POLL_MS));

@@ -1,15 +1,6 @@
-// Cloud backup — mirrors saved trips and presets to Postgres through the
-// /api/* endpoints (device-cookie scoped, RLS-isolated per user row).
-//
-// Design matches the app's offline-first philosophy:
-//  - localStorage stays the source of truth and always works offline;
-//  - pushes are debounced + best-effort (failures are silent, retried later);
-//  - restore only fills an EMPTY local store — cloud never overwrites local.
 import type { Trip, Preset } from './storage.js';
 
-/* ---------- row <-> domain mapping (pure, unit-tested) ---------- */
 
-// pg returns NUMERIC/BIGINT columns as strings — coerce back to numbers.
 const num = (v: unknown): number => (typeof v === 'number' ? v : Number(v) || 0);
 
 interface TripRow {
@@ -81,9 +72,6 @@ interface PresetRow {
 	coords: [number, number] | null;
 }
 
-// Preset ids are BIGSERIAL in Postgres but Date.now()+random locally — scope
-// restored rows to negative ids so they can never collide with local ones and
-// will be re-saved with fresh local ids the first time the user edits them.
 export const rowToPreset = (r: PresetRow): Preset => ({
 	id: -Math.abs(num(r.id)) - 1,
 	label: r.label,
@@ -91,10 +79,7 @@ export const rowToPreset = (r: PresetRow): Preset => ({
 	coords: Array.isArray(r.coords) && r.coords.length === 2 ? r.coords : null
 });
 
-/* ---------- push / restore (network, best-effort) ---------- */
 
-// Debounced mirror of the latest local state — mutations call scheduleBackup
-// with a snapshot; only the most recent payload within the window is pushed.
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
 let pending: { trips: Trip[]; presets: Preset[] } | null = null;
 
@@ -110,8 +95,6 @@ export const scheduleBackup = (trips: Trip[], presets: Preset[]): void => {
 };
 
 export const pushBackup = async (trips: Trip[], presets: Preset[]): Promise<boolean> => {
-	// Strictly `=== false`: some environments (node, SSR-ish) expose navigator
-	// without onLine — treating undefined as offline would silently skip sync.
 	if (typeof navigator !== 'undefined' && navigator.onLine === false) return false;
 	try {
 		const resp = await fetch('/api/sync', {

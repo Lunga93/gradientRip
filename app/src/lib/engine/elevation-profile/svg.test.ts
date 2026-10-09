@@ -66,7 +66,7 @@ describe('profileSVG dynamic axis', () => {
 	});
 
 	it('opens up and differentiates rides as relief grows', () => {
-		const elev = [0, 25, 50, 75, 100]; // 100 m span over 1 km
+		const elev = [0, 25, 50, 75, 100];
 		const cum = [0, 250, 500, 750, 1000];
 		const push = lineExtent(profileSVG(pts, elev, cum, { climb: 8 }).svg);
 		const eskate = lineExtent(profileSVG(pts, elev, cum, { climb: 30 }).svg);

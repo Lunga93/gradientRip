@@ -101,9 +101,20 @@ const photonSearch = async (
 	return data.features.filter(hasFeature).filter(inCountry(country)).slice(0, 5).map(toResult);
 };
 
-const CLOSE_KM = 60;
-const nearBias = (r: PhotonResult, lat: number, lon: number): boolean =>
-	haversine([lat, lon], [r.lat, r.lon]) <= CLOSE_KM * 1000;
+const byDistance =
+	(lat: number, lon: number) =>
+	(a: PhotonResult, b: PhotonResult): number =>
+		haversine([lat, lon], [a.lat, a.lon]) - haversine([lat, lon], [b.lat, b.lon]);
+
+const dedupeResults = (results: PhotonResult[]): PhotonResult[] => {
+	const seen = new Set<string>();
+	return results.filter((r) => {
+		const k = `${r.lat.toFixed(5)},${r.lon.toFixed(5)}`;
+		if (seen.has(k)) return false;
+		seen.add(k);
+		return true;
+	});
+};
 
 export const autocompleteSearch = async (
 	query: string,
@@ -112,19 +123,15 @@ export const autocompleteSearch = async (
 	country = 'za'
 ): Promise<PhotonResult[]> => {
 	const exact = await photonSearch(query, lat, lon, country);
-	if (exact.length) {
-		if (!query.trim().match(/[0-9]/)) return exact;
-		const close = exact.filter((r) => nearBias(r, lat, lon));
-		if (close.length) return close;
-	}
 	const street = streetQuery(query);
-	if (street && street !== query) {
-		const sc = await photonSearch(street, lat, lon, country);
-		const close = sc.filter((r) => nearBias(r, lat, lon));
-		if (close.length) return close;
-		return sc;
+	if (!/[0-9]/.test(query) || !street || street === query) {
+		if (exact.length) return exact;
+		return street && street !== query ? photonSearch(street, lat, lon, country) : [];
 	}
-	return exact;
+	const sc = await photonSearch(street, lat, lon, country);
+	return dedupeResults([...exact, ...sc])
+		.sort(byDistance(lat, lon))
+		.slice(0, 5);
 };
 
 export const route = async (a: LatLon, b: LatLon): Promise<LatLon[]> => {
@@ -152,8 +159,6 @@ export const route = async (a: LatLon, b: LatLon): Promise<LatLon[]> => {
 }
 
 export const elevations = async (pts: LatLon[]): Promise<number[]> => {
-	// Chunks are independent idempotent reads — up to 4 in flight at a time.
-	// Order is preserved by writing each chunk into its own slot.
 	const CHUNK = 100;
 	const CONCURRENCY = 4;
 	const out: number[][] = [];
@@ -163,8 +168,6 @@ export const elevations = async (pts: LatLon[]): Promise<number[]> => {
 		const lats = chunk.map((p) => p[0].toFixed(6)).join(',');
 		const lons = chunk.map((p) => p[1].toFixed(6)).join(',');
 		const url = `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`;
-		// Transient failures (429 throttling, 5xx, timeouts, network blips)
-		// retry with backoff — one bad chunk must not nuke the whole lookup.
 		let lastErr: unknown = null;
 		for (let attempt = 0; attempt < 3; attempt++) {
 			try {
@@ -181,7 +184,6 @@ export const elevations = async (pts: LatLon[]): Promise<number[]> => {
 				return;
 			} catch (err) {
 				lastErr = err;
-				// Deterministic failures fail fast — retrying won't help.
 				if (
 					err instanceof Error &&
 					(err.message.includes('mismatched') || err.message === 'Elevation lookup failed')

@@ -1,6 +1,3 @@
-// GET /api/friends/[userId]/trips — trips a friend explicitly shared with
-// friends, shaped exactly like /api/trips rows so loadTrip() reopens them.
-// 403 unless the friendship is accepted (both directions checked).
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
 import { requireAuth } from '$lib/server/auth.js';

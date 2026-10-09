@@ -1,7 +1,3 @@
-// Server-side plan pipeline behind the `planRoute` remote command.
-// Geocodes every stop in order (respecting Nominatim's 1 req/sec policy),
-// routes each leg, resamples at 50 m, fetches elevation, then hands the
-// sample to the shared pure scorer. Returns the full PlanPacket.
 
 import { MODES, NOMINATIM_DELAY_MS } from '../engine/index.js';
 import { geocode, route, elevations } from './services.js';
@@ -52,9 +48,6 @@ export const runRemotePlan = async (
 	const tGeo = performance.now();
 
 	let line: LatLon[] = [];
-	// Legs are independent router calls with no shared rate policy, so they
-	// run concurrently (unlike Nominatim above, which stays sequential).
-	// Order is preserved: legs[i] always joins coords[i] → coords[i + 1].
 	const legs = await Promise.all(
 		coords.slice(0, -1).map((from, i) => route(from, coords[i + 1]))
 	);
@@ -76,7 +69,6 @@ export const runRemotePlan = async (
 		queries,
 		source: 'planned'
 	});
-	// One line per plan on stdout — the perf record for the waterfall.
 	// eslint-disable-next-line no-console
 	console.info(
 		`[runRemotePlan] stops=${queries.length} pts=${pts.length} ` +

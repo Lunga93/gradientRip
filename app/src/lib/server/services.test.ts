@@ -9,14 +9,11 @@ afterEach(() => {
 	vi.restoreAllMocks();
 });
 
-// 250 points → 3 chunks fetched concurrently with random completion order;
-// the merged array must still follow input order.
 describe('elevations chunk ordering', () => {
 	it('preserves input order across concurrent chunks', async () => {
 		const pts: LatLon[] = Array.from({ length: 250 }, (_, i) => [-33.9, 18.4 + i * 0.0001]);
 		globalThis.fetch = (async (url: unknown) => {
 			const u = new URL(url as string);
-			// longitude varies per point (latitude is constant here)
 			const lons = (u.searchParams.get('longitude') || '').split(',');
 			const count = lons.length;
 			const startIdx = Math.round((parseFloat(lons[0]) - 18.4) / 0.0001);

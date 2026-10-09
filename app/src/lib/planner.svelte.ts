@@ -22,9 +22,6 @@ const SNAP_FACTOR = 1.6;
 export const isMobileView = (): boolean =>
 	typeof window !== 'undefined' && window.matchMedia('(max-width:640px)').matches;
 
-// Client entry for the Plan form: calls the typed remote command (server
-// runs the whole geocode→route→elevation→score pipeline) and finalises the
-// returned packet. Reads like the flow it is: set busy → call → render.
 export const runPlan = async (): Promise<void> => {
 	if (typeof navigator !== 'undefined' && !navigator.onLine) {
 		ui.setStatus('You are offline — planning a new route needs a connection, but saved trips still open.', true);
@@ -56,10 +53,7 @@ export const runPlan = async (): Promise<void> => {
 	}
 };
 
-// Browser-side half of a successful plan (planned, drawn or recorded).
 export const finalisePlan = (packet: PlanPacket) => {
-	// A fresh plan replaces whatever route live tracking was following —
-	// stop any in-progress session before swapping the data out from under it.
 	stopTracking();
 	domain.applyResult({
 		verdict: packet.verdict,
@@ -107,8 +101,6 @@ export const finalisePlan = (packet: PlanPacket) => {
 	ui.setTab('ride');
 }
 
-// Redraws a saved trip with zero network access — same rendering path a live
-// plan uses, fed from stored data instead of fresh API responses.
 export const loadTrip = (t: Trip): void => {
 	if (!t.drawn && !t.recorded) {
 		domain.stops = t.queries.map((q, i) => ({
@@ -119,9 +111,6 @@ export const loadTrip = (t: Trip): void => {
 		domain.activeStopIndex = 0;
 	}
 	if (MODES[t.modeId]) domain.selectMode(t.modeId);
-	// Trust the trip's board when it is a shipped preset or a valid custom
-	// triple — otherwise the chip row would highlight nothing while planning
-	// fell back silently.
 	domain.boardVal =
 		t.boardVal && (isPresetBoard(t.modeId, t.boardVal) || parseBoardVal(t.boardVal))
 			? t.boardVal
@@ -134,7 +123,6 @@ export const loadTrip = (t: Trip): void => {
 	const mode = MODES[t.modeId] ?? domain.mode;
 	const v = decide(segs, t.totalWh, t.usableWh, t.climbLimit, t.brakeLimit, mode);
 
-	// Same session reset as a fresh plan — a loaded trip replaces the route.
 	stopTracking();
 	domain.applyResult({
 		verdict: v,
@@ -166,8 +154,6 @@ export const scoreAndSaveCustomRoute = async (tapped: LatLon[], name: string, so
 		ui.setStatus(`You are offline — saving a ${source} route needs elevation data, but the traced points are kept.`, true);
 		return;
 	}
-	// Drawn routes snap to the road network leg-by-leg — nobody rides
-	// helicopter lines. Recordings skip this: GPS traces are the ridden path.
 	let line = tapped;
 	let snapNote: string | null = null;
 	if (source === 'drawn') {
@@ -206,17 +192,13 @@ export const scoreAndSaveCustomRoute = async (tapped: LatLon[], name: string, so
 	}
 }
 
-/* ---------- cloud backup ---------- */
-// On first load: if the cloud has data and local is empty (fresh browser),
-// restore it; otherwise push local up so new activity is mirrored. Runs once
-// per session, quietly — this is backup, not a sync UI.
 let backupInit = false;
 export const initCloudBackup = async (): Promise<void> => {
 	if (backupInit) return;
 	backupInit = true;
 	if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
 	const remote = await fetchBackup();
-	if (!remote) return; // offline or endpoints down — stay local-only
+	if (!remote) return;
 	if (remote.trips.length === 0 && remote.presets.length === 0) {
 		if (domain.trips.length > 0 || domain.presets.length > 0) await pushBackup(domain.trips, domain.presets);
 		return;
@@ -231,7 +213,6 @@ export const initCloudBackup = async (): Promise<void> => {
 	}
 };
 
-/* ---------- custom route naming (injectable for tests) ---------- */
 type RouteNamer = (message: string, defaultName: string) => string | null;
 let routeNamer: RouteNamer = (message, defaultName) =>
 	typeof window !== 'undefined' && typeof window.prompt === 'function'
@@ -249,7 +230,6 @@ export const askRouteName = (message: string, defaultName: string): string | nul
 	return trimmed || defaultName;
 };
 
-/* ---------- locate ---------- */
 export const locateInto = (idx: number, panMap: boolean) => {
 	const unavailable = !navigator.geolocation || !window.isSecureContext;
 	if (unavailable) {
@@ -292,10 +272,6 @@ export const locateInto = (idx: number, panMap: boolean) => {
 	);
 }
 
-// Quietly try to centre the map (and bias geocode()/autocompleteSearch()) on
-// the user's actual location instead of the hardcoded Cape Town fallback.
-// Failure (denied/unavailable) is silent: the app already works fine on the
-// Cape Town default.
 export const initMapCenter = (onCenter: (center: LatLon) => void) => {
 	if (!navigator.geolocation) return;
 	navigator.geolocation.getCurrentPosition(
@@ -309,20 +285,18 @@ export const initMapCenter = (onCenter: (center: LatLon) => void) => {
 			saveKnownLocation({ lat: center[0], lon: center[1], label: '', ts: Date.now() });
 		},
 		() => {
-			// keep the Cape Town default (and its matching 'za' countryCode)
 		},
 		{ enableHighAccuracy: false, timeout: 8000, maximumAge: 5 * 60 * 1000 }
 	);
 };
 
-/** Snap a single leg between two points to the road network. */
-export async function snapDrawnLeg(
+export const snapDrawnLeg = async (
 	a: LatLon,
 	b: LatLon
-): Promise<{ leg: LatLon[]; snapped: boolean }> {
+): Promise<{ leg: LatLon[]; snapped: boolean }> => {
 	const straightLen = haversine(a, b);
-	if (straightLen < 1) return { leg: [a], snapped: false }; // duplicate tap — nothing to add
-	if (straightLen < RESAMPLE_STEP_M) return { leg: [a, b], snapped: false }; // too short — just add b
+	if (straightLen < 1) return { leg: [a], snapped: false };
+	if (straightLen < RESAMPLE_STEP_M) return { leg: [a, b], snapped: false };
 
 	try {
 		const leg = await fetchRoute(a, b);
@@ -332,10 +306,8 @@ export async function snapDrawnLeg(
 			return { leg, snapped: true };
 		}
 	} catch {
-		// no road match – fall through to straight interpolation
 	}
 
-	// Straight interpolation at profiling resolution.
 	const n = Math.max(1, Math.floor(straightLen / RESAMPLE_STEP_M));
 	const straightLeg: LatLon[] = [a];
 	for (let k = 1; k <= n; k++) {
@@ -347,17 +319,9 @@ export async function snapDrawnLeg(
 	return { leg: straightLeg, snapped: false };
 }
 
-/** Snap a user-drawn polyline to the road network leg‑by‑leg.
- *  For each tapped segment we try `fetchRoute(a, b)`; if the routed length
- *  is not excessively longer than the straight-line distance we keep the
- *  road geometry, otherwise we fall back to evenly‑spaced interpolated
- *  way‑points at the profiling resolution.
- *
- *  Returns `{ line, snapped, straight }` where *snapped* is the count of
- *  legs that were road‑snapped and *straight* is the count kept as-tapped. */
-export async function snapDrawnLine(
+export const snapDrawnLine = async (
 	tapped: LatLon[]
-): Promise<{ line: LatLon[]; snapped: number; straight: number }> {
+): Promise<{ line: LatLon[]; snapped: number; straight: number }> => {
 	const out: LatLon[] = [tapped[0]];
 	let snapped = 0;
 	let straight = 0;

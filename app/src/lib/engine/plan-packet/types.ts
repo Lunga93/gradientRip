@@ -1,5 +1,3 @@
-// Serializable types shared between server and client.
-// Plain data only — no runes, no stores, no I/O.
 
 export type LatLon = [number, number];
 
@@ -16,7 +14,7 @@ export interface Phys {
 
 export interface Board {
 	label: string;
-	value: string; // "capWh|climbLimit|brakeLimit"
+	value: string;
 }
 
 export interface Mode {

@@ -39,7 +39,6 @@ export const POST: RequestHandler = async (event) => {
 	if (!Array.isArray(body.pts)) throw error(400, 'pts must be an array');
 	if (!Array.isArray(body.elev)) throw error(400, 'elev must be an array');
 	if (!Array.isArray(body.cum)) throw error(400, 'cum must be an array');
-	// drawn/recorded are optional flags — planned trips carry neither.
 	if (body.drawn !== undefined && typeof body.drawn !== 'boolean') throw error(400, 'drawn must be a boolean');
 	if (body.recorded !== undefined && typeof body.recorded !== 'boolean') throw error(400, 'recorded must be a boolean');
 

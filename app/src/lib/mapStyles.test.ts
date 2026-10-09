@@ -42,8 +42,6 @@ describe('map tile catalog', () => {
 	});
 
 	it('ships no contour-bearing tile layers', () => {
-		// Stamen Terrain bakes elevation contours into the raster — removed
-		// from the catalog so they can never show behind the plan panel.
 		for (const s of MAP_STYLES) {
 			expect(s.url).not.toContain('stamen_terrain');
 		}

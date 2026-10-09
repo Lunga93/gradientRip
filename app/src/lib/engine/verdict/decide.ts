@@ -1,6 +1,5 @@
 import type { Mode, Verdict, RouteSegment } from '../plan-packet/types.js';
 
-/** Determine if a route is Fly, OK, Caution, or Stop for the given mode/board. */
 export const decide = (
 	segs: RouteSegment[],
 	totalWh: number,

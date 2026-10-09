@@ -1,7 +1,6 @@
 import { THRESHOLDS } from './thresholds.js';
 import type { Band } from '../plan-packet/types.js';
 
-/** Classify a grade percentage into a gradient band. */
 export const classify = (gradePct: number): Band => {
 	const g = gradePct;
 	if (g <= THRESHOLDS.pastBraking) return { c: '#4a1420', k: 'past braking' };

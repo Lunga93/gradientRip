@@ -1,5 +1,3 @@
-// Address autocomplete — debounced + throttled against Photon's public instance.
-// Ported from the legacy app. Only caller: StopList.svelte.
 
 import { autocompleteSearch } from './api.js';
 import { geoState } from './geo-state.svelte.js';
@@ -10,9 +8,6 @@ export const AC_MIN_CHARS = 3;
 export const AC_DEBOUNCE_MS = 450;
 export const AC_MIN_INTERVAL_MS = 500;
 
-// Per-field debounce timers + controllers: typing in field B must not cancel
-// field A's in-flight request. Throttle clock stays global (Photon rate).
-// Plain records (not reactive Maps) — these are request bookkeeping, never UI.
 const acTimers: Record<number, ReturnType<typeof setTimeout> | undefined> = {};
 const acControllers: Record<number, AbortController | undefined> = {};
 const acSeq: Record<number, number | undefined> = {};
@@ -46,7 +41,6 @@ const runAutocomplete = async (idx: number, query: string): Promise<void> => {
 	try {
 		const results = await autocompleteSearch(query, controller.signal, geoState.center, geoState.country);
 		if (controller.signal.aborted) return;
-		// Discard stale responses: only the latest request per field may publish.
 		if (acSeq[idx] !== seq) return;
 		const stop = domain.stops[idx];
 		if (!stop || stop.value.trim() !== query) return;

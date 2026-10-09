@@ -1,6 +1,5 @@
 import { haversine } from './haversine.js';
 
-/** Find nearest point on a polyline to a given lat/lon. */
 export const nearestOnLine = (
 	latlng: [number, number],
 	line: [number, number][],

@@ -1,4 +1,3 @@
-// Engine public API — re-export everything consumers need.
 
 export * from './transport-modes/index.js';
 export * from './energy-physics/constants.js';

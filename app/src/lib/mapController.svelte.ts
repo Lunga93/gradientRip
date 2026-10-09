@@ -1,9 +1,3 @@
-// Leaflet map controller — owns the single map instance and every layer the
-// legacy app managed by hand. The component creates/destroys the map in a
-// $effect; all other modules go through this API.
-//
-// Leaflet is dynamically imported: its UMD factory throws when evaluated
-// without `window`, so it must never run during SSR/prerender.
 import type * as LeafletTypes from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { LatLon } from './util.js';
@@ -51,7 +45,6 @@ let locateAccuracyCircle: L.Circle | null = null;
 let trackMarker: L.Marker | null = null;
 let trackAccuracyCircle: L.Circle | null = null;
 
-/* ---------- basemap tile styles ---------- */
 let tileLayer: L.TileLayer | null = null;
 let activeStyleId: string | null = null;
 let stylePref = 'auto';
@@ -59,8 +52,6 @@ let themeObserver: MutationObserver | null = null;
 let themeMedia: MediaQueryList | null = null;
 let themeMediaHandler: (() => void) | null = null;
 
-// Mirror of the app theme resolution: explicit data-theme wins, otherwise the
-// OS preference (same rule as the pre-paint script in app.html).
 export const effectiveTheme = (): 'light' | 'dark' => {
 	if (typeof document === 'undefined') return 'dark';
 	const t = document.documentElement.getAttribute('data-theme');
@@ -92,8 +83,6 @@ const applyTileStyle = (id: string): void => {
 	});
 	tileLayer.addTo(m);
 	m.setMaxZoom(def.maxZoom);
-	// Only plain OSM ever gets the CSS invert treatment in dark mode —
-	// everything else is native artwork (light or dark).
 	m.getContainer().classList.toggle(
 		'tiles-invert',
 		effectiveTheme() === 'dark' && def.invertInDark === true
@@ -101,7 +90,6 @@ const applyTileStyle = (id: string): void => {
 	activeStyleId = def.id;
 };
 
-// Follow the app theme while the user hasn't picked an explicit style.
 const watchTheme = (): void => {
 	unwatchTheme();
 	if (typeof document === 'undefined') return;
@@ -129,7 +117,6 @@ const unwatchTheme = (): void => {
 	themeMediaHandler = null;
 };
 
-/** Persist the user's choice ('auto' follows the app theme) and apply it. */
 export const setMapStyle = (id: string): void => {
 	stylePref = id === 'auto' || isValidStyleId(id) ? id : 'auto';
 	saveMapStylePref(stylePref);
@@ -143,13 +130,10 @@ export const createMap = async (container: HTMLElement, center: LatLon): Promise
 	const Leaf = await ensureLeaflet();
 	map = Leaf.map(container, { zoomControl: false }).setView(center, 13);
 	Leaf.control.zoom({ position: 'topright' }).addTo(map);
-	// Basemap follows the saved style pref (or the app theme when 'auto').
 	stylePref = loadMapStylePref();
 	applyTileStyle(resolveStyleId(stylePref));
 	watchTheme();
 
-	// Panning away from the live marker while tracking means the rider wants
-	// to look around — stop auto-recentring until they ask to jump back.
 	map.on('dragstart', () => {
 		if (session.trackingActive && session.following) {
 			session.following = false;
@@ -161,7 +145,6 @@ export const createMap = async (container: HTMLElement, center: LatLon): Promise
 	return map;
 };
 
-// browser-only layer helpers grab the loaded namespace through this getter
 const l = (): L => {
 	if (!Leaflet) throw new Error('Leaflet not loaded — call ensureLeaflet()/createMap() first');
 	return Leaflet;
@@ -204,7 +187,6 @@ export const ensureMap = (): L.Map => {
 	return map;
 };
 
-/* ---------- route rendering ---------- */
 const stopMapIcon = (i: number, n: number): L.DivIcon => {
 	if (i === 0) {
 		return l().divIcon({
@@ -288,7 +270,6 @@ export const renderRoute = (
 	m.fitBounds(l().latLngBounds(line), { padding: [40, 40] });
 };
 
-/* ---------- live progress: traveled cyan vs dashed-blue remaining ---------- */
 const cutLineAt = (dist: number): LatLon[] => {
 	if (routeLine.length < 2) return [];
 	let lo = 0;
@@ -366,7 +347,6 @@ export const clearRouteProgress = (): void => {
 	progressLive = false;
 };
 
-/* ---------- floating badges: hill warnings + arrival ---------- */
 const fmtAhead = (m: number): string => (m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`);
 
 let hillKey = '';
@@ -415,7 +395,6 @@ export const clearArrivalBadge = (): void => {
 	arrivalBadge = null;
 };
 
-/* ---------- draw mode ---------- */
 const onMapClick = (e: L.LeafletMouseEvent): void => {
 	if (session.drawMode) {
 		addDrawPoint([e.latlng.lat, e.latlng.lng]);
@@ -462,7 +441,6 @@ export const setDrawCursor = (crosshair: boolean): void => {
 	map.getContainer().style.cursor = crosshair ? 'crosshair' : '';
 };
 
-/* ---------- record mode ---------- */
 export const redrawRecordLayer = (): void => {
 	const m = ensureMap();
 	if (recordLayer) {
@@ -500,7 +478,6 @@ export const clearRecordLayer = (): void => {
 	}
 };
 
-/* ---------- locate ---------- */
 export const showLocateMarker = (latlng: LatLon, accuracy: number): void => {
 	const m = ensureMap();
 	m.setView(latlng, 16);
@@ -513,8 +490,6 @@ export const showLocateMarker = (latlng: LatLon, accuracy: number): void => {
 		fillColor: '#FFFFFF',
 		fillOpacity: 0.35
 	}).addTo(m);
-	// A visible accuracy radius (metres -> map units via a real circle,
-	// not the marker's pixel radius) so a bad fix is visible, not just implied.
 	locateAccuracyCircle = l().circle(latlng, {
 		radius: accuracy,
 		color: '#FFFFFF',
@@ -524,7 +499,6 @@ export const showLocateMarker = (latlng: LatLon, accuracy: number): void => {
 	}).addTo(m);
 };
 
-/* ---------- live tracking marker (owned here, driven by tracker.ts) ---------- */
 export const updateTrackMarker = (latlng: LatLon, accuracy: number): void => {
 	const m = ensureMap();
 	if (!trackMarker) {
@@ -564,7 +538,6 @@ export const clearTrackMarker = (): void => {
 	}
 };
 
-/* ---------- friend live markers (driven by the social SSE feed) ---------- */
 export interface FriendPin {
 	id: string;
 	name: string;
@@ -591,7 +564,7 @@ export const renderFriendMarkers = (friends: FriendPin[]): void => {
 	try {
 		m = ensureMap();
 	} catch {
-		return; // map not ready yet — next SSE poll re-renders
+		return;
 	}
 	if (!friendLayer) friendLayer = l().layerGroup().addTo(m);
 	friendLayer.clearLayers();

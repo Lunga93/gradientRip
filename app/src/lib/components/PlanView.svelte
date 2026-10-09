@@ -39,17 +39,17 @@
 	<div class="view {ui.activeTab === 'plan' ? 'active' : ''}">
 	<form onsubmit={(e) => { e.preventDefault(); runPlan(); }}>
 		<div class="relative p-5">
-			<div class="relative">					<div class="sec-label">Route stops</div>
+			<div class="relative">					<div class="mb-2 text-[0.7rem] font-bold tracking-[0.14em] text-base-content/60 uppercase">Route stops</div>
 					<StopList />
 					{#if domain.stops.every((s) => !s.value)}
-						<p class="mt-1.5 text-[0.75rem]" style="color: var(--ink-2);">
+						<p class="mt-1.5 text-[0.75rem] text-base-content/70">
 							Type an address or place name to set your origin and destination.
 						</p>
 					{/if}
-				<div class="stops-actions mt-2.5 flex gap-2">
+				<div class="mt-2.5 flex gap-2 max-[380px]:flex-col">
 					<button
 						type="button"
-						class="board-chip flex-1"
+						class="btn btn-soft btn-sm flex-1 max-[380px]:w-full max-[380px]:flex-none"
 						onclick={() => domain.addStop()}
 						title="Add another stop to your route"
 					>
@@ -57,7 +57,7 @@
 					</button>
 					<button
 						type="button"
-						class="board-chip"
+						class="btn btn-soft btn-sm max-[380px]:w-full"
 						onclick={() => domain.reverseStops()}
 						title="Reverse stop order"
 						aria-label="Reverse stop order"
@@ -66,7 +66,7 @@
 					</button>
 					<button
 						type="button"
-						class="board-chip flex-1"
+						class="btn btn-soft btn-sm flex-1 max-[380px]:w-full max-[380px]:flex-none"
 						onclick={() => locateInto(domain.activeStopIndex, domain.activeStopIndex === 0)}
 						title="Fill this stop with your current GPS location"
 					>
@@ -75,27 +75,27 @@
 				</div>
 
 				<section class="mt-5">
-					<div class="sec-label">Saved places</div>
+					<div class="mb-2 text-[0.7rem] font-bold tracking-[0.14em] text-base-content/60 uppercase">Saved places</div>
 					<div class="flex flex-wrap gap-1.5"><PresetChips /></div>
 				</section>
 
 				{#if !ui.netOnline}
-					<div class="mt-4 flex items-start gap-2.5 p-3" style="background: color-mix(in srgb, var(--v-caution) 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v-caution) 35%, transparent); border-radius: 8px;" role="status">
-						<Mark name="alert" cls="size-4 mt-0.5 shrink-0" />
-						<span class="text-[0.8rem] leading-relaxed" style="color: var(--ink-1);">
+					<div class="alert alert-warning mt-4" role="status">
+						<Mark name="alert" cls="size-4 shrink-0" />
+						<span class="text-[0.8rem] leading-relaxed">
 							You're offline — planning a new route needs a connection, but any saved trip still opens instantly.
 						</span>
 					</div>
 				{/if}
 
 				<section class="mt-5">
-					<div class="sec-label">Transport mode</div>
+					<div class="mb-2 text-[0.7rem] font-bold tracking-[0.14em] text-base-content/60 uppercase">Transport mode</div>
 					<ModePicker variant="panel" />
 				</section>
 
 				{#if !session.planControlsHidden}
 					<section class="mt-5">
-						<div class="sec-label">Board // Powertrain</div>
+						<div class="mb-2 text-[0.7rem] font-bold tracking-[0.14em] text-base-content/60 uppercase">Board // Powertrain</div>
 						<div
 							class="drag-scroll flex gap-1.5 overflow-x-auto pb-1 [&>*]:shrink-0 [&::-webkit-scrollbar]:hidden"
 							role="radiogroup"
@@ -108,25 +108,27 @@
 							{/each}
 						</div>
 
-						<div class="chamfer-card mt-2.5 p-3.5">
-							<div class="flex items-baseline justify-between gap-2">
-								<div class="min-w-0 truncate text-[0.85rem] font-semibold text-base-content">{boardSpec.name}</div>
-								<div class="font-mono2 shrink-0 text-[0.62rem] font-semibold tracking-widest" style="color: var(--color-primary);">
-									{domain.mode.label.toUpperCase()}
+						<div class="card border-base-300 bg-base-100 mt-2.5 border shadow-sm">
+							<div class="card-body gap-2 p-3.5">
+								<div class="flex items-baseline justify-between gap-2">
+									<div class="min-w-0 truncate text-[0.85rem] font-semibold">{boardSpec.name}</div>
+									<div class="font-mono2 text-primary shrink-0 text-[0.62rem] font-semibold tracking-widest">
+										{domain.mode.label.toUpperCase()}
+									</div>
 								</div>
-							</div>
-							<div class="mt-2.5 grid grid-cols-3 gap-2">
-								<div>
-									<div class="font-mono2 text-[0.6rem] tracking-widest" style="color: var(--ink-2);">{human ? 'DAY BUDGET' : 'BATTERY'}</div>
-									<div class="font-display text-lg font-bold" style="color: var(--ink-0);">{boardSpec.cap}<small class="font-mono2 ml-1 text-[0.6rem] font-medium" style="color: var(--ink-2);">{human ? 'kcal' : 'Wh'}</small></div>
-								</div>
-								<div>
-									<div class="font-mono2 text-[0.6rem] tracking-widest" style="color: var(--ink-2);">MAX CLIMB</div>
-									<div class="font-display text-lg font-bold" style="color: var(--v-caution);">{boardSpec.climb}<small class="font-mono2 ml-1 text-[0.6rem] font-medium" style="color: var(--ink-2);">%</small></div>
-								</div>
-								<div>
-									<div class="font-mono2 text-[0.6rem] tracking-widest" style="color: var(--ink-2);">BRAKE LIM</div>
-									<div class="font-display text-lg font-bold" style="color: var(--color-primary);">{boardSpec.brake}<small class="font-mono2 ml-1 text-[0.6rem] font-medium" style="color: var(--ink-2);">%</small></div>
+								<div class="stats stats-horizontal w-full shadow-none">
+									<div class="stat px-0">
+										<div class="stat-title font-mono2 text-[0.6rem]">{human ? 'DAY BUDGET' : 'BATTERY'}</div>
+										<div class="font-display stat-value text-lg">{boardSpec.cap}<span class="font-mono2 ml-1 text-[0.6rem] font-medium opacity-70">{human ? 'kcal' : 'Wh'}</span></div>
+									</div>
+									<div class="stat px-0">
+										<div class="stat-title font-mono2 text-[0.6rem]">MAX CLIMB</div>
+										<div class="font-display stat-value text-lg text-warning">{boardSpec.climb}<span class="font-mono2 ml-1 text-[0.6rem] font-medium opacity-70">%</span></div>
+									</div>
+									<div class="stat px-0">
+										<div class="stat-title font-mono2 text-[0.6rem]">BRAKE LIM</div>
+										<div class="font-display stat-value text-lg text-primary">{boardSpec.brake}<span class="font-mono2 ml-1 text-[0.6rem] font-medium opacity-70">%</span></div>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -137,18 +139,19 @@
 						<div class="mt-2 flex gap-2">
 							<button
 								type="button"
-								class="board-chip flex-1"
-								style={session.drawMode ? 'background: color-mix(in srgb, var(--color-primary) 24%, transparent); color: var(--color-primary); box-shadow: inset 0 0 0 1px var(--color-primary);' : ''}
+								class="btn btn-sm flex-1"
+								class:btn-primary={session.drawMode}
+								class:btn-soft={!session.drawMode}
 								onclick={onDrawToggle}
 							>
 								DRAW ROUTE
 							</button>
 							<button
 								type="button"
-								class="board-chip flex-1"
-								style={session.recordMode
-									? 'background: color-mix(in srgb, var(--color-error) 18%, transparent); color: var(--color-error); box-shadow: inset 0 0 0 1px var(--color-error);'
-									: 'background: color-mix(in srgb, var(--color-error) 8%, transparent); color: var(--color-error);'}
+								class="btn btn-sm flex-1"
+								class:btn-error={session.recordMode}
+								class:btn-soft={!session.recordMode}
+								class:text-error={!session.recordMode}
 								onclick={onRecordToggle}
 							>
 								<span class="inline-flex items-center gap-1.5"><span class="rec-dot" aria-hidden="true"></span>REC LIVE</span>
@@ -159,26 +162,24 @@
 					{#if session.planning || ui.statusMsg}
 						<div class="mt-3" role="status" aria-live="polite">
 							{#if session.planning}
-								<div class="scan-box">
-									<div class="scan-line"></div>
-								</div>
-								<div class="mt-2 flex flex-col gap-1.5">
+								<progress class="progress progress-primary w-full" aria-label="Planning route"></progress>
+								<ul class="steps steps-vertical mt-2 w-full">
 									{#each ['Geocode stops', 'Route legs', 'Fetch elevation', 'Score gradients'] as step (step)}
-										<div class="pipe-step"><span class="pipe-dot pipe-dot-live"></span>{step}</div>
+										<li class="step step-primary text-sm" data-content=""><span class="text-left">{step}</span></li>
 									{/each}
-								</div>
+								</ul>
 							{:else if ui.statusErr}
-								<div class="flex items-start gap-2.5 p-3" style="background: color-mix(in srgb, var(--color-error) 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-error) 35%, transparent); border-radius: 8px;">
-									<Mark name="alert" cls="size-4 mt-0.5 shrink-0" />
+								<div class="alert alert-error">
+									<Mark name="alert" cls="size-4 shrink-0" />
 									<div class="min-w-0">
-										<p class="m-0 text-[0.82rem] leading-relaxed" style="color: var(--ink-0);">{ui.statusMsg}</p>
-										<button type="button" class="mt-2 cursor-pointer font-display text-[0.75rem] font-bold tracking-widest" style="background: transparent; border: none; color: var(--color-error);" onclick={() => runPlan()}>
+										<p class="m-0 text-[0.82rem] leading-relaxed">{ui.statusMsg}</p>
+										<button type="button" class="btn btn-error btn-xs mt-2" onclick={() => runPlan()}>
 											↺ RETRY
 										</button>
 									</div>
 								</div>
 							{:else}
-								<p class="m-0 px-1 text-sm" style="color: var(--ink-2);">{ui.statusMsg}</p>
+								<p class="m-0 px-1 text-sm text-base-content/70">{ui.statusMsg}</p>
 							{/if}
 						</div>
 					{/if}

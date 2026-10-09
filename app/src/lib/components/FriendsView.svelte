@@ -80,7 +80,6 @@
 		void social.probeMe();
 	});
 
-	// (Re)subscribe whenever the tab is opened while signed in.
 	$effect(() => {
 		if (ui.activeTab === 'friends' && social.signedIn) {
 			social.startLive();
@@ -88,7 +87,6 @@
 		}
 	});
 
-	// Mirror live buddies onto the map (cleared when nobody is live).
 	$effect(() => {
 		const pins = social.livePeers.map((p) => ({
 			id: p.id,
@@ -104,87 +102,82 @@
 </script>
 
 <div class="view {ui.activeTab === 'friends' ? 'active' : ''} p-5">
-	<h2 class="font-display m-0 mb-1 text-[1.35rem] font-bold" style="color: var(--ink-0);">Friends</h2>
-	<p class="m-0 mb-4 text-[0.8rem]" style="color: var(--ink-2);">
+	<h2 class="font-display m-0 mb-1 text-[1.35rem] font-bold">Friends</h2>
+	<p class="m-0 mb-4 text-[0.8rem] text-base-content/70">
 		Ride together — see buddies live on the map and open their shared routes.
 	</p>
 
 	{#if social.me === undefined}
-		<p class="text-sm" style="color: var(--ink-2);">Checking sign-in…</p>
+		<p class="text-sm text-base-content/70">Checking sign-in…</p>
 	{:else if !social.signedIn}
-		<div class="chamfer-card flex flex-col items-center gap-3 p-6 text-center">
-			<span
-				class="font-display grid size-12 place-items-center text-xl font-bold"
-				style="background: color-mix(in srgb, var(--color-primary) 16%, transparent); color: var(--color-primary); border-radius: 10px;"
-				aria-hidden="true"
-			>
-				G
-			</span>
-			<h3 class="font-display m-0 text-base font-bold" style="color: var(--ink-0);">
-				Sign in to ride with friends
-			</h3>
-			<p class="m-0 text-sm leading-relaxed" style="color: var(--ink-2);">
-				Google login links your saved trips to a real identity — nothing is lost, and
-				anonymous riding keeps working when signed out.
-			</p>
-			{#if loginError}
-				<p class="m-0 text-sm font-bold" style="color: var(--color-error);" role="alert">{loginError}</p>
-			{/if}
-			<a
-				href="/api/auth/google"
-				rel="external"
-				class="slash-btn slash-btn-sm no-underline"
-				style="display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none;"
-			>
-				Continue with Google
-			</a>
+		<div class="card border-base-300 bg-base-100 border shadow-sm">
+			<div class="card-body items-center gap-3 p-6 text-center">
+				<div class="avatar placeholder">
+					<div class="bg-primary text-primary-content grid size-12 place-items-center rounded-box text-xl font-bold">
+						<span>G</span>
+					</div>
+				</div>
+				<h3 class="font-display m-0 text-base font-bold">
+					Sign in to ride with friends
+				</h3>
+				<p class="m-0 text-sm leading-relaxed text-base-content/70">
+					Google login links your saved trips to a real identity — nothing is lost, and
+					anonymous riding keeps working when signed out.
+				</p>
+				{#if loginError}
+					<p class="text-error m-0 text-sm font-bold" role="alert">{loginError}</p>
+				{/if}
+				<a
+					href="/api/auth/google"
+					rel="external"
+					class="btn btn-primary btn-sm gap-2 no-underline"
+				>
+					Continue with Google
+				</a>
+			</div>
 		</div>
 	{:else if social.me}
 		{@const me = social.me}
-		<!-- profile row -->
-		<div class="chamfer-card mb-3 flex items-center gap-3 p-3.5">
+		<div class="card border-base-300 bg-base-100 mb-3 border shadow-sm">
+			<div class="card-body flex-row items-center gap-3 p-3.5">
 			{#if me.avatar_url}
-				<img
-					src={me.avatar_url}
-					alt=""
-					width="44"
-					height="44"
-					class="shrink-0 rounded-full"
-					style="width: 44px; height: 44px; object-fit: cover; box-shadow: 0 0 0 2px var(--color-primary);"
-					referrerpolicy="no-referrer"
-				/>
+				<div class="avatar shrink-0">
+					<div class="ring-primary size-11 rounded-full ring ring-offset-2">
+						<img src={me.avatar_url} alt="" width="44" height="44" referrerpolicy="no-referrer" />
+					</div>
+				</div>
 			{:else}
-				<span
-					class="font-display grid shrink-0 place-items-center text-lg font-bold"
-					style="width: 44px; height: 44px; border-radius: 9999px; background: var(--color-primary); color: #fff;"
-					aria-hidden="true"
-				>
-					{(me.display_name || me.email || 'R')[0]?.toUpperCase()}
-				</span>
+				<div class="avatar placeholder shrink-0">
+					<div class="bg-primary text-primary-content size-11 rounded-full">
+						<span class="font-display text-lg font-bold">
+							{(me.display_name || me.email || 'R')[0]?.toUpperCase()}
+						</span>
+					</div>
+				</div>
 			{/if}
 			<span class="min-w-0 flex-1">
-				<span class="font-display block truncate text-[1.05rem] leading-tight font-bold" style="color: var(--ink-0);">
+				<span class="font-display block truncate text-[1.05rem] leading-tight font-bold">
 					{me.display_name || 'Rider'}
 				</span>
-				<span class="mt-0.5 block truncate text-[0.72rem]" style="color: var(--ink-2);">
+				<span class="mt-0.5 block truncate text-[0.72rem] text-base-content/60">
 					{me.email} · {social.friends.length} friend{social.friends.length === 1 ? '' : 's'}
-					{#if social.liveConnected}· <span style="color: var(--v-go);">live feed on</span>{/if}
+					{#if social.liveConnected}· <span class="text-success">live feed on</span>{/if}
 				</span>
 			</span>
 			<button
 				type="button"
-				class="slash-btn slash-btn-xs shrink-0"
-				style="background: transparent; box-shadow: inset 0 0 0 1px var(--panel-line); color: var(--ink-1); filter: none;"
+				class="btn btn-ghost btn-xs shrink-0"
 				onclick={() => social.logout()}
 			>
 				Sign out
 			</button>
+			</div>
 		</div>
 
-		<!-- live now -->
 		{#if social.liveNow.length > 0}
-			<div class="chamfer-card mb-3 p-3.5" style="--vt: var(--v-go);">
-				<span class="font-mono2 mb-2 block" style="font-size: 0.62rem; letter-spacing: 0.16em; color: var(--v-go);">
+			<div class="card border-base-300 bg-base-100 mb-3 border shadow-sm">
+				<div class="card-body gap-2 p-3.5">
+				<span class="font-mono2 text-success mb-2 block text-[0.62rem] tracking-[0.16em]">
 					● LIVE NOW · {social.liveNow.length}
 				</span>
 				<div class="flex flex-col gap-2">
@@ -192,39 +185,33 @@
 						{@const dist = peerDistance(peer)}
 						<div class="flex items-center gap-2.5">
 							{#if peer.avatar_url}
-								<img
-									src={peer.avatar_url}
-									alt=""
-									width="32"
-									height="32"
-									class="shrink-0 rounded-full"
-									style="width: 32px; height: 32px; object-fit: cover; box-shadow: 0 0 0 2px var(--v-go);"
-									referrerpolicy="no-referrer"
-								/>
+								<div class="avatar shrink-0">
+									<div class="ring-success size-8 rounded-full ring ring-offset-2">
+										<img src={peer.avatar_url} alt="" width="32" height="32" referrerpolicy="no-referrer" />
+									</div>
+								</div>
 							{/if}
 							<span class="min-w-0 flex-1">
-								<span class="block truncate text-sm font-bold" style="color: var(--ink-0);">
+								<span class="block truncate text-sm font-bold">
 									{friendName(peer)}
 								</span>
-								<span class="block text-[0.7rem]" style="color: var(--ink-2);">
+								<span class="block text-[0.7rem] text-base-content/60">
 									riding{speedText(peer)}{dist ? ` · ${dist}` : ''}
 								</span>
 							</span>
-							<span
-								class="font-mono2 shrink-0 rounded-full px-2 py-1"
-								style="font-size: 0.62rem; font-weight: 700; background: color-mix(in srgb, var(--v-go) 16%, transparent); color: var(--v-go);"
-							>
+							<span class="badge badge-success badge-soft font-mono2 shrink-0 text-[0.62rem] font-bold">
 								LIVE
 							</span>
 						</div>
 					{/each}
 				</div>
+				</div>
 			</div>
 		{/if}
 
-		<!-- add friend -->
-		<div class="chamfer-card mb-3 p-3.5">
-			<span class="font-mono2 mb-2 block" style="font-size: 0.62rem; letter-spacing: 0.16em; color: var(--ink-2);">
+		<div class="card border-base-300 bg-base-100 mb-3 border shadow-sm">
+			<div class="card-body gap-2 p-3.5">
+			<span class="font-mono2 mb-2 block text-[0.62rem] tracking-[0.16em] text-base-content/60">
 				ADD A RIDING BUDDY
 			</span>
 			<form
@@ -241,61 +228,55 @@
 					autocomplete="email"
 					bind:value={email}
 					aria-label="Friend's Google email"
-					class="min-w-0 flex-1 rounded-md px-3 py-2.5 text-sm"
-					style="background: var(--panel-soft); color: var(--ink-0); box-shadow: inset 0 0 0 1px var(--panel-line); border: none; min-height: 44px;"
+					class="input input-bordered min-w-0 flex-1 text-sm"
 				/>
 				<SlashButton label={sending ? '…' : 'Add'} size="sm" type="submit" />
 			</form>
 			{#if social.lastError}
-				<p class="m-0 mt-2 text-[0.78rem] font-bold" style="color: var(--color-error);" role="alert">
+				<p class="text-error m-0 mt-2 text-[0.78rem] font-bold" role="alert">
 					{social.lastError}
 				</p>
 			{/if}
 			{#if sentMsg}
-				<p class="m-0 mt-2 text-[0.78rem] font-bold" style="color: var(--v-go);" role="status">{sentMsg}</p>
+				<p class="text-success m-0 mt-2 text-[0.78rem] font-bold" role="status">{sentMsg}</p>
 			{/if}
 			{#if social.outgoing.length > 0}
-				<p class="m-0 mt-2 text-[0.75rem]" style="color: var(--ink-2);">
+				<p class="m-0 mt-2 text-[0.75rem] text-base-content/60">
 					Waiting on: {social.outgoing.map((o) => friendName(o)).join(', ')}
 				</p>
 			{/if}
+			</div>
 		</div>
 
-		<!-- incoming requests -->
 		{#if social.incoming.length > 0}
-			<div class="chamfer-card mb-3 p-3.5" style="--vt: var(--v-caution);">
-				<span class="font-mono2 mb-2 block" style="font-size: 0.62rem; letter-spacing: 0.16em; color: var(--v-caution);">
+			<div class="card border-base-300 bg-base-100 mb-3 border shadow-sm">
+				<div class="card-body gap-2 p-3.5">
+				<span class="font-mono2 text-warning mb-2 block text-[0.62rem] tracking-[0.16em]">
 					REQUESTS · {social.incoming.length}
 				</span>
 				<div class="flex flex-col gap-2">
 					{#each social.incoming as req (req.id)}
 						<div class="flex items-center gap-2.5">
 							{#if req.avatar_url}
-								<img
-									src={req.avatar_url}
-									alt=""
-									width="32"
-									height="32"
-									class="shrink-0 rounded-full"
-									style="width: 32px; height: 32px; object-fit: cover;"
-									referrerpolicy="no-referrer"
-								/>
+								<div class="avatar shrink-0">
+									<div class="size-8 rounded-full">
+										<img src={req.avatar_url} alt="" width="32" height="32" referrerpolicy="no-referrer" />
+									</div>
+								</div>
 							{/if}
-							<span class="min-w-0 flex-1 truncate text-sm font-bold" style="color: var(--ink-0);">
+							<span class="min-w-0 flex-1 truncate text-sm font-bold">
 								{friendName(req)}
 							</span>
 							<button
 								type="button"
-								class="slash-btn slash-btn-xs"
-								style="filter: none; background: color-mix(in srgb, var(--v-go) 16%, transparent); color: var(--v-go); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v-go) 40%, transparent);"
+								class="btn btn-success btn-soft btn-xs"
 								onclick={() => social.respond(req.id, true)}
 							>
 								Accept
 							</button>
 							<button
 								type="button"
-								class="slash-btn slash-btn-xs"
-								style="filter: none; background: transparent; box-shadow: inset 0 0 0 1px var(--panel-line); color: var(--ink-1);"
+								class="btn btn-ghost btn-xs btn-circle"
 								aria-label="Decline {friendName(req)}"
 								onclick={() => social.respond(req.id, false)}
 							>
@@ -304,66 +285,61 @@
 						</div>
 					{/each}
 				</div>
+				</div>
 			</div>
 		{/if}
 
-		<!-- friends list -->
 		{#if social.friends.length === 0}
 			<div class="flex flex-col items-center gap-2 px-6 py-10 text-center">
-				<h3 class="font-display m-0 text-base font-bold" style="color: var(--ink-0);">No buddies yet</h3>
-				<p class="m-0 text-sm leading-relaxed" style="color: var(--ink-2);">
+				<h3 class="font-display m-0 text-base font-bold">No buddies yet</h3>
+				<p class="m-0 text-sm leading-relaxed text-base-content/70">
 					Add a friend by their Google email — once they accept, you'll see each other
 					live on the map while riding.
 				</p>
 			</div>
 		{:else}
-			<span class="font-mono2 mb-2 block" style="font-size: 0.62rem; letter-spacing: 0.16em; color: var(--ink-2);">
+			<span class="font-mono2 mb-2 block text-[0.62rem] tracking-[0.16em] text-base-content/60">
 				BUDDIES · {social.friends.length}
 			</span>
 			<div class="flex flex-col gap-2.5">
 				{#each social.friends as f (f.id)}
 					{@const peer = liveFor(f.id)}
 					{@const expanded = social.expandedFriend === f.id}
-					<div class="chamfer-card p-3.5">
+					<div class="card border-base-300 bg-base-100 border shadow-sm">
+						<div class="card-body gap-2 p-3.5">
 						<div class="flex items-center gap-2.5">
 							{#if f.avatar_url}
-								<img
-									src={f.avatar_url}
-									alt=""
-									width="36"
-									height="36"
-									class="shrink-0 rounded-full"
-									style="width: 36px; height: 36px; object-fit: cover; box-shadow: 0 0 0 2px {peer ? 'var(--v-go)' : 'var(--panel-line)'};"
-									referrerpolicy="no-referrer"
-								/>
+								<div class="avatar shrink-0">
+									<div class="size-9 rounded-full" class:ring={!!peer} class:ring-success={!!peer} class:ring-base-300={!peer} class:ring-offset-2={!!peer}>
+										<img src={f.avatar_url} alt="" width="36" height="36" referrerpolicy="no-referrer" />
+									</div>
+								</div>
 							{:else}
-								<span
-									class="font-display grid shrink-0 place-items-center text-sm font-bold"
-									style="width: 36px; height: 36px; border-radius: 9999px; background: var(--panel-soft); color: var(--ink-0); box-shadow: inset 0 0 0 1px var(--panel-line);"
-									aria-hidden="true"
-								>
-									{friendName(f)[0]?.toUpperCase()}
-								</span>
+								<div class="avatar placeholder shrink-0">
+									<div class="bg-base-300 text-base-content size-9 rounded-full">
+										<span class="font-display text-sm font-bold" aria-hidden="true">
+											{friendName(f)[0]?.toUpperCase()}
+										</span>
+									</div>
+								</div>
 							{/if}
 							<button
 								type="button"
-								class="min-w-0 flex-1 cursor-pointer bg-transparent text-left"
-								style="border: none;"
+								class="min-w-0 flex-1 cursor-pointer text-left"
 								onclick={() => social.toggleExpand(f.id)}
 								aria-expanded={expanded}
 								title="Show {friendName(f)}'s shared routes"
 							>
-								<span class="block truncate text-[0.95rem] font-bold" style="color: var(--ink-0);">
+								<span class="block truncate text-[0.95rem] font-bold">
 									{friendName(f)}
 								</span>
-								<span class="block text-[0.7rem]" style="color: {peer ? 'var(--v-go)' : 'var(--ink-2)'};">
+								<span class="block text-[0.7rem]" class:text-success={!!peer} class:text-base-content={!peer} class:opacity-60={!peer}>
 									{peer ? (peer.freshness === 'live' ? '● riding now' : '○ recently active') : 'offline'}
 								</span>
 							</button>
 							<button
 								type="button"
-								class="slash-btn slash-btn-xs shrink-0"
-								style="filter: none; background: transparent; box-shadow: inset 0 0 0 1px var(--panel-line); color: var(--ink-1);"
+								class="btn btn-ghost btn-xs shrink-0"
 								aria-label="Remove {friendName(f)}"
 								title="Remove friend"
 								onclick={() => social.removeFriend(f.id)}
@@ -373,22 +349,23 @@
 						</div>
 						{#if expanded}
 							{@const trips = social.friendTrips[f.id] ?? []}
-							<div class="mt-2.5 flex flex-col gap-2" style="border-top: 1px solid var(--panel-line); padding-top: 0.625rem;">
-								<span class="font-mono2" style="font-size: 0.6rem; letter-spacing: 0.14em; color: var(--ink-2);">
+							<div class="mt-2.5 flex flex-col gap-2">
+								<div class="divider my-0"></div>
+								<span class="font-mono2 text-[0.6rem] tracking-[0.14em] text-base-content/60">
 									SHARED ROUTES · {trips.length}
 								</span>
 								{#if trips.length === 0}
-									<p class="m-0 text-[0.78rem]" style="color: var(--ink-2);">
+									<p class="m-0 text-[0.78rem] text-base-content/60">
 										{friendName(f)} hasn't shared any routes yet.
 									</p>
 								{:else}
 									{#each trips as t (t.ts)}
 										<div class="flex items-center gap-2">
 											<span class="min-w-0 flex-1">
-												<span class="block truncate text-[0.85rem] font-bold" style="color: var(--ink-0);">
+												<span class="block truncate text-[0.85rem] font-bold">
 													{tripLabel(t)}
 												</span>
-												<span class="block text-[0.68rem]" style="color: var(--ink-2);">
+												<span class="block text-[0.68rem] text-base-content/60">
 													{t.totalKm.toFixed(1)} km · +{t.totalClimb.toFixed(0)} m · {tripDay(t.ts)}
 												</span>
 											</span>
@@ -398,24 +375,23 @@
 								{/if}
 							</div>
 						{/if}
+						</div>
 					</div>
 				{/each}
 			</div>
 		{/if}
 
-		<!-- my shared routes hint -->
 		<div class="mt-3">
 			<button
 				type="button"
-				class="w-full cursor-pointer bg-transparent text-left text-[0.78rem]"
-				style="border: none; color: var(--ink-2);"
+				class="btn btn-ghost btn-sm w-full justify-start text-[0.78rem] font-normal"
 				onclick={() => (expandedTrips = !expandedTrips)}
 				aria-expanded={expandedTrips}
 			>
 				{expandedTrips ? '▾' : '▸'} How do my buddies see my routes?
 			</button>
 			{#if expandedTrips}
-				<p class="m-0 mt-1 text-[0.78rem] leading-relaxed" style="color: var(--ink-2);">
+				<p class="m-0 mt-1 text-[0.78rem] leading-relaxed text-base-content/70">
 					Open the Saved tab and flip <strong>Share</strong> on any trip — it becomes
 					visible to your accepted buddies only. Flip it off any time to go private again.
 				</p>

@@ -1,9 +1,6 @@
-// Friendship helpers: canonical pair ordering (pure, unit-tested) plus the
-// friend-list queries shared by GET /api/friends and the live SSE stream.
 
 import type { PoolClient } from 'pg';
 
-// Canonical unordered pair — lexicographic so (a,b) and (b,a) map to one row.
 export const canonicalPair = (a: string, b: string): [string, string] =>
 	a < b ? [a, b] : [b, a];
 
@@ -31,7 +28,6 @@ export interface PendingRow {
 	created_at: string;
 }
 
-// Accepted friends with their live position (if any) attached.
 export const listFriends = async (c: PoolClient): Promise<FriendRow[]> => {
 	const { rows } = await c.query(
 		`SELECT u.id, u.display_name, u.avatar_url, u.email,
@@ -46,8 +42,6 @@ export const listFriends = async (c: PoolClient): Promise<FriendRow[]> => {
 	return rows as FriendRow[];
 };
 
-// Pending requests in one direction: incoming = others asked me,
-// outgoing = I asked others.
 export const listPending = async (c: PoolClient, incoming: boolean): Promise<PendingRow[]> => {
 	const { rows } = await c.query(
 		`SELECT u.id, u.display_name, u.avatar_url, f.created_at

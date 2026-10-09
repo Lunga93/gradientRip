@@ -65,9 +65,6 @@ describe('buildPlanPacket mode physics', () => {
 });
 
 describe('fly reward band', () => {
-	// Flat line of N points ~111 m apart; e-skate burns ~13 Wh/km flat, so
-	// distance (and only distance) moves the verdict between fly and ok.
-	// Board 250 Wh → usable 217.5 Wh; fly below 30% (65 Wh), ok below 70%.
 	const flatLine = (n: number): [number, number][] =>
 		Array.from({ length: n }, (_, i) => [-33.9, 18.4 + i * 0.001]);
 	const flatPacket = (n: number) => {

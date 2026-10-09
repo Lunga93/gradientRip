@@ -1,5 +1,3 @@
-// UI chrome state — panel, tabs, theme, legal note, net status, plan status.
-// No ride data, no GPS session.
 
 import {
 	loadLegalDismissed,
@@ -17,15 +15,13 @@ class UiState {
 	theme = $state<ThemePref>(loadThemePref());
 	activeTab = $state<'plan' | 'saved' | 'ride' | 'friends'>('plan');
 	isMobile = $state(false);
-	panelVisible = $state(true); // hide panel in drawing/record mode
+	panelVisible = $state(true);
 
 	statusMsg = $state('');
 	statusErr = $state(false);
 
-	// --- derived ---
 	statusBusy = $derived(!!this.statusMsg && !this.statusErr);
 
-	// --- actions ---
 	dismissLegal() {
 		this.legalDismissed = true;
 		setLegalDismissed();
@@ -44,13 +40,10 @@ class UiState {
 		this.activeTab = tab;
 	}
 
-	// Cycles auto → light → dark (the toggle in the header). Persists the
-	// choice; the pre-paint script in app.html applies it before first paint.
 	setTheme(pref: ThemePref) {
 		this.theme = pref;
 		saveThemePref(pref);
-		// Light = no attribute (the :root default); dark toggles the override.
-		if (pref === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+		if (pref === 'dark') document.documentElement.setAttribute('data-theme', 'gradient-dark');
 		else document.documentElement.removeAttribute('data-theme');
 	}
 

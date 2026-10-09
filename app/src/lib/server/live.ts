@@ -1,8 +1,3 @@
-// Live-position helpers: freshness classification (pure, unit-tested) and
-// the friend-visibility query shared by the friends list and the SSE feed.
-//
-// Privacy rule: a position is only ever returned for accepted friends, and
-// only when the fix is recent — riders older than LIVE_STALE_MS vanish.
 
 export const LIVE_FRESH_MS = 2 * 60 * 1000;
 export const LIVE_STALE_MS = 10 * 60 * 1000;

@@ -1,5 +1,3 @@
-// UI/session helpers. Pure route geometry lives in $lib/engine/route-geometry
-// and is re-exported here so existing importers keep working.
 
 export type { LatLon } from './engine/index.js';
 export { haversine, resample, cumulative, nearestOnLine, RESAMPLE_STEP_M } from './engine/index.js';

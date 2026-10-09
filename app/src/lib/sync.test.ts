@@ -29,7 +29,7 @@ const tripRow = (over: Record<string, unknown> = {}): Record<string, unknown> =>
 	coords: [[-33.9, 18.4], [-33.91, 18.41]],
 	line: [[-33.9, 18.4], [-33.905, 18.405], [-33.91, 18.41]],
 	pts: [[-33.9, 18.4], [-33.905, 18.405]],
-	elev: ['10', '12', '11'], // pg NUMERIC arrives as strings
+	elev: ['10', '12', '11'],
 	cum: ['0', '550', '1100'],
 	total_wh: '21.4',
 	total_climb: '2',

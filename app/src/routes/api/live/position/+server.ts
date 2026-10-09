@@ -1,5 +1,3 @@
-// /api/live/position — publish (PUT) or clear (DELETE) my live GPS fix.
-// Called every few seconds while riding/recording; friends read it via SSE.
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
 import { requireAuth } from '$lib/server/auth.js';

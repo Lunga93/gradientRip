@@ -1,10 +1,3 @@
-// Google OAuth + opaque session cookies. Zero new dependencies: the OAuth
-// code exchange and userinfo calls are plain fetch, sessions are SHA-256
-// token hashes in oauth_sessions with a 30-day rolling expiry.
-//
-// Identity model: anonymous device-cookie users keep working untouched.
-// On first Google login the current device row is LINKED (same UUID, so
-// trips/presets/prefs carry over); returning logins match on google_id.
 
 import { createHash, randomBytes } from 'node:crypto';
 import { env } from '$env/dynamic/private';
@@ -31,7 +24,6 @@ export interface AuthUser {
 	google_id: string | null;
 }
 
-/* ---------- pure helpers (unit-tested) ---------- */
 
 export const hashToken = (token: string): string =>
 	createHash('sha256').update(token, 'utf8').digest('hex');
@@ -51,8 +43,6 @@ export const buildGoogleAuthUrl = (clientId: string, redirectUri: string, state:
 	return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 };
 
-// Narrow unknown JSON to a GoogleProfile — rejects anything malformed so a
-// compromised/mocked userinfo endpoint can't inject a partial identity.
 export const validateGoogleProfile = (v: unknown): GoogleProfile | null => {
 	if (!v || typeof v !== 'object') return null;
 	const p = v as Record<string, unknown>;
@@ -66,7 +56,6 @@ export const validateGoogleProfile = (v: unknown): GoogleProfile | null => {
 	};
 };
 
-/* ---------- Google network calls (fetch-mocked in tests) ---------- */
 
 export const exchangeCode = async (
 	code: string,
@@ -103,7 +92,6 @@ export const fetchGoogleProfile = async (accessToken: string): Promise<GooglePro
 	return profile;
 };
 
-/* ---------- sessions ---------- */
 
 export const createSession = async (userId: string): Promise<string> => {
 	const token = newToken();
@@ -133,8 +121,6 @@ export const clearSessionCookie = (event: RequestEvent): void => {
 	event.cookies.delete(SESSION_COOKIE, { path: '/' });
 };
 
-// Session cookie → linked Google user, or 401. Anonymous device users get
-// 401 here — social endpoints require a real identity.
 export const requireAuth = async (event: RequestEvent): Promise<AuthUser> => {
 	const token = event.cookies.get(SESSION_COOKIE);
 	if (!token) throw error(401, 'Sign in with Google to use friends');
@@ -147,7 +133,6 @@ export const requireAuth = async (event: RequestEvent): Promise<AuthUser> => {
 	if (rows.length === 0) throw error(401, 'Session expired — sign in again');
 	const user = rows[0] as AuthUser;
 	if (!user.google_id) throw error(401, 'Sign in with Google to use friends');
-	// Rolling expiry: extend when under half the TTL remains (best-effort).
 	void getPool()
 		.query(
 			`UPDATE oauth_sessions SET expires_at = now() + make_interval(secs => $2)
@@ -158,7 +143,6 @@ export const requireAuth = async (event: RequestEvent): Promise<AuthUser> => {
 	return user;
 };
 
-// Non-throwing probe for the UI — returns the linked user or null.
 export const getAuthUser = async (event: RequestEvent): Promise<AuthUser | null> => {
 	try {
 		return await requireAuth(event);
@@ -167,11 +151,7 @@ export const getAuthUser = async (event: RequestEvent): Promise<AuthUser | null>
 	}
 };
 
-/* ---------- identity linking ---------- */
 
-// Match returning logins on google_id; otherwise link the current device row
-// (preserving its UUID + all data); otherwise mint a fresh Google user.
-// Profiles row is upserted so friends always have a name/avatar to read.
 export const linkGoogleIdentity = async (
 	event: RequestEvent,
 	profile: GoogleProfile

@@ -1,5 +1,3 @@
-// Verdict message templates — used by decide.ts
-// Kept separate for potential i18n or A/B testing.
 
 export const messages = {
 	stop: {

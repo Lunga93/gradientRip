@@ -1,6 +1,5 @@
 import { THRESHOLDS } from './thresholds.js';
 
-/** CSS variable reference for a grade percentage (used in map/profile rendering). */
 export const cssVar = (gradePct: number): string => {
 	const g = gradePct;
 	if (g <= THRESHOLDS.pastBraking) return 'var(--band-stop, #dc2626)';

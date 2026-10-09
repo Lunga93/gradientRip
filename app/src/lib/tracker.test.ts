@@ -55,10 +55,8 @@ describe('tracker draw mode', () => {
 
 		addDrawPoint(p2);
 		expect(session.drawPoints).toEqual([p1, p2]);
-		// Initially provisional straight leg before promise resolves
 		expect(getDrawnPath()).toEqual([p1, p2]);
 
-		// Wait for snapDrawnLeg promise to resolve
 		await vi.waitFor(() => {
 			expect(session.drawLegs[0]).toEqual(roadLeg);
 		});

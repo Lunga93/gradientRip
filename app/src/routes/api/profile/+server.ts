@@ -1,4 +1,3 @@
-// /api/profile — the signed-in rider's own profile (name/avatar friends see).
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
 import { requireAuth } from '$lib/server/auth.js';

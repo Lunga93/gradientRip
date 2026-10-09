@@ -1,6 +1,3 @@
-// Social client state — auth probe, friends, requests, shared trips, and the
-// live SSE subscription. Plain fetch + Svelte 5 runes; everything degrades
-// to the anonymous offline experience when signed out or offline.
 import type { Trip } from './storage.js';
 import { rowToTrip } from './sync.js';
 import { subscribeLive, type LivePeer } from './live.js';
@@ -38,7 +35,6 @@ export const friendName = (f: FriendEntry | PendingEntry | LivePeer): string =>
 	displayName(f.display_name, 'email' in f ? f.email : null, 'Rider');
 
 class SocialState {
-	// undefined = not probed yet, null = signed out
 	me = $state<AuthMe | null | undefined>(undefined);
 	friends = $state<FriendEntry[]>([]);
 	incoming = $state<PendingEntry[]>([]);
@@ -49,7 +45,6 @@ class SocialState {
 	expandedFriend = $state<string | null>(null);
 	lastError = $state('');
 
-	// --- derived ---
 	readonly signedIn = $derived(this.me !== undefined && this.me !== null);
 	readonly liveNow = $derived(this.livePeers.filter((p) => p.freshness === 'live'));
 	readonly incomingCount = $derived(this.incoming.length);
@@ -77,7 +72,6 @@ class SocialState {
 		try {
 			await fetch('/api/auth/logout', { method: 'POST' });
 		} catch {
-			/* session already gone server-side */
 		}
 		this.stopLive();
 		this.me = null;
@@ -106,7 +100,6 @@ class SocialState {
 			this.incoming = data.incoming;
 			this.outgoing = data.outgoing;
 		} catch {
-			/* offline — keep last known list */
 		}
 	}
 
@@ -145,7 +138,6 @@ class SocialState {
 			});
 			if (resp.ok) await this.loadFriends();
 		} catch {
-			/* offline — retry later */
 		}
 	}
 
@@ -157,7 +149,6 @@ class SocialState {
 				if (this.expandedFriend === userId) this.expandedFriend = null;
 			}
 		} catch {
-			/* offline — retry later */
 		}
 	}
 
@@ -181,7 +172,6 @@ class SocialState {
 			const rows = (await resp.json()) as Parameters<typeof rowToTrip>[0][];
 			this.friendTrips = { ...this.friendTrips, [userId]: rows.map(rowToTrip) };
 		} catch {
-			/* offline — keep last known */
 		}
 	}
 

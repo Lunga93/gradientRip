@@ -10,8 +10,10 @@
 	type="button"
 	role="radio"
 	aria-checked={active}
-	class="board-chip"
-	class:board-chip-picked={active}
+	class="btn btn-sm flex-1"
+	class:btn-active={active}
+	class:btn-primary={active}
+	class:btn-soft={!active}
 	onclick={() => domain.selectBoard(board.value)}
 >
 	{board.label}

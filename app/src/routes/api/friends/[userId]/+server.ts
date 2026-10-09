@@ -1,5 +1,3 @@
-// DELETE /api/friends/[userId] — remove a friend (any status, either side).
-// Also clears their live row visibility implicitly via the friendship check.
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
 import { requireAuth } from '$lib/server/auth.js';

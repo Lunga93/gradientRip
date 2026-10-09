@@ -3,22 +3,15 @@
 
 	let { children }: { children?: import('svelte').Snippet } = $props();
 
-	// The built src/service-worker.js is emitted as /service-worker.js by the
-	// SvelteKit build — register it so the offline app shell engages. Dev has
-	// no service worker build, so only register in production.
 	$effect(() => {
 		if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 			navigator.serviceWorker.register('/service-worker.js').catch(() => {
-				/* offline shell is a progressive enhancement — ignore */
 			});
 		}
-		// Leaflet rides a dynamic import so the first paint stays lean — warm
-		// that chunk once the browser idles so the map is ready when asked.
 		const warmLeaflet = (): void => {
 			import('$lib/mapController.svelte.js')
 				.then((m) => m.ensureLeaflet())
 				.catch(() => {
-					/* offline on first paint — MapCanvas loads it on demand */
 				});
 		};
 		const idle = (window as Window & { requestIdleCallback?: (cb: () => void) => void })

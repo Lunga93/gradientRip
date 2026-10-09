@@ -27,11 +27,9 @@
 
 	const cls = $derived(
 		[
-			'slash-btn',
-			variant === 'secondary' ? 'slash-btn-secondary' : '',
-			variant === 'danger' ? 'slash-btn-danger' : '',
-			size === 'sm' ? 'slash-btn-sm' : '',
-			size === 'xs' ? 'slash-btn-xs' : ''
+			'btn',
+			variant === 'secondary' ? 'btn-secondary' : variant === 'danger' ? 'btn-error' : 'btn-primary',
+			size === 'sm' ? 'btn-sm' : size === 'xs' ? 'btn-xs' : ''
 		]
 			.filter(Boolean)
 			.join(' ')

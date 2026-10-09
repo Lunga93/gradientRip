@@ -9,7 +9,6 @@ import {
 const realFetch = globalThis.fetch;
 
 beforeEach(() => {
-	// publishPosition is browser-gated — stub window for the node test env.
 	vi.stubGlobal('window', {});
 });
 

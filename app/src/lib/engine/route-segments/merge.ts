@@ -1,6 +1,5 @@
 import type { RouteSegment, LatLon } from '../plan-packet/types.js';
 
-/** Merge consecutive same-colour segments for efficient rendering. */
 export const mergePolylines = (segs: RouteSegment[]): { c: string; pts: LatLon[] }[] => {
 	const groups: { c: string; pts: LatLon[] }[] = [];
 	let cur: { c: string; pts: LatLon[] } | null = null;

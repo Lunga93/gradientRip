@@ -98,12 +98,11 @@
 <MapFabs />
 <SessionToolbar />
 
-<!-- panel -->
 {#if ui.panelVisible}
 	<div class="panel" class:sheet-open={ui.sheetOpen} style={panelEdge}>
 		<button
 			type="button"
-			class="grabber"
+			class="grabber min-[641px]:hidden"
 			aria-expanded={ui.sheetOpen}
 			aria-controls="panelScroll"
 			aria-label={ui.sheetOpen ? 'Collapse route panel' : 'Expand route panel'}

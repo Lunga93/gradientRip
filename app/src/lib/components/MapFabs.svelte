@@ -13,7 +13,6 @@
 		locateInto(0, true);
 	};
 
-	// Map style picker — 'auto' follows the app theme, otherwise a pinned look.
 	let styleOpen = $state(false);
 	let stylePref = $state(loadMapStylePref());
 
@@ -27,7 +26,6 @@
 		styleOpen = false;
 	};
 
-	// Tiny swatch per style so the list reads at a glance.
 	const swatch = (id: string): string =>
 		({
 			voyager: 'linear-gradient(135deg,#e8f4e8 40%,#f6d9a0 40% 65%,#a8d8f0 65%)',
@@ -41,10 +39,9 @@
 		})[id] ?? '#888';
 </script>
 
-<!-- hidden while the mobile sheet is open so they don't cover it -->
 {#if !(ui.isMobile && ui.sheetOpen)}
 	<button
-		class="fab-btn fixed right-3 bottom-[calc(196px+env(safe-area-inset-bottom,0px))] z-30 md:right-4 md:bottom-4 md:left-auto"
+		class="btn btn-circle btn-primary fixed right-3 bottom-[calc(196px+env(safe-area-inset-bottom,0px))] z-30 shadow-lg md:right-4 md:bottom-4 md:left-auto"
 		aria-label="Use my location"
 		title="Use my location"
 		onclick={locateFab}
@@ -52,7 +49,7 @@
 		<Mark name="pin" cls="" />
 	</button>
 	<button
-		class="fab-btn fixed right-3 bottom-[calc(308px+env(safe-area-inset-bottom,0px))] z-30 md:right-4 md:bottom-[7.5rem] md:left-auto"
+		class="btn btn-circle btn-soft fixed right-3 bottom-[calc(308px+env(safe-area-inset-bottom,0px))] z-30 shadow-lg md:right-4 md:bottom-[7.5rem] md:left-auto"
 		aria-label="Change map style"
 		title="Map style"
 		aria-expanded={styleOpen}
@@ -68,56 +65,70 @@
 			onclick={() => (styleOpen = false)}
 		></button>
 		<div
-			class="style-menu fixed right-3 bottom-[calc(364px+env(safe-area-inset-bottom,0px))] z-30 md:right-4 md:bottom-[11rem]"
+			class="card bg-base-100 fixed right-3 bottom-[calc(364px+env(safe-area-inset-bottom,0px))] z-30 w-64 shadow-xl md:right-4 md:bottom-[11rem]"
 			role="menu"
 			aria-label="Map styles"
 		>
-			<h4>THEME</h4>
+			<div class="card-body gap-1 p-2">
+			<h4 class="menu-title">THEME</h4>
+			<ul class="menu w-full p-0">
+			<li>
 			<button
 				type="button"
 				role="menuitemradio"
 				aria-checked={stylePref === 'auto'}
-				class="style-row {stylePref === 'auto' ? 'active' : ''}"
+				class:menu-active={stylePref === 'auto'}
 				onclick={() => pickStyle('auto')}
 			>
-				<span class="dot" style="background: linear-gradient(135deg,#f0f0f0 50%,#14141e 50%);"></span>
-				<span class="t"><strong>Auto</strong><span>Follow app theme</span></span>
+				<span class="size-6 shrink-0 rounded-full border border-base-300" style="background: linear-gradient(135deg,#f0f0f0 50%,#14141e 50%);"></span>
+				<span class="flex min-w-0 flex-1 flex-col"><strong>Auto</strong><span class="text-xs opacity-70">Follow app theme</span></span>
 				{#if stylePref === 'auto'}<Mark name="check" cls="" />{/if}
 			</button>
-			<h4>LIGHT</h4>
+			</li>
+			</ul>
+			<h4 class="menu-title">LIGHT</h4>
+			<ul class="menu w-full p-0">
 			{#each lightStyles as s (s.id)}
+				<li>
 				<button
 					type="button"
 					role="menuitemradio"
 					aria-checked={stylePref === s.id}
-					class="style-row {stylePref === s.id ? 'active' : ''}"
+					class:menu-active={stylePref === s.id}
 					onclick={() => pickStyle(s.id)}
 				>
-					<span class="dot" style="background: {swatch(s.id)};"></span>
-					<span class="t"><strong>{s.name}</strong><span>{s.blurb}</span></span>
+					<span class="size-6 shrink-0 rounded-full border border-base-300" style="background: {swatch(s.id)};"></span>
+					<span class="flex min-w-0 flex-1 flex-col"><strong>{s.name}</strong><span class="text-xs opacity-70">{s.blurb}</span></span>
 					{#if stylePref === s.id}<Mark name="check" cls="" />{/if}
 				</button>
+				</li>
 			{/each}
-			<h4>DARK</h4>
+			</ul>
+			<h4 class="menu-title">DARK</h4>
+			<ul class="menu w-full p-0">
 			{#each darkStyles as s (s.id)}
+				<li>
 				<button
 					type="button"
 					role="menuitemradio"
 					aria-checked={stylePref === s.id}
-					class="style-row {stylePref === s.id ? 'active' : ''}"
+					class:menu-active={stylePref === s.id}
 					onclick={() => pickStyle(s.id)}
 				>
-					<span class="dot" style="background: {swatch(s.id)};"></span>
-					<span class="t"><strong>{s.name}</strong><span>{s.blurb}</span></span>
+					<span class="size-6 shrink-0 rounded-full border border-base-300" style="background: {swatch(s.id)};"></span>
+					<span class="flex min-w-0 flex-1 flex-col"><strong>{s.name}</strong><span class="text-xs opacity-70">{s.blurb}</span></span>
 					{#if stylePref === s.id}<Mark name="check" cls="" />{/if}
 				</button>
+				</li>
 			{/each}
+			</ul>
+			</div>
 		</div>
 	{/if}
 {/if}
 {#if session.recenterVisible && !(ui.isMobile && ui.sheetOpen)}
 	<button
-		class="fab-btn fixed right-3 bottom-[calc(252px+env(safe-area-inset-bottom,0px))] z-30 md:right-4 md:bottom-[4.5rem] md:left-auto"
+		class="btn btn-circle btn-soft fixed right-3 bottom-[calc(252px+env(safe-area-inset-bottom,0px))] z-30 shadow-lg md:right-4 md:bottom-[4.5rem] md:left-auto"
 		aria-label="Re-center on live position"
 		title="Re-center"
 		onclick={() => recenter()}

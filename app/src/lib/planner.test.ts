@@ -10,7 +10,7 @@ describe('snapDrawnLeg and snapDrawnLine', () => {
 
 	it('returns straight line if points are identical or very close', async () => {
 		const a: LatLon = [-33.9, 18.4];
-		const b: LatLon = [-33.9, 18.4001]; // ~11m - clearly less than RESAMPLE_STEP_M (50m) but > 1m
+		const b: LatLon = [-33.9, 18.4001];
 		const res = await snapDrawnLeg(a, b);
 		expect(res.snapped).toBe(false);
 		expect(res.leg).toEqual([a, b]);
@@ -35,7 +35,7 @@ describe('snapDrawnLeg and snapDrawnLine', () => {
 
 	it('falls back to interpolated straight line when route fetch fails', async () => {
 		const a: LatLon = [-33.9, 18.4];
-		const b: LatLon = [-33.905, 18.4]; // ~556m
+		const b: LatLon = [-33.905, 18.4];
 
 		vi.spyOn(api, 'route').mockRejectedValue(new Error('Network error'));
 

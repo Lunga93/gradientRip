@@ -1,5 +1,3 @@
-// Domain state — the ride itself: stops, results, presets, trips, mode/board.
-// No UI chrome, no GPS session. Status feedback goes through ui.setStatus.
 
 import { MODES } from '../engine/index.js';
 import type { Mode } from '../engine/index.js';
@@ -47,9 +45,6 @@ export interface ScoredResult {
 	brakeLimit: number;
 }
 
-// Board values are "capWh|climbPct|brakePct" — either a shipped preset or a
-// user-tuned custom triple from onboarding. Ranges keep scoring sane
-// (a zero cap would divide by zero in battery math downstream).
 export const BOARD_RANGES = {
 	cap: [50, 5000],
 	climb: [1, 45],
@@ -83,9 +78,6 @@ const loadModeId = (): string => {
 	return 'eskate';
 };
 
-// Restore the last picked board: a shipped preset, or a valid custom triple
-// tuned in onboarding (never a stale value from another mode's presets,
-// and never a malformed string that would poison scoring math).
 const initialBoardVal = (modeId: string): string => {
 	const boards = MODES[modeId].boards;
 	const saved = loadBoard();
@@ -94,9 +86,6 @@ const initialBoardVal = (modeId: string): string => {
 };
 
 class DomainState {
-	// The legacy app stored the picked mode as a raw string in
-	// TRANSPORT_KEY and treated its presence as "onboarding done" — do the
-	// same so old users carry over and the flag survives reloads.
 	onboardSeen = $state(!!loadMode());
 	modeId = $state(loadModeId());
 	boardVal = $state(initialBoardVal(this.modeId));
@@ -108,15 +97,12 @@ class DomainState {
 	results = $state<ScoredResult | null>(null);
 	currentRoute = $state<{ line: LatLon[]; lineCum: number[] } | null>(null);
 
-	// data lists
 	presets = $state<Preset[]>(typeof localStorage !== 'undefined' ? loadPresets() : []);
 	trips = $state<Trip[]>(typeof localStorage !== 'undefined' ? loadTrips() : []);
 
-	// --- derived ---
 	mode = $derived<Mode>(MODES[this.modeId] ?? MODES.eskate);
 	boards = $derived(this.mode.boards);
 
-	// --- actions ---
 	selectMode(id: string) {
 		if (!MODES[id]) return;
 		this.modeId = id;
@@ -131,8 +117,6 @@ class DomainState {
 		saveBoard(value);
 	}
 
-	// User-tuned triple from onboarding — validated, then persisted like a preset.
-	// Returns false (and changes nothing) when out of range.
 	setCustomBoard(cap: number, climb: number, brake: number): boolean {
 		const value = `${Math.round(cap)}|${Math.round(climb)}|${Math.round(brake)}`;
 		if (!parseBoardVal(value)) return false;
@@ -143,7 +127,7 @@ class DomainState {
 
 	completeOnboarding() {
 		this.onboardSeen = true;
-		saveMode(this.modeId); // raw string in TRANSPORT_KEY, legacy-compatible
+		saveMode(this.modeId);
 	}
 
 	addStop() {
@@ -151,7 +135,7 @@ class DomainState {
 	}
 
 	removeStop(idx: number) {
-		if (idx <= 0 || idx >= this.stops.length - 1) return; // endpoints protected
+		if (idx <= 0 || idx >= this.stops.length - 1) return;
 		this.stops.splice(idx, 1);
 	}
 
@@ -163,8 +147,6 @@ class DomainState {
 		const s = this.stops[idx];
 		if (!s) return;
 		s.value = value;
-		// Typing invalidates any exact fix; programmatic selections
-		// (autocomplete, geolocation) pass keepCoords to preserve it.
 		if (!keepCoords) s.coords = null;
 	}
 
@@ -187,8 +169,6 @@ class DomainState {
 		const suggested = val.length > 28 ? val.slice(0, 28) + '…' : val;
 		const label = presetNamer('Save this place as:', suggested);
 		if (!label) return;
-		// Carry the exact fix along if this stop was set via geolocation, so
-		// re-selecting the saved place later skips fuzzy text geocoding too.
 		this.presets.push({
 			id: Date.now() + Math.random(),
 			label: label.trim(),
@@ -225,8 +205,6 @@ class DomainState {
 		scheduleBackup($state.snapshot(this.trips), $state.snapshot(this.presets));
 	}
 
-	// Pure assignment only — lifecycle side effects (stopping live tracking)
-	// belong to the callers in planner.svelte.ts, which own the session.
 	applyResult(r: ScoredResult) {
 		this.results = r;
 		this.currentRoute = { line: r.line, lineCum: cumulative(r.line) };
@@ -235,7 +213,6 @@ class DomainState {
 
 export const domain = new DomainState();
 
-// Prompt hook for preset naming — window.prompt by default so tests can inject.
 type PresetNamer = (message: string, defaultName: string) => string | null;
 let presetNamer: PresetNamer = (message, defaultName) =>
 	typeof window !== 'undefined' && typeof window.prompt === 'function'

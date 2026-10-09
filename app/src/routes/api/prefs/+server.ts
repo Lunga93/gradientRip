@@ -4,7 +4,7 @@ import { requireUser } from '$lib/server/device.js';
 
 const VALID_THEMES = new Set(['auto', 'light', 'dark']);
 
-function validateKnownLocation(v: unknown): { lat: number; lon: number; label: string; ts: number } | null {
+const validateKnownLocation = (v: unknown): { lat: number; lon: number; label: string; ts: number } | null => {
 	if (!v || typeof v !== 'object') return null;
 	const loc = v as Record<string, unknown>;
 	if (typeof loc.lat !== 'number' || typeof loc.lon !== 'number' || typeof loc.label !== 'string' || typeof loc.ts !== 'number') return null;

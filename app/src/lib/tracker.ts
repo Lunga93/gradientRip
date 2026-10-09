@@ -16,7 +16,6 @@ import {
 } from './mapController.svelte.js';
 import { scoreAndSaveCustomRoute, askRouteName, snapDrawnLeg } from './planner.svelte.js';
 
-/* ---------- tracking ---------- */
 
 interface Tracking {
 	watchId: number | null;
@@ -30,13 +29,9 @@ const setTrackMsg = (msg: string, warn: boolean): void => {
 	session.trackingWarn = warn;
 };
 
-// Latest own fix for friend-distance display (tracking fix wins, else record tail).
 export const getOwnFix = (): LatLon | null =>
 	tracking.lastLatLng ?? session.recordPoints[session.recordPoints.length - 1] ?? null;
 
-// Friends see me while riding or recording — publish the fix (throttled
-// inside publishPosition, no-op when signed out). Clearing happens when
-// neither mode is active anymore so mode switches don't flap the row.
 const shareFix = (latlng: LatLon, speed: number | null, accuracy: number): void => {
 	if (!social.signedIn) return;
 	void publishPosition({ lat: latlng[0], lon: latlng[1], speed, heading: null, accuracy });
@@ -110,7 +105,7 @@ export const finishRide = (): void => {
 };
 
 const onTrackError = (err: GeolocationPositionError): void => {
-	if (!tracking.hasFix) stopTracking(); // no first fix yet → revert planControls
+	if (!tracking.hasFix) stopTracking();
 	setTrackMsg(geoErrorMessage(err), true);
 };
 
@@ -154,10 +149,6 @@ const onTrackUpdate = async (pos: GeolocationPosition): Promise<void> => {
 	}
 };
 
-// Scan the scored segments ahead of the rider for the worst descent in the
-// next ~600 m and pin a floating warning on the map when it bites. Segment
-// spacing differs between planned and loaded routes, so distances are
-// re-derived from the segment endpoints and cached per result.
 let hillFor: unknown = null;
 let hillCum: number[] = [];
 
@@ -199,7 +190,6 @@ export const recenter = (): void => {
 	if (tracking.lastLatLng) { const m = getMap(); if (m) m.setView(tracking.lastLatLng, Math.max(m.getZoom(), 16)); }
 };
 
-/* ---------- draw mode ---------- */
 
 export const addDrawPoint = (latlng: LatLon): void => {
 	const len = session.drawPoints.length;
@@ -218,7 +208,6 @@ export const addDrawPoint = (latlng: LatLon): void => {
 				}
 			})
 			.catch(() => {
-				// keep straight fallback
 			});
 	} else {
 		redrawDrawLayer();
@@ -247,7 +236,7 @@ export const enterDrawMode = (): void => {
 	setDrawCursor(true);
 	redrawDrawLayer();
 	ui.setStatus('Tap the map to trace your route, then hit Finish.');
-	ui.panelVisible = false; // hide panel for maximal map space
+	ui.panelVisible = false;
 };
 
 export const exitDrawMode = (): void => {
@@ -256,7 +245,7 @@ export const exitDrawMode = (): void => {
 	clearDrawLayer();
 	session.drawPoints = [];
 	session.drawLegs = [];
-	ui.panelVisible = true; // restore panel
+	ui.panelVisible = true;
 };
 
 export const undoDrawPoint = (): void => {
@@ -280,7 +269,6 @@ export const finishDrawing = async (): Promise<void> => {
 	await scoreAndSaveCustomRoute(line, name, 'drawn');
 };
 
-/* ---------- record mode ---------- */
 
 let recordWatchId: number | null = null;
 
@@ -292,7 +280,7 @@ export const enterRecordMode = (): void => {
 	session.recordStartedAt = Date.now(); session.recordSpeedKmh = null; session.recordAcc = null;
 	ui.setStatus('Recording your live path — move to trace the route, then hit Finish.');
 	recordWatchId = navigator.geolocation.watchPosition(onRecordUpdate, onRecordError, { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 });
-	ui.panelVisible = false; // hide panel for maximal map space
+	ui.panelVisible = false;
 };
 
 export const exitRecordMode = (): void => {
@@ -301,7 +289,7 @@ export const exitRecordMode = (): void => {
 	recordWatchId = null; clearRecordLayer(); session.recordPoints = []; session.recordKm = 0;
 	session.recordStartedAt = null; session.recordSpeedKmh = null; session.recordAcc = null;
 	maybeStopSharing();
-	ui.panelVisible = true; // restore panel
+	ui.panelVisible = true;
 };
 
 const onRecordError = (err: GeolocationPositionError): void => { ui.setStatus(geoErrorMessage(err), true); };
@@ -309,12 +297,11 @@ const onRecordError = (err: GeolocationPositionError): void => { ui.setStatus(ge
 const onRecordUpdate = (pos: GeolocationPosition): void => {
 	const latlng: LatLon = [pos.coords.latitude, pos.coords.longitude];
 	const last = session.recordPoints[session.recordPoints.length - 1];
-	if (last && haversine(last, latlng) < 5) return; // GPS jitter filter
+	if (last && haversine(last, latlng) < 5) return;
 	session.recordPoints.push(latlng);
 	session.recordSpeedKmh = pos.coords.speed != null && pos.coords.speed >= 0 ? pos.coords.speed * 3.6 : null;
 	session.recordAcc = pos.coords.accuracy;
 	redrawRecordLayer();
-	// Incremental distance — avoids O(n²) full cumulative() per GPS fix.
 	session.recordKm = (session.recordKm * 1000 + (last ? haversine(last, latlng) : 0)) / 1000;
 	const first = session.recordPoints.length === 1;
 	ensureMap();

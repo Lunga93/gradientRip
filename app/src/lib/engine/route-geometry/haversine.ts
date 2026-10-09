@@ -1,4 +1,3 @@
-// Haversine distance between two lat/lon points in meters.
 
 export const haversine = (a: [number, number], b: [number, number]): number => {
 	const R = 6371000;

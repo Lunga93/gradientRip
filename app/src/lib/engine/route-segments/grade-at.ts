@@ -1,4 +1,3 @@
-/** Binary search for grade at a specific distance along the resampled profile. */
 export const gradeAt = (dist: number, cum: number[], elev: number[]): number => {
 	let lo = 1;
 	let hi = cum.length - 1;

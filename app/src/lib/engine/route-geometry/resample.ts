@@ -2,7 +2,6 @@ import { haversine } from './haversine.js';
 
 export const RESAMPLE_STEP_M = 50;
 
-/** Resample a polyline to points every `step` meters. */
 export const resample = (coords: [number, number][], step: number): [number, number][] => {
 	const out: [number, number][] = [coords[0]];
 	let carry = 0;

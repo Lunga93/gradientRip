@@ -1,5 +1,3 @@
-// GET /api/auth/google — start Google sign-in: stash a CSRF state cookie,
-// then bounce the browser to Google's consent screen.
 import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { randomBytes } from 'node:crypto';

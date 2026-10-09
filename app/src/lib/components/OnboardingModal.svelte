@@ -45,8 +45,6 @@
 
 	const STEPS = { cap: 50, climb: 1, brake: 1 } as const;
 
-	// Tune the ride in place — first nudge converts the preset into a
-	// persisted custom triple, so results stay curated to these numbers.
 	const nudge = (key: 'cap' | 'climb' | 'brake', dir: 1 | -1): void => {
 		const parts = (domain.boardVal || '').split('|').map(Number);
 		const cur = {
@@ -79,48 +77,43 @@
 				<Mark name="route" cls="size-10 text-primary" />
 				<h1
 					id="onboardTitle"
-					class="font-display m-0"
-					style="font-weight: 700; font-size: 3.25rem; letter-spacing: -0.02em; line-height: 1;"
+					class="font-display m-0 text-[3.25rem] leading-none font-bold tracking-tight"
 				>
 					<span class="wordmark">GradientRip</span>
-				</h1>					<p class="font-mono2 m-0" style="font-size: 0.68rem; letter-spacing: 0.14em; color: var(--ink-2); line-height: 1.5;">
+				</h1>					<p class="font-mono2 m-0 text-[0.68rem] leading-relaxed tracking-[0.14em] text-base-content/70">
 						Plan any route. Know if your board can make it — before you leave.
 					</p>
 			</div>
 
 			<div class="anim-slide-up w-full" style="animation-delay: 0.1s;">
-				<div class="sec-label">Choose your ride</div>
+				<div class="mb-2 text-[0.7rem] font-bold tracking-[0.14em] text-base-content/60 uppercase">Choose your ride</div>
 				<ModePicker variant="onboard" />
 			</div>
 
-			<div class="anim-slide-up chamfer-card w-full" style="animation-delay: 0.18s;">
-				<div class="flex items-center justify-between gap-2 px-4 py-3" style="border-bottom: 1px solid var(--panel-line);">
-					<span class="font-mono2" style="font-size: 0.62rem; letter-spacing: 0.14em; color: var(--ink-2);"
+			<div class="anim-slide-up card border-base-300 bg-base-100 w-full border shadow-sm" style="animation-delay: 0.18s;">
+				<div class="border-base-300 flex items-center justify-between gap-2 border-b px-4 py-3">
+					<span class="font-mono2 text-[0.62rem] tracking-[0.14em] text-base-content/60"
 						>BOARD CONFIGURATION</span
 					>
-					<span class="font-mono2 truncate" style="font-size: 0.6rem; letter-spacing: 0.1em; color: var(--color-primary);">{presetLabel.toUpperCase()}</span>
+					<span class="font-mono2 text-primary truncate text-[0.6rem] tracking-[0.1em]">{presetLabel.toUpperCase()}</span>
 				</div>
 				<div class="flex flex-col gap-2.5 px-4 py-3">
 					{#each spec as cfg (cfg.l)}
 						<div class="flex items-center gap-2.5">
-							<span class="font-mono2 w-24 shrink-0" style="font-size: 0.62rem; letter-spacing: 0.08em; color: var(--ink-2);">{cfg.l}</span>
-							<div class="h-[3px] flex-1" style="background: var(--panel-line); border-radius: 2px;">
-								<div
-									style="width: {Math.min(100, Math.max(4, cfg.pct * 100))}%; height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--color-primary), var(--color-accent)); box-shadow: 0 0 6px var(--brand-glow);"
-								></div>
-							</div>
-							<div class="flex shrink-0 items-center gap-1">
+							<span class="font-mono2 w-24 shrink-0 text-[0.62rem] tracking-[0.08em] text-base-content/60">{cfg.l}</span>
+							<progress class="progress progress-primary flex-1" value={Math.min(100, Math.max(4, cfg.pct * 100))} max="100" aria-label={cfg.l}></progress>
+							<div class="join shrink-0">
 								<button
 									type="button"
-									class="spec-step"
+									class="btn btn-square btn-xs join-item"
 									aria-label="Decrease {cfg.l}"
 									title="Decrease {cfg.l}"
 									onclick={() => nudge(cfg.key, -1)}
 								>−</button>
-								<span class="font-mono2 w-16 shrink-0 text-center" style="font-size: 0.68rem; font-weight: 600; color: var(--color-primary);">{cfg.v}</span>
+								<span class="font-mono2 text-primary w-16 shrink-0 self-center text-center text-[0.68rem] font-semibold">{cfg.v}</span>
 								<button
 									type="button"
-									class="spec-step"
+									class="btn btn-square btn-xs join-item"
 									aria-label="Increase {cfg.l}"
 									title="Increase {cfg.l}"
 									onclick={() => nudge(cfg.key, 1)}

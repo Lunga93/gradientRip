@@ -1,5 +1,3 @@
-// POST /api/friends/respond { userId, accept } — answer a pending request.
-// Only the recipient (requested_by <> me) can respond.
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
 import { requireAuth } from '$lib/server/auth.js';

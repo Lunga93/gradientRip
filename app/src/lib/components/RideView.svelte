@@ -23,8 +23,8 @@
 				<circle cx="8" cy="44" r="5" stroke="var(--ink-3)" stroke-width="2" fill="none" />
 				<circle cx="72" cy="4" r="5" stroke="var(--ink-3)" stroke-width="2" fill="none" />
 			</svg>
-			<h3 class="font-display m-0 text-base font-bold" style="color: var(--ink-0);">Nothing scored yet</h3>
-			<p class="m-0 text-sm leading-relaxed" style="color: var(--ink-2);">
+			<h3 class="font-display m-0 text-base font-bold">Nothing scored yet</h3>
+			<p class="m-0 text-sm leading-relaxed text-base-content/70">
 				Plan a route with stops, or draw one straight on the map.
 			</p>
 			<SlashButton label="Plan a route" size="sm" onclick={() => ui.setTab('plan')} />

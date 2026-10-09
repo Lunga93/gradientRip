@@ -1,10 +1,3 @@
-// Typed geo gateway — remote query/command replacements for the old
-// /api/* passthrough endpoints (deleted). Small idempotent reads are `query`
-// (deduped + cached by arg, good for Nominatim quota); route legs and
-// elevation batches are `command` (large payloads, never cached).
-// Autocomplete keeps its /api/autocomplete endpoint: it needs AbortSignal
-// cancellation, which remote functions don't thread through.
-// Validation moved here from the deleted +server.ts files.
 
 import { query, command } from '$app/server';
 import { error } from '@sveltejs/kit';

@@ -16,18 +16,17 @@
 
 {#if !domain.presets.length}
 	<div class="flex items-center gap-2 py-1">
-		<Mark name="bookmark" cls="size-3.5" style="color: var(--ink-3);" />
-		<span class="text-[0.78rem]" style="color: var(--ink-2);">
+		<Mark name="bookmark" cls="size-3.5 opacity-40" />
+		<span class="text-base-content/70 text-[0.78rem]">
 			No saved places yet — tap the bookmark icon on any stop to save it here.
 		</span>
 	</div>
 {:else}
 	{#each domain.presets as p (p.id)}
-		<span class="preset-chip">
+		<span class="badge badge-outline badge-lg gap-1 pr-1">
 			<button
 				type="button"
-				class="flex min-w-0 cursor-pointer items-center gap-1.5 bg-transparent"
-				style="border: none; color: inherit;"
+				class="flex min-w-0 cursor-pointer items-center gap-1.5"
 				title="Use {p.label}"
 				aria-label="Use saved place {p.label}"
 				onclick={() => fillPreset(p.id)}
@@ -37,8 +36,7 @@
 			</button>
 			<button
 				type="button"
-				class="grid size-8 cursor-pointer place-items-center text-base-content/50 transition-colors hover:text-error"
-				style="background: transparent; border: none;"
+				class="btn btn-ghost btn-xs btn-circle"
 				title="Remove saved place"
 				aria-label="Remove saved place {p.label}"
 				onclick={(e) => removePreset(e, p.id)}

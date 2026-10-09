@@ -1,4 +1,3 @@
-// POST /api/auth/logout — kill the server session and clear the cookie.
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { destroySession, clearSessionCookie, SESSION_COOKIE } from '$lib/server/auth.js';
 
@@ -8,7 +7,6 @@ export const POST: RequestHandler = async (event) => {
 		try {
 			await destroySession(token);
 		} catch {
-			/* session already gone — cookie clear below still logs out */
 		}
 	}
 	clearSessionCookie(event);

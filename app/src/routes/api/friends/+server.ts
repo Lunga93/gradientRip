@@ -1,5 +1,3 @@
-// /api/friends — GET lists accepted friends (with live fixes attached) plus
-// pending incoming/outgoing requests. POST { email } sends a request.
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
 import { requireAuth } from '$lib/server/auth.js';
@@ -40,7 +38,6 @@ export const POST: RequestHandler = async (event) => {
 			const row = existing.rows[0] as { status: string; requested_by: string };
 			if (row.status === 'accepted') return { status: 'accepted' as const };
 			if (row.status === 'blocked') throw error(403, 'This rider is unavailable');
-			// They already asked me → accept on the spot (mutual intent).
 			if (row.requested_by === other) {
 				await c.query(
 					`UPDATE friendships SET status = 'accepted', updated_at = now()

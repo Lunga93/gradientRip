@@ -1,7 +1,6 @@
 import { G, RHO } from './constants.js';
 import type { Phys } from '../plan-packet/types.js';
 
-/** Calculate energy (Wh) for a segment at constant grade and speed. */
 export const segWh = (
 	distance: number,
 	grade: number,
@@ -14,6 +13,6 @@ export const segWh = (
 	const fRoll = p.crr * mass * G;
 	const fAir = 0.5 * RHO * p.cda * v * v;
 	const fGrav = mass * G * Math.sin(Math.atan(grade));
-	const f = Math.max(0, fRoll + fAir + fGrav); // clamped: no regen credited
+	const f = Math.max(0, fRoll + fAir + fGrav);
 	return (f * distance) / p.eff / 3600;
 };

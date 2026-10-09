@@ -7,7 +7,6 @@
 
 	const electric = Object.keys(MODES).filter((id) => MODES[id].group === 'electric');
 	const human = Object.keys(MODES).filter((id) => MODES[id].group === 'human');
-	const modeColor = (id: string): string => (MODES[id].group === 'electric' ? '#38bdf8' : '#60a5fa');
 </script>
 
 {#if variant === 'panel'}
@@ -24,9 +23,10 @@
 				type="button"
 				role="radio"
 				aria-checked={picked}
-				class="mode-chip"
-				class:mode-chip-picked={picked}
-				style="--mc: {modeColor(id)};"
+				class="btn btn-sm"
+				class:btn-active={picked}
+				class:btn-primary={picked}
+				class:btn-soft={!picked}
 				onclick={() => domain.selectMode(id)}
 			>
 				{MODES[id].label}
@@ -38,14 +38,13 @@
 		{#each [{ key: 'electric', ids: electric }, { key: 'human', ids: human }] as group (group.key)}
 			<div class="flex items-center gap-2">
 				<span
-					class="font-mono2"
-					style="font-size: 0.62rem; letter-spacing: 0.12em; color: {group.key === 'electric'
-						? '#38bdf8'
-						: '#60a5fa'};"
+					class="font-mono2 text-[0.62rem] font-semibold tracking-[0.12em]"
+					class:text-sky-400={group.key === 'electric'}
+					class:text-primary={group.key !== 'electric'}
 				>
 					{group.key === 'electric' ? 'ELECTRIC' : 'HUMAN'}
 				</span>
-				<span class="h-px flex-1" style="background: var(--panel-line);"></span>
+				<span class="bg-base-300 h-px flex-1"></span>
 			</div>
 			<div
 				class="grid gap-2"
@@ -59,9 +58,10 @@
 						aria-checked={picked}
 						name="omode"
 						value={id}
-						class="mode-cell"
-						class:mode-cell-picked={picked}
-						style="--mc: {modeColor(id)}; color: {picked ? modeColor(id) : 'var(--ink-2)'};"
+						class="btn"
+						class:btn-active={picked}
+						class:btn-primary={picked}
+						class:btn-soft={!picked}
 						onclick={() => domain.selectMode(id)}
 					>
 						{@html MODE_ICONS[id]}

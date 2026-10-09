@@ -8,7 +8,6 @@ import { decide } from '../verdict/decide.js';
 import { smooth5 } from '../elevation-profile/smooth.js';
 import type { PlanPacket, ScoreInput } from './types.js';
 
-/** Build the serializable PlanPacket from raw route + elevation data. */
 export const buildPlanPacket = (input: ScoreInput): PlanPacket => {
 	const { line, coords, pts, elev: rawElev, boardVal, modeId, queries, source } = input;
 	if (!Array.isArray(pts) || pts.length < 2) throw new Error('Need at least 2 points to score.');

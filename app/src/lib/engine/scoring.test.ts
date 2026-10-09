@@ -3,10 +3,8 @@ import { segWh, smooth3, mergePolylines, classify } from './index.js';
 import { resample, haversine, cumulative } from './index.js';
 import { MODES, RIDER_KIT_KG } from './index.js';
 
-// SPEC.md regression values (e-skate defaults: mass 116.8 kg, drivetrain 80%).
-// If a change moves these by more than ~5%, the change is wrong.
 describe('SPEC regression values', () => {
-	const mass = RIDER_KIT_KG + MODES.eskate.phys.vehicleKg; // 116.8
+	const mass = RIDER_KIT_KG + MODES.eskate.phys.vehicleKg;
 	const phys = MODES.eskate.phys;
 
 	it('flat, 25 km/h, 1 km → 14.5 Wh', () => {
@@ -18,7 +16,6 @@ describe('SPEC regression values', () => {
 	});
 
 	it('1.9 km with 60 m ascent, 25 km/h → 51.4 Wh', () => {
-		// 60 m rise over 1900 m ≈ 3.158% grade
 		const grade = 60 / 1900;
 		expect(segWh(1900, grade, mass, 25, phys)).toBeCloseTo(51.4, 0);
 	});
@@ -53,13 +50,13 @@ describe('gradient bands are deliberately asymmetric (SPEC)', () => {
 		expect(classify(5.9)).toEqual({ c: '#6b8f4e', k: 'easy going' });
 		expect(classify(6)).toEqual({ c: '#8fae7a', k: 'working climb' });
 		expect(classify(18)).toEqual({ c: '#b5502e', k: 'at the motor limit' });
-		expect(classify(12)).toEqual({ c: '#c98a2c', k: 'hard climb' }); // exactly 12% is NOT < 12
+		expect(classify(12)).toEqual({ c: '#c98a2c', k: 'hard climb' });
 	});
 });
 
 describe('smooth3', () => {
 	it('averages interior points, keeps endpoints', () => {
-		expect(smooth3([1, 4, 7])).toEqual([1, 4, 7]); // (1+4+7)/3 = 4
+		expect(smooth3([1, 4, 7])).toEqual([1, 4, 7]);
 		expect(smooth3([0, 3, 9])).toEqual([0, 4, 9]);
 	});
 
@@ -70,7 +67,6 @@ describe('smooth3', () => {
 
 describe('resample', () => {
 	it('emits points exactly `step` apart except the final remainder', () => {
-		// ~1112 m per degree of latitude
 		const line: [number, number][] = [
 			[-33.9, 18.4],
 			[-33.95, 18.4]
@@ -83,7 +79,7 @@ describe('resample', () => {
 		}
 		const lastGap = haversine(pts[pts.length - 2], pts[pts.length - 1]);
 		expect(lastGap).toBeLessThanOrEqual(step);
-		expect(lastGap).toBeGreaterThan(1); // the remainder point
+		expect(lastGap).toBeGreaterThan(1);
 		expect(haversine(pts[0], line[0])).toBeLessThan(0.001);
 	});
 
@@ -121,9 +117,9 @@ describe('mergePolylines', () => {
 		const groups = mergePolylines(segs);
 		expect(groups.length).toBe(3);
 		expect(groups[0].c).toBe('#8fae7a');
-		expect(groups[0].pts.length).toBe(3); // [0,0] [0,1] [0,2]
+		expect(groups[0].pts.length).toBe(3);
 		expect(groups[1].c).toBe('#c98a2c');
-		expect(groups[2].pts.length).toBe(2); // [0,3] [0,4]
+		expect(groups[2].pts.length).toBe(2);
 	});
 
 	it('returns empty for empty input', () => {

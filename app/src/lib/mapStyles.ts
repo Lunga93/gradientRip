@@ -1,7 +1,3 @@
-// Basemap tile catalog — every map look the app can wear. All entries are
-// plain Leaflet raster XYZ layers (no new dependencies). CARTO + OSM are
-// keyless; Stadia works keyless on localhost and needs domain auth/API key
-// in production (free tier: 200k tiles/month).
 
 export interface MapStyleDef {
 	id: string;
@@ -11,9 +7,7 @@ export interface MapStyleDef {
 	subdomains?: string;
 	maxZoom: number;
 	attribution: string;
-	/** native dark artwork — never gets the invert filter */
 	dark: boolean;
-	/** only true for plain OSM: legible when inverted under a dark theme */
 	invertInDark?: boolean;
 	group: 'light' | 'dark';
 }
@@ -123,28 +117,24 @@ export const isValidStyleId = (id: string): boolean => styleById(id) !== undefin
 export const defaultStyleForTheme = (theme: 'light' | 'dark'): string =>
 	theme === 'dark' ? DEFAULT_DARK_STYLE : DEFAULT_LIGHT_STYLE;
 
-// ── Key gating: CARTO + Stadia tiles work keyless on localhost but
-// watermark in production unless their API key is configured.
 const KEYS: Record<'carto' | 'stadia', string | undefined> = {
 	carto: import.meta.env.VITE_CARTO_API_KEY,
 	stadia: import.meta.env.VITE_STADIA_API_KEY
 };
 
-function providerOf(url: string): 'carto' | 'stadia' | null {
+const providerOf = (url: string): 'carto' | 'stadia' | null => {
 	if (url.includes('cartocdn.com')) return 'carto';
 	if (url.includes('stadiamaps.com')) return 'stadia';
 	return null;
-}
+};
 
-/** Tile URL with the provider's API key appended when one is configured. */
-export function tileUrl(style: MapStyleDef): string {
+export const tileUrl = (style: MapStyleDef): string => {
 	const provider = providerOf(style.url);
 	const key = provider ? KEYS[provider] : undefined;
 	return key ? `${style.url}?api_key=${key}` : style.url;
-}
+};
 
-/** Dev shows the full catalog; prod hides keyed styles lacking their key. */
-export function getAvailableStyles(): MapStyleDef[] {
+export const getAvailableStyles = (): MapStyleDef[] => {
 	if (import.meta.env.DEV) return MAP_STYLES;
 	return MAP_STYLES.filter((s) => {
 		const provider = providerOf(s.url);

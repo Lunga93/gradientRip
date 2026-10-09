@@ -3,7 +3,6 @@ import { gradeAt } from './grade-at.js';
 import { classify } from '../gradient-bands/classify.js';
 import { smooth5 } from '../elevation-profile/smooth.js';
 
-/** Build colored segments for the full-resolution route line. */
 export const routeSegments = (
 	line: LatLon[],
 	lineCum: number[],

@@ -4,13 +4,11 @@ import { requireUser } from '$lib/server/device.js';
 
 const VALID_THEMES = new Set(['auto', 'light', 'dark']);
 
-function isNumberArray(v: unknown): boolean {
+const isNumberArray = (v: unknown): boolean => {
 	return Array.isArray(v) && v.every((x) => typeof x === 'number');
-}
+};
 
-// Trip geometry columns are [lat, lon][] — validate the pair structure, not
-// just "array of numbers" (a flat array would crash the JSONB insert shape).
-function isLonLatPair(p: unknown): boolean {
+const isLonLatPair = (p: unknown): boolean => {
 	return (
 		Array.isArray(p) &&
 		p.length === 2 &&
@@ -21,11 +19,11 @@ function isLonLatPair(p: unknown): boolean {
 	);
 }
 
-function isCoordList(v: unknown): boolean {
+const isCoordList = (v: unknown): boolean => {
 	return Array.isArray(v) && v.every(isLonLatPair);
-}
+};
 
-function validateKnownLocation(v: unknown): { lat: number; lon: number; label: string; ts: number } | null {
+const validateKnownLocation = (v: unknown): { lat: number; lon: number; label: string; ts: number } | null => {
 	if (!v || typeof v !== 'object') return null;
 	const loc = v as Record<string, unknown>;
 	if (typeof loc.lat !== 'number' || typeof loc.lon !== 'number' || typeof loc.label !== 'string' || typeof loc.ts !== 'number') return null;

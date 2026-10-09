@@ -34,7 +34,6 @@ export interface Trip extends Record<string, any> {
 	totalKm: number;
 	drawn?: boolean;
 	recorded?: boolean;
-	// friends-visibility, mirrored from the server (never pushed up)
 	shared?: boolean;
 }
 
@@ -51,7 +50,6 @@ export const saveJSON = (key: string, value: unknown): void => {
 	try {
 		localStorage.setItem(key, JSON.stringify(value));
 	} catch {
-		/* storage unavailable (private mode / quota) — persistence is best-effort */
 	}
 };
 
@@ -67,7 +65,6 @@ export const saveTrips = (list: Trip[]): void => {
 	try {
 		localStorage.setItem(TRIPS_KEY, JSON.stringify(list.slice(0, TRIPS_MAX)));
 	} catch {
-		/* best-effort, as above */
 	}
 };
 
@@ -83,7 +80,6 @@ const setItem = (key: string, value: string): void => {
 	try {
 		localStorage.setItem(key, value);
 	} catch {
-		/* best-effort */
 	}
 };
 
@@ -114,7 +110,6 @@ export const clearLegalDismissed = (): void => {
 	try {
 		localStorage.removeItem(LEGAL_KEY);
 	} catch {
-		/* best-effort */
 	}
 };
 
@@ -127,19 +122,16 @@ export const saveThemePref = (pref: ThemePref): void => {
 		try {
 			localStorage.removeItem(THEME_KEY);
 		} catch {
-			/* best-effort */
 		}
 	} else setItem(THEME_KEY, pref);
 };
 
-// Map tile style: 'auto' follows the app theme, otherwise a MAP_STYLES id.
 export const loadMapStylePref = (): string => getItem(MAP_STYLE_KEY) || 'auto';
 export const saveMapStylePref = (pref: string): void => {
 	if (!pref || pref === 'auto') {
 		try {
 			localStorage.removeItem(MAP_STYLE_KEY);
 		} catch {
-			/* best-effort */
 		}
 	} else setItem(MAP_STYLE_KEY, pref);
 };

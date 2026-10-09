@@ -1,8 +1,3 @@
-// Drag-to-scroll action for horizontal carousels (board chips, mode rows).
-// Native overflow-x scrolls with wheel/shift-wheel and touch, but not mouse
-// drag — this adds pointer-drag scrolling plus click suppression so a drag
-// ending on a label doesn't toggle its radio. Touch pointers keep native
-// scrolling (no interference); keyboard users scroll via tabindex + arrows.
 
 export const dragScroll = (node: HTMLElement): { destroy(): void } => {
 	let down = false;
@@ -34,7 +29,6 @@ export const dragScroll = (node: HTMLElement): { destroy(): void } => {
 		node.classList.remove('dragging');
 	};
 
-	// Capture phase: swallow the click that ends a drag so radios don't flip.
 	const onClick = (e: MouseEvent): void => {
 		if (moved) {
 			e.preventDefault();

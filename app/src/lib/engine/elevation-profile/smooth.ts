@@ -1,4 +1,3 @@
-/** 3-point moving average — suppresses DEM noise. */
 export const smooth3 = (arr: number[]): number[] => {
 	if (arr.length < 3) return arr.slice();
 	const out = arr.slice();
@@ -8,7 +7,6 @@ export const smooth3 = (arr: number[]): number[] => {
 	return out;
 };
 
-/** 5-point moving average — stronger noise suppression for grade display. */
 export const smooth5 = (arr: number[]): number[] => {
 	if (arr.length < 5) return smooth3(arr);
 	const out = arr.slice();

@@ -1,6 +1,3 @@
-// PUT /api/trips/share { ts, shared } — toggle friends-visibility on one of
-// my trips. Keyed by ts (the client's trip identity, unique per user).
-// Private by default: sharing inserts a shared_trips row, unsharing deletes it.
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
 import { requireAuth } from '$lib/server/auth.js';
