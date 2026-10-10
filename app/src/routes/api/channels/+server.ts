@@ -10,8 +10,9 @@ export const GET: RequestHandler = async (event) => {
 	const me = await requireAuth(event);
 	const data = await withUser(me.id, async (c) => {
 		const { rows } = await c.query(
-			`SELECT ch.id, ch.name, ch.visibility, ch.sport, ch.home_area, ch.created_at,
+			`SELECT ch.id, ch.name, ch.visibility, ch.sport, ch.home_area, ch.about, ch.avatar_key, ch.created_at,
 				EXISTS (SELECT 1 FROM channel_members m WHERE m.channel_id = ch.id AND m.user_id = current_user_id() AND m.status = 'active') AS is_member,
+				EXISTS (SELECT 1 FROM channel_members m WHERE m.channel_id = ch.id AND m.user_id = current_user_id() AND m.status = 'active' AND m.role = 'admin') AS is_admin,
 				(SELECT COUNT(*)::int FROM channel_members m WHERE m.channel_id = ch.id AND m.status = 'active') AS member_count
 			 FROM channels ch
 			 WHERE ch.visibility = 'open'
@@ -25,8 +26,11 @@ export const GET: RequestHandler = async (event) => {
 				visibility: r.visibility as 'open' | 'private',
 				sport: (r.sport as string | null) ?? null,
 				home_area: (r.home_area as string | null) ?? null,
+				about: (r.about as string | null) ?? null,
+				avatar_key: (r.avatar_key as string | null) ?? null,
 				created_at: (r.created_at as Date).toISOString(),
 				is_member: Boolean(r.is_member),
+				is_admin: Boolean(r.is_admin),
 				member_count: Number(r.member_count) || 0
 			}))
 		};
@@ -57,7 +61,7 @@ export const POST: RequestHandler = async (event) => {
 		const row = rows[0];
 		await c.query(
 			`INSERT INTO channel_members (channel_id, user_id, role, status)
-			 VALUES ($1, current_user_id(), 'owner', 'active') ON CONFLICT DO NOTHING`,
+			 VALUES ($1, current_user_id(), 'admin', 'active') ON CONFLICT DO NOTHING`,
 			[row.id]
 		);
 		return {
@@ -66,8 +70,11 @@ export const POST: RequestHandler = async (event) => {
 			visibility: row.visibility as 'open' | 'private',
 			sport: (row.sport as string | null) ?? null,
 			home_area: (row.home_area as string | null) ?? null,
+			about: null,
+			avatar_key: null,
 			created_at: (row.created_at as Date).toISOString(),
 			is_member: true,
+			is_admin: true,
 			member_count: 1
 		};
 	});
