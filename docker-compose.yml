@@ -25,6 +25,11 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://gradientrip:changeme-in-prod@db:5432/gradientrip
+      - S3_ENDPOINT=http://minio:9000
+      - S3_BUCKET=gradientrip-media
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadmin
+      - S3_REGION=us-east-1
     depends_on:
       db:
         condition: service_healthy

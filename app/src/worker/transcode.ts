@@ -15,11 +15,13 @@
 // terminal `failed` + post `failed`. SIGTERM/SIGINT finishes the current job
 // then exits (no new poll).
 import { execFile } from 'node:child_process';
-import { createReadStream } from 'node:fs';
+import { createReadStream, createWriteStream } from 'node:fs';
 import { promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
+import { pipeline } from 'node:stream/promises';
+import { Readable } from 'node:stream';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Pool } from 'pg';
 import { contentTypeForExt, mediaKey, s3 } from '../lib/server/media.js';
@@ -30,6 +32,12 @@ const MAX_ATTEMPTS = 3;
 const MAX_DURATION_S = 60;
 const IDLE_SLEEP_MS = 5000;
 const LAST_ERROR_MAX = 500;
+
+// Must stay byte-identical to the retry endpoint's refusal copy
+// (_DURATION_GATE_ERROR in src/routes/api/posts/[id]/retry/+server.ts,
+// underscore-prefixed because SvelteKit rejects non-handler exports) —
+// a vitest asserts the equality (see duration-gate.test.ts).
+export const DURATION_GATE_ERROR = 'Video exceeds 60 seconds';
 
 // Same expression as the media module's private BUCKET (env, else default);
 // the module does not export it, so it is mirrored here, not reimplemented.
@@ -74,6 +82,18 @@ const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms
 // Poster rule: keep the verbatim 1s seek for normal videos; sub-1s clips use their midpoint (always exists).
 export function posterSeekSeconds(duration: number): number {
 	return Math.min(1, duration / 2);
+}
+
+// Crash-recovery: a crash between claim (status='processing') and terminal
+// failure left the row 'processing' forever — the poll loop only claims
+// 'queued' and the retry endpoint refuses 'processing', so the post wedged.
+// Requeueing on boot is safe: attempts are untouched, so the 3-attempt cap
+// still holds; the job is simply reprocessed from the top.
+export const RECLAIM_PROCESSING_SQL = `UPDATE transcode_jobs SET status='queued', updated_at = now() WHERE status = 'processing'`;
+
+export async function reclaimProcessing(pool: Pool): Promise<number> {
+	const res = await pool.query(RECLAIM_PROCESSING_SQL);
+	return Number(res.rowCount ?? 0);
 }
 
 async function pollOnce(pool: Pool): Promise<string | null> {
@@ -129,13 +149,28 @@ async function loadJob(pool: Pool, jobId: string): Promise<JobDetail | null> {
 
 async function downloadSource(srcKey: string, destPath: string): Promise<number> {
 	const out = await s3().send(new GetObjectCommand({ Bucket: BUCKET, Key: srcKey }));
-	if (!out.Body || typeof (out.Body as { transformToByteArray?: unknown }).transformToByteArray !== 'function')
+	const body = out.Body as unknown;
+	if (!body) throw new Error(`S3 object missing or unreadable: ${srcKey}`);
+	// Stream the object straight to disk — never buffer the whole video in
+	// memory. Node SDK bodies are Readable streams; web ReadableStreams are
+	// converted; the transformToByteArray branch exists only for test mocks.
+	if (body instanceof Readable || typeof (body as Readable).pipe === 'function') {
+		await pipeline(body as Readable, createWriteStream(destPath));
+	} else if (typeof ReadableStream !== 'undefined' && body instanceof ReadableStream) {
+		await pipeline(Readable.fromWeb(body as import('node:stream/web').ReadableStream), createWriteStream(destPath));
+	} else if (
+		typeof (body as { transformToByteArray?: unknown }).transformToByteArray === 'function'
+	) {
+		const bytes = await (
+			body as { transformToByteArray: () => Promise<Uint8Array> }
+		).transformToByteArray();
+		await fs.writeFile(destPath, bytes);
+		return bytes.length;
+	} else {
 		throw new Error(`S3 object missing or unreadable: ${srcKey}`);
-	const bytes = await (
-		out.Body as { transformToByteArray: () => Promise<Uint8Array> }
-	).transformToByteArray();
-	await fs.writeFile(destPath, bytes);
-	return bytes.length;
+	}
+	const { size } = await fs.stat(destPath);
+	return size;
 }
 
 async function probeDuration(path: string): Promise<number> {
@@ -215,7 +250,7 @@ async function recordFailure(pool: Pool, job: JobDetail, message: string): Promi
 }
 
 async function recordDurationGate(pool: Pool, job: JobDetail, duration: number): Promise<void> {
-	const lastError = 'Video exceeds 60 seconds';
+	const lastError = DURATION_GATE_ERROR;
 	await pool.query(
 		`UPDATE transcode_jobs SET status='failed', attempts=$2, last_error=$3, updated_at=now() WHERE id=$1`,
 		[job.id, job.attempts + 1, lastError]
@@ -397,6 +432,8 @@ async function main(): Promise<void> {
 	console.log(
 		`[worker] stage=boot msg="transcode worker starting" bucket=${BUCKET} max_attempts=${MAX_ATTEMPTS} idle_sleep_ms=${IDLE_SLEEP_MS}`
 	);
+	const reclaimed = await reclaimProcessing(pool);
+	log(null, 'boot', `crash_recovery requeued_processing=${reclaimed}`);
 	try {
 		for (;;) {
 			if (shuttingDown) break;

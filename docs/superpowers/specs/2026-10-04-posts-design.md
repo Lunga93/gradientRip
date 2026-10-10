@@ -93,7 +93,8 @@ unique, hiding support); feed API (`route`/`event` kinds, auth-required);
   last_error TEXT NULL, created_at, updated_at)`; index on `(status, created_at)`.
 - Extend: comments `findOwner` + `KINDS` gain `'post'` (owner = author iff post visible
   to commenter, else 404 — mirrors event visibility branch); reports `KINDS` gains
-  `'post'` with the same hide-threshold behaviour as routes.
+  `'post'` as store-only in Phase B (accepted + stored, reporter-unique, NO
+  hide-threshold — hide-threshold enforcement is Phase D (moderation) scope).
 - RLS: posts readable iff `visibility='public'` OR `author = current_user_id()` OR
   (`visibility='friends'` AND `is_friend(author)`); write/delete owner-only. Media/kudos
   ride the post's visibility via joins (no independent RLS).
@@ -150,7 +151,8 @@ Dockerfile: worker target adds `ffmpeg` via apk on the same image; compose runs
   mints media GETs for posts the caller can see — checked in the same query).
 - Author-deleted posts: media GETs stop minting immediately (rows gone); existing URLs
   expire within the hour.
-- Reports on posts reuse the route-hiding threshold behaviour.
+- Reports on posts are store-only in Phase B (accepted + stored, no auto-hide);
+  hide-threshold enforcement is Phase D (moderation) scope.
 - Upload abuse: per-day caps (§2) + key namespacing per user (`<userId>/<uuid>`) so
   users can never address each other's keys; post-create HEAD check rejects foreign keys.
 - Errors: 400 validation shapes mirror existing handlers; 413 on oversize (before

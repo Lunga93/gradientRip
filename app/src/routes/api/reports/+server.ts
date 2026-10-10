@@ -5,8 +5,8 @@
 // hide branch in the trigger, so accepting them would be a no-op. Post
 // reports are accepted and stored (UNIQUE per reporter), but likewise do NOT
 // auto-hide: posts have no hidden column, so the trigger has no post branch.
-// A post-moderation follow-up (hide/status threshold) should extend the
-// trigger before claiming threshold behaviour for posts.
+// A post-moderation follow-up (hide/status threshold, Phase D scope) should
+// extend the trigger before claiming threshold behaviour for posts.
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
 import { requireAuth } from '$lib/server/auth.js';

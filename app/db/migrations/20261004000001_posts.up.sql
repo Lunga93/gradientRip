@@ -78,6 +78,17 @@ CREATE TABLE IF NOT EXISTS transcode_jobs (
 );
 CREATE INDEX IF NOT EXISTS idx_transcode_jobs_status_created ON transcode_jobs (status, created_at);
 
+-- media_mints (mint-tracking for the 100/day upload-URL cap, Task 2
+-- corrected: counting post_media under-counts abandoned mints, so every
+-- minted file leaves one row here. Self-pruning — each mint call deletes
+-- rows older than 1 day, so no sweeper process is needed for this table.)
+CREATE TABLE IF NOT EXISTS media_mints (
+	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_media_mints_user_created ON media_mints (user_id, created_at);
+
 -- RLS on posts (shape copied from social-v1: SELECT read policy + owner FOR ALL policy)
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY posts_read ON posts FOR SELECT TO PUBLIC USING (

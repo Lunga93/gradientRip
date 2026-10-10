@@ -166,7 +166,11 @@
 			//    the composer NEVER constructs storage keys. Text/ride-only
 			//    posts skip mint+PUT entirely (the endpoint needs ≥1 file).
 			const mintFiles = [
-				...photoBlobs.map((b) => ({ kind: 'photo', contentType: 'image/jpeg', bytes: b.size })),
+				...photoBlobs.map((b) => ({
+					kind: 'photo',
+					contentType: b.type.startsWith('image/') ? b.type : 'image/jpeg',
+					bytes: b.size
+				})),
 				...(video
 					? [{ kind: 'video', contentType: video.file.type || 'video/mp4', bytes: video.file.size }]
 					: [])
@@ -182,21 +186,30 @@
 				const minted = (await mintRes.json()) as { urls: { key: string; url: string }[] };
 
 				// 3. Raw header-less PUTs, one file at a time with an honest step label.
-				const bodies: Uint8Array[] = [];
-				for (const b of photoBlobs) bodies.push(new Uint8Array(await b.arrayBuffer()));
-				if (video) bodies.push(new Uint8Array(await video.file.arrayBuffer()));
+				// Each body carries its kind alongside (no index math against
+				// photoBlobs/video to decide photo-vs-video later).
+				const bodies: { kind: 'photo' | 'video'; bytes: Uint8Array; photoIdx: number | null }[] = [];
+				for (let i = 0; i < photoBlobs.length; i++) {
+					bodies.push({ kind: 'photo', bytes: new Uint8Array(await photoBlobs[i].arrayBuffer()), photoIdx: i });
+				}
+				if (video) bodies.push({ kind: 'video', bytes: new Uint8Array(await video.file.arrayBuffer()), photoIdx: null });
+				if (minted.urls.length !== bodies.length)
+					throw new Error('Upload preparation mismatch — please try again');
 				for (let i = 0; i < minted.urls.length; i++) {
+					const part = bodies[i];
 					uploadLabel = `Uploading ${i + 1}/${minted.urls.length}…`;
-					if (i < photos.length) photos[i] = { ...photos[i], uploading: true };
+					if (part.kind === 'photo' && part.photoIdx !== null)
+						photos[part.photoIdx] = { ...photos[part.photoIdx], uploading: true };
 					else if (video) video = { ...video, uploading: true };
-					await putObjectBytes(minted.urls[i].url, bodies[i]);
-					if (i < photos.length) photos[i] = { ...photos[i], uploading: false, uploaded: true };
+					await putObjectBytes(minted.urls[i].url, part.bytes);
+					if (part.kind === 'photo' && part.photoIdx !== null)
+						photos[part.photoIdx] = { ...photos[part.photoIdx], uploading: false, uploaded: true };
 					else if (video) video = { ...video, uploading: false, uploaded: true };
 				}
 				for (let i = 0; i < minted.urls.length; i++) {
 					media.push({
 						key: minted.urls[i].key,
-						kind: i < photoBlobs.length ? 'photo' : 'video'
+						kind: bodies[i].kind
 					});
 				}
 			}

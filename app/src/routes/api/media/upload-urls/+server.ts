@@ -1,7 +1,8 @@
 // POST /api/media/upload-urls { files: [{ kind: 'photo'|'video', contentType, bytes }] }
 // → { urls: [{ key, url }] }. Authed; validates kind/size caps BEFORE minting;
-// ≤100 mints/day per user (approximation, see below). 400 on cap breach,
-// 400 on unknown kind/oversize.
+// ≤100 mints/day per user via the media_mints table (one row per minted file,
+// so abandoned mints count too). 429 on cap breach (comments tone), 400 on
+// unknown kind/oversize.
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
 import { requireAuth } from '$lib/server/auth.js';
@@ -60,16 +61,20 @@ export const POST: RequestHandler = async (event) => {
 		return { kind, contentType, bytes, ext };
 	});
 	const urls = await withUser(me.id, async (c) => {
-		// Mint rate limit, approximated: mints that never become posts leave no
-		// row, so count the user's media rows on posts created today instead.
-		// A mint-tracking table is overkill per plan; this under-counts
-		// abandoned mints (fail-open) but blocks bulk abuse (fail-closed).
+		// Mint rate limit, exact: every minted file leaves one media_mints
+		// row (abandoned mints count, unlike the old post_media count).
+		// Self-pruning — rows older than a day are deleted on every mint
+		// call, so no sweeper process is needed for this table.
+		await c.query(`DELETE FROM media_mints WHERE created_at < now() - interval '1 day'`);
 		const { rows } = await c.query(
-			`SELECT COUNT(*)::int AS n FROM post_media m JOIN posts p ON p.id = m.post_id
-			 WHERE p.author = current_user_id() AND p.created_at > now() - interval '1 day'`
+			`SELECT COUNT(*)::int AS n FROM media_mints
+			 WHERE user_id = current_user_id() AND created_at > now() - interval '1 day'`
 		);
 		if (Number(rows[0]?.n) + parsed.length > MINTS_PER_DAY) {
-			throw error(400, 'Daily upload limit reached');
+			throw error(429, 'Slow down — daily upload limit reached');
+		}
+		for (let i = 0; i < parsed.length; i++) {
+			await c.query(`INSERT INTO media_mints (user_id) VALUES (current_user_id())`);
 		}
 		return await Promise.all(
 			parsed.map((f) => presignPut(mediaKey(me.id, f.ext), f.contentType, f.bytes))

@@ -37,6 +37,7 @@
 	let routes = $state<ExploreRoute[]>([]);
 	let loading = $state(true);
 	let loadError = $state('');
+	let pickError = $state('');
 
 	const radioValue = (ride: RidePick): string => `${ride.kind}:${String(ride.id)}`;
 	const selectedValue = $derived(selected ? radioValue(selected) : '');
@@ -75,7 +76,11 @@
 
 	const pickTrip = (t: TripRow): void => {
 		const id = Number(t.id);
-		if (!Number.isInteger(id) || id <= 0) return;
+		if (!Number.isInteger(id) || id <= 0) {
+			pickError = 'That trip could not be attached — pick another ride.';
+			return;
+		}
+		pickError = '';
 		onselect({ kind: 'trip', id, label: tripLabel(t) });
 	};
 	const pickRoute = (r: ExploreRoute): void =>
@@ -105,6 +110,9 @@
 	{:else}
 		{#if selected}
 			<p class="picker-selected" role="status">Attached: {selected.label}</p>
+		{/if}
+		{#if pickError}
+			<p class="picker-error" role="alert">{pickError}</p>
 		{/if}
 		<h3 class="picker-section">My trips</h3>
 		{#if trips.length === 0}
@@ -192,6 +200,12 @@
 		margin: 0;
 		font: var(--type-meta);
 		color: var(--text-secondary);
+	}
+
+	.picker-error {
+		margin: 0;
+		font: var(--type-body);
+		color: var(--state-stop);
 	}
 
 	.picker-list {

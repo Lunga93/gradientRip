@@ -13,6 +13,10 @@ ALTER TABLE comments ADD CONSTRAINT comments_feed_kind_check CHECK (feed_kind IN
 DROP POLICY IF EXISTS posts_read ON posts;
 DROP POLICY IF EXISTS posts_self_write ON posts;
 
+-- media_mints (standalone mint-tracking table, no posts dependency — drop alongside)
+DROP INDEX IF EXISTS idx_media_mints_user_created;
+DROP TABLE IF EXISTS media_mints;
+
 -- transcode_jobs (depends on posts + post_media)
 DROP INDEX IF EXISTS idx_transcode_jobs_status_created;
 DROP TABLE IF EXISTS transcode_jobs;

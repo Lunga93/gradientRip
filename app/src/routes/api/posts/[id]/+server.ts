@@ -131,7 +131,8 @@ export const DELETE: RequestHandler = async (event) => {
 		try {
 			await deleteObjects(keys);
 		} catch {
-			/* rows are gone (URLs unmintable); orphaned bytes expire with the bucket lifecycle */
+			/* rows are gone (URLs unmintable); orphaned bytes persist until the
+			   sweeper follow-up lands (Phase C/D) — no bucket lifecycle expires them */
 		}
 	}
 	return json({ ok: true, id }, { headers: { 'Cache-Control': 'no-store' } });

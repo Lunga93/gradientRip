@@ -236,24 +236,25 @@
 	{/if}
 
 	{#if post.ride}
-		{#if post.ride.kind === 'route'}
+		{@const ride = post.ride}
+		{#if ride.kind === 'route'}
 			<div class="ride-card">
-				<span class="ride-label">Route · {post.ride.title ?? 'Untitled'} · {post.ride.sport ?? 'Route'}</span>
+				<span class="ride-label">Route · {ride.title ?? 'Untitled'} · {ride.sport ?? 'Route'}</span>
 				<SecondaryButton
 					label="Open"
-					ariaLabel="Open attached route {post.ride.title ?? ''}"
+					ariaLabel="Open attached route {ride.title ?? ''}"
 					title="Open attached route"
-					onclick={() => void goto(resolve(`/route/${post.ride!.id}` as `/route/${string}`))}
+					onclick={() => void goto(resolve(`/route/${ride.id}` as `/route/${string}`))}
 				/>
 			</div>
 		{:else}
 			<div class="ride-card">
-				<span class="ride-label">{rideTripLabel(post.ride)}</span>
+				<span class="ride-label">{rideTripLabel(ride)}</span>
 				<SecondaryButton
 					label="Open"
 					ariaLabel="Open attached trip"
 					title="Open attached trip"
-					onclick={() => void onOpenTrip(post.ride as PostRideTrip)}
+					onclick={() => void onOpenTrip(ride)}
 				/>
 			</div>
 			{#if tripMsg}

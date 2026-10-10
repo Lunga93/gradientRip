@@ -283,6 +283,8 @@
 		<EmptyState
 			title="The feed is quiet"
 			body="Published routes and upcoming events will land here."
+			actionLabel="Write a post"
+			onAction={() => goto(resolve('/compose'))}
 		/>
 	{:else}
 		{#each entries as entry (entry.kind + entry.id)}

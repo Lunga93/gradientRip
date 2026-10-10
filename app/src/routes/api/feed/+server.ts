@@ -27,6 +27,7 @@ export interface FeedPostRideTrip {
 	kind: 'trip';
 	id: number;
 	ts: number | null;
+	mode_id: string | null;
 	total_km: number | null;
 }
 
@@ -192,10 +193,10 @@ export const GET: RequestHandler = async (event) => {
 						.map((r) => r.ride_route_id as string)
 				)
 			];
-			const tripById = new Map<number, { ts: number | null; total_km: number | null }>();
+			const tripById = new Map<number, { ts: number | null; mode_id: string | null; total_km: number | null }>();
 			if (tripIds.length > 0) {
 				const { rows: tripRows } = await c.query(
-					`SELECT id, ts, total_km FROM trips WHERE id = ANY($1::bigint[])`,
+					`SELECT id, ts, mode_id, total_km FROM trips WHERE id = ANY($1::bigint[])`,
 					[tripIds]
 				);
 				for (const t of tripRows) {
@@ -205,6 +206,7 @@ export const GET: RequestHandler = async (event) => {
 					const totalKm = Number(t.total_km);
 					tripById.set(id, {
 						ts: Number.isFinite(ts) ? ts : null,
+						mode_id: (t.mode_id as string | null) ?? null,
 						total_km: Number.isFinite(totalKm) ? totalKm : null
 					});
 				}
@@ -227,7 +229,7 @@ export const GET: RequestHandler = async (event) => {
 					const id = Number(p.ride_trip_id);
 					const found = tripById.get(id);
 					if (found === undefined) return null;
-					return { kind: 'trip', id, ts: found.ts, total_km: found.total_km };
+					return { kind: 'trip', id, ts: found.ts, mode_id: found.mode_id, total_km: found.total_km };
 				}
 				if (p.ride_kind === 'route' && p.ride_route_id !== null) {
 					const id = p.ride_route_id as string;

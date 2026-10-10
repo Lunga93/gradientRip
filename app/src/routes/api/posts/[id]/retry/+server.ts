@@ -10,8 +10,10 @@ import { requireAuth } from '$lib/server/auth.js';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Must stay byte-identical to the worker's duration-gate last_error
-// (recordDurationGate in src/worker/transcode.ts).
-const DURATION_GATE_ERROR = 'Video exceeds 60 seconds';
+// (DURATION_GATE_ERROR in src/worker/transcode.ts) — a vitest asserts the
+// equality (see src/worker/duration-gate.test.ts). Underscore prefix because
+// SvelteKit rejects non-handler exports from +server.ts at build time.
+export const _DURATION_GATE_ERROR = 'Video exceeds 60 seconds';
 const MAX_ATTEMPTS = 3;
 
 // Same posts_read rule as the GET ([id]/+server.ts): invisibility reads as
@@ -47,7 +49,7 @@ export const POST: RequestHandler = async (event) => {
 		if (status === 'queued' || status === 'processing') {
 			throw error(422, 'Video is still being processed — please wait');
 		}
-		if (lastError === DURATION_GATE_ERROR) {
+		if (lastError === _DURATION_GATE_ERROR) {
 			throw error(
 				422,
 				'This video is over 60 seconds and cannot be processed — post a shorter clip instead'

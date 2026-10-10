@@ -152,6 +152,8 @@ export interface VideoParts {
 // last video row is the 480p default and the second-to-last the 720p toggle.
 // Single-video posts (still processing, or worker output pending) play as-is
 // with no quality toggle.
+// FOLLOW-UP: this positional order is fragile — consider an explicit rendition
+// label/column (e.g. 720p/480p/source) instead of relying on insert order.
 export function videoParts(media: PostCardMedia[] | null | undefined): VideoParts {
 	const rows = Array.isArray(media) ? media : [];
 	const photos = rows.filter((m) => m.kind === 'photo');
