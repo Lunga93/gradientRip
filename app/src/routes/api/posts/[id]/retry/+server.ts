@@ -18,7 +18,7 @@ const MAX_ATTEMPTS = 3;
 
 // Same posts_read rule as the GET ([id]/+server.ts): invisibility reads as
 // missing (404); only a visible foreign post reaches the author-only 403.
-// The crew branch is character-identical to the detail/feed/comments/kudos
+// The crew branch is character-identical to the detail/feed/comments/kudos/reports
 // fragments — copy-paste it, never rephrase.
 const VISIBLE = `(p.visibility = 'public' OR p.author = current_user_id() OR (p.visibility = 'friends' AND is_friend(p.author)) OR (visibility='crew' AND is_crew_member(crew_id))) AND (p.status = 'live' OR p.author = current_user_id())`;
 

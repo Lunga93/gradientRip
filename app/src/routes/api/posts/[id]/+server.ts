@@ -20,7 +20,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // (spec §2 — a public post still processing must not leak its source media
 // to strangers who guess the UUID). The crew branch
 // (OR (visibility='crew' AND is_crew_member(crew_id))) is character-identical
-// in every visibility expression across detail/feed/comments/kudos/retry —
+// in every visibility expression across detail/feed/comments/kudos/retry/reports —
 // copy-paste it, never rephrase.
 const VISIBLE = `(p.visibility = 'public' OR p.author = current_user_id() OR (p.visibility = 'friends' AND is_friend(p.author)) OR (visibility='crew' AND is_crew_member(crew_id))) AND (p.status = 'live' OR p.author = current_user_id())`;
 

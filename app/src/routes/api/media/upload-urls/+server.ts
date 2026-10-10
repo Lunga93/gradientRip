@@ -6,7 +6,7 @@
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
 import { requireAuth } from '$lib/server/auth.js';
-import { mediaKey, presignPut } from '$lib/server/media.js';
+import { mediaKey, presignPut, ensureBucket } from '$lib/server/media.js';
 
 const PHOTO_MAX_BYTES = 10 * 1024 * 1024;
 const VIDEO_MAX_BYTES = 200 * 1024 * 1024;
@@ -25,6 +25,8 @@ const EXT_BY_TYPE: Record<string, string> = {
 };
 
 export const POST: RequestHandler = async (event) => {
+	// Self-healing bucket creation; HeadBucket is cheap, CreateBucket runs once ever.
+	await ensureBucket();
 	const me = await requireAuth(event);
 	const body = await event.request.json().catch(() => null);
 	const files = body?.files;
