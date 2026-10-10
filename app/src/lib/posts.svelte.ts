@@ -47,6 +47,9 @@ export interface PostCardPost {
 	body: string | null;
 	status: string | null;
 	visibility?: string | null;
+	// Crew audience (Task C3): crew posts only — id + name for the chip.
+	crew_id?: string | null;
+	crew_name?: string | null;
 	kudos: number;
 	kudosed?: boolean;
 	comments?: number;
@@ -71,6 +74,8 @@ export interface FeedPostEntry {
 	body?: string | null;
 	status?: string | null;
 	visibility?: string | null;
+	crew_id?: string | null;
+	crew_name?: string | null;
 	kudos: number;
 	created_at: string;
 	author_name?: string | null;
@@ -104,6 +109,8 @@ export function buildFeedCard(entry: FeedPostEntry): PostCardPost {
 		body: entry.excerpt ?? entry.body ?? null,
 		status: entry.status ?? 'live',
 		visibility: entry.visibility ?? null,
+		crew_id: entry.crew_id ?? null,
+		crew_name: entry.crew_name ?? null,
 		kudos: entry.kudos,
 		created_at: entry.created_at,
 		author_name: entry.author_name ?? null,

@@ -17,6 +17,10 @@ export interface FeedItem {
 	created_at?: string;
 	status?: string | null;
 	visibility?: string | null;
+	// Crew audience (Task C3): present on crew posts only — the target
+	// crew's id + name for the "in CrewName" chip.
+	crew_id?: string | null;
+	crew_name?: string | null;
 	media?: { kind: string; url: string }[];
 }
 

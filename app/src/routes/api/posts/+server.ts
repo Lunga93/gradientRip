@@ -67,8 +67,23 @@ export const POST: RequestHandler = async (event) => {
 	const body = await event.request.json().catch(() => null);
 
 	const visibility = typeof body?.visibility === 'string' ? body.visibility : '';
-	if (visibility !== 'public' && visibility !== 'friends') {
-		throw error(400, "visibility must be 'public' or 'friends'");
+	if (visibility !== 'public' && visibility !== 'friends' && visibility !== 'crew') {
+		throw error(400, "visibility must be 'public', 'friends' or 'crew'");
+	}
+
+	// Crew audience: crew_id required iff visibility is crew (the exactly-one
+	// rule posts_crew_check enforces in the DB; validated here for honest
+	// 400s instead of 500s). Membership itself is checked in SQL inside the
+	// txn below (is_crew_member), not in app logic.
+	let crewId: string | null = null;
+	const rawCrewId: unknown = body?.crew_id ?? null;
+	if (visibility === 'crew') {
+		if (typeof rawCrewId !== 'string' || !UUID_RE.test(rawCrewId)) {
+			throw error(400, 'crew_id is required when visibility is crew');
+		}
+		crewId = rawCrewId;
+	} else if (rawCrewId !== null && rawCrewId !== undefined) {
+		throw error(400, 'crew_id is only allowed when visibility is crew');
 	}
 
 	// Text: optional iff media or ride attached; when present, 1–500 chars.
@@ -174,6 +189,17 @@ export const POST: RequestHandler = async (event) => {
 		if (Number(counted[0]?.n) >= POSTS_PER_DAY) {
 			fail(ownedKeys, 400, 'Daily post limit reached — try again tomorrow');
 		}
+		// Crew audience gate: the caller must be an active member of the
+		// target crew (evaluated in SQL via is_crew_member under the session
+		// user — never app logic). Non-members get 403; stray objects are
+		// cleaned up under the same contract as the 400 paths above.
+		if (crewId !== null) {
+			const { rows: membership } = await c.query('SELECT is_crew_member($1) AS ok', [crewId]);
+			if (!membership[0]?.ok) {
+				cleanupOwned(ownedKeys);
+				throw error(403, 'You must be a member of this crew to post to it');
+			}
+		}
 		// Ride eligibility: own trips only; routes must be visible.
 		let rideKind: string | null = null;
 		let rideTripId: number | null = null;
@@ -208,10 +234,10 @@ export const POST: RequestHandler = async (event) => {
 			}
 		}
 		const { rows: posts } = await c.query(
-			`INSERT INTO posts (author, body, visibility, ride_kind, ride_trip_id, ride_route_id, status)
-			 VALUES (current_user_id(), $1, $2, $3, $4, $5, $6)
-			 RETURNING id, body, visibility, ride_kind, ride_trip_id, ride_route_id, status, kudos, created_at`,
-			[text, visibility, rideKind, rideTripId, rideRouteId, status]
+			`INSERT INTO posts (author, body, visibility, crew_id, ride_kind, ride_trip_id, ride_route_id, status)
+			 VALUES (current_user_id(), $1, $2, $3, $4, $5, $6, $7)
+			 RETURNING id, body, visibility, crew_id, ride_kind, ride_trip_id, ride_route_id, status, kudos, created_at`,
+			[text, visibility, crewId, rideKind, rideTripId, rideRouteId, status]
 		);
 		const post = posts[0];
 		const mediaRows: { id: string; kind: string; s3_key: string; bytes: number }[] = [];
@@ -255,6 +281,7 @@ export const POST: RequestHandler = async (event) => {
 			id: created.post.id as string,
 			body: (created.post.body as string | null) ?? null,
 			visibility: created.post.visibility as string,
+			crew_id: (created.post.crew_id as string | null) ?? null,
 			status: created.post.status as string,
 			ride:
 				created.post.ride_kind === 'trip'

@@ -16,7 +16,8 @@ export const POST: RequestHandler = async (event) => {
 		const found = await c.query(
 			`SELECT id FROM posts p WHERE p.id = $1
 			 AND (p.visibility = 'public' OR p.author = current_user_id()
-			    OR (p.visibility = 'friends' AND is_friend(p.author)))
+			    OR (p.visibility = 'friends' AND is_friend(p.author))
+			    OR (visibility='crew' AND is_crew_member(crew_id)))
 			 AND (p.status = 'live' OR p.author = current_user_id())`,
 			[id]
 		);

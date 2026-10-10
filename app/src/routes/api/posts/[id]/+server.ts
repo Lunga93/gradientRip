@@ -1,7 +1,7 @@
 // GET /api/posts/[id] — single post with author, presigned media GETs,
 // ride card data, kudos + kudosed, comments count. Visibility-filtered with
-// the migration's read rule (public | mine | friends-of-author); anything
-// else 404s so friends-only posts don't leak. Media URLs are minted ONLY
+// the migration's read rule (public | mine | friends-of-author | crew-member);
+// anything else 404s so friends-only posts don't leak. Media URLs are minted ONLY
 // for rows this query already proved visible — the server never mints them
 // for anyone else.
 //
@@ -18,8 +18,11 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // The migration's posts_read rule, inlined so the 404 covers invisibility,
 // plus the unfinished-post gate: processing/failed rows are author-only
 // (spec §2 — a public post still processing must not leak its source media
-// to strangers who guess the UUID).
-const VISIBLE = `(p.visibility = 'public' OR p.author = current_user_id() OR (p.visibility = 'friends' AND is_friend(p.author))) AND (p.status = 'live' OR p.author = current_user_id())`;
+// to strangers who guess the UUID). The crew branch
+// (OR (visibility='crew' AND is_crew_member(crew_id))) is character-identical
+// in every visibility expression across detail/feed/comments/kudos/retry —
+// copy-paste it, never rephrase.
+const VISIBLE = `(p.visibility = 'public' OR p.author = current_user_id() OR (p.visibility = 'friends' AND is_friend(p.author)) OR (visibility='crew' AND is_crew_member(crew_id))) AND (p.status = 'live' OR p.author = current_user_id())`;
 
 export const GET: RequestHandler = async (event) => {
 	const me = await requireAuth(event);
@@ -27,9 +30,10 @@ export const GET: RequestHandler = async (event) => {
 	if (!UUID_RE.test(id)) throw error(400, 'Invalid post id');
 	const data = await withUser(me.id, async (c) => {
 		const { rows } = await c.query(
-			`SELECT p.id, p.author, p.body, p.visibility, p.ride_kind, p.ride_trip_id,
+			`SELECT p.id, p.author, p.body, p.visibility, p.crew_id, p.ride_kind, p.ride_trip_id,
 			        p.ride_route_id, p.status, p.kudos, p.created_at,
 			        u.display_name AS author_name, u.avatar_url AS author_avatar,
+			        (SELECT ch.name FROM channels ch WHERE ch.id = p.crew_id) AS crew_name,
 			        EXISTS (SELECT 1 FROM post_kudos k WHERE k.post_id = p.id AND k.user_id = current_user_id()) AS kudosed,
 			        (SELECT COUNT(*)::int FROM comments cm WHERE cm.feed_kind = 'post' AND cm.target_id = p.id) AS comments
 			 FROM posts p LEFT JOIN users u ON u.id = p.author
@@ -90,6 +94,8 @@ export const GET: RequestHandler = async (event) => {
 			},
 			body: (p.body as string | null) ?? null,
 			visibility: p.visibility as string,
+			crew_id: (p.crew_id as string | null) ?? null,
+			crew_name: (p.crew_name as string | null) ?? null,
 			status: p.status as string,
 			ride: data.ride,
 			kudos: Number(p.kudos) || 0,

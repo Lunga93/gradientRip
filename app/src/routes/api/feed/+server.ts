@@ -2,6 +2,7 @@
 // from route_stats, cf. explore endpoint), upcoming events the caller can
 // see (open + member-private channels, cf. events RSVP), and Phase B posts
 // (public+live for all signed-in; friends+live iff author is me or friend;
+// crew+live iff I am an active member of the post's crew;
 // own processing/failed always). Shape
 // { kind: 'activity'|'route'|'event'; id; title; kudos } is consumed by
 // Task 9 comments. No 'activity' rows exist in v1 — the kind stays in the
@@ -61,6 +62,10 @@ export interface FeedEntry {
 	excerpt: string | null;
 	status: string | null;
 	visibility: string | null;
+	// Crew audience (null unless visibility is 'crew'): the target crew's id
+	// + name so cards can render the "in CrewName" chip (Task 4).
+	crew_id: string | null;
+	crew_name: string | null;
 	media: FeedPostMedia[] | null;
 	// Attached ride for post entries only (null for route/event rows and
 	// posts without one). Field list mirrors GET /api/posts/[id]: trip →
@@ -126,6 +131,8 @@ export const GET: RequestHandler = async (event) => {
 				excerpt: null,
 				status: null,
 				visibility: null,
+				crew_id: null,
+				crew_name: null,
 				media: null,
 				ride: null
 			})),
@@ -147,23 +154,30 @@ export const GET: RequestHandler = async (event) => {
 				excerpt: null,
 				status: null,
 				visibility: null,
+				crew_id: null,
+				crew_name: null,
 				media: null,
 				ride: null
 			}))
 		];
 		// Posts: public+live for every signed-in caller; friends+live iff the
-		// author is me or a friend; my own processing/failed rows always (the
-		// author-only processing card). Strangers never see friends-only or
-		// unfinished rows — enforced here, in the same query that gates the
-		// presigned media URLs below.
+		// author is me or a friend; crew+live iff I am an active member of the
+		// target crew (OR (visibility='crew' AND is_crew_member(crew_id)) —
+		// character-identical to the detail/comments/kudos/retry fragments);
+		// my own processing/failed rows always (the author-only processing
+		// card). Strangers never see friends-only, crew-only or unfinished
+		// rows — enforced here, in the same query that gates the presigned
+		// media URLs below.
 		const posts = await c.query(
 			`SELECT p.id, p.body, LEFT(p.body, 140) AS excerpt, p.visibility, p.status,
-			        p.kudos, p.created_at, p.ride_kind, p.ride_trip_id, p.ride_route_id,
-			        u.display_name AS author_name, u.avatar_url AS author_avatar
+			        p.kudos, p.created_at, p.crew_id, p.ride_kind, p.ride_trip_id, p.ride_route_id,
+			        u.display_name AS author_name, u.avatar_url AS author_avatar,
+			        (SELECT ch.name FROM channels ch WHERE ch.id = p.crew_id) AS crew_name
 			 FROM posts p LEFT JOIN users u ON u.id = p.author
 			 WHERE (p.status = 'live'
 			        AND (p.visibility = 'public'
-			             OR (p.visibility = 'friends' AND is_friend(p.author))))
+			             OR (p.visibility = 'friends' AND is_friend(p.author))
+			             OR (visibility='crew' AND is_crew_member(crew_id))))
 			    OR p.author = current_user_id()
 			 ORDER BY p.created_at DESC LIMIT 50`
 		);
@@ -265,6 +279,8 @@ export const GET: RequestHandler = async (event) => {
 					excerpt,
 					status: p.status as string,
 					visibility: p.visibility as string,
+					crew_id: (p.crew_id as string | null) ?? null,
+					crew_name: (p.crew_name as string | null) ?? null,
 					media: mediaByPost.get(p.id as string) ?? [],
 					ride: rideOf(p as Record<string, unknown>)
 				});
