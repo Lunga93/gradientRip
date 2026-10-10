@@ -2,8 +2,10 @@
 // Open crews: any signed-in user. Private crews: active members only (403 otherwise).
 // PATCH /api/channels/[id]/members { user_id, action } — crew admin controls.
 // Actions: 'promote' (member → admin), 'demote' (admin → member), 'remove'
-// (delete the membership row; self-remove = leave). Caller must be an active
-// admin (403 otherwise). The final admin can neither be demoted nor leave:
+// (delete the membership row; remove-on-self = leave for everyone). Non-self
+// remove/promote/demote require an active admin caller (403 otherwise).
+// Self-remove is allowed for any active member regardless of admin status.
+// The final admin can neither be demoted nor leave:
 // both paths refuse with 422 so a crew never ends up adminless (delete-crew
 // stays available to that admin).
 import { json, error, type RequestHandler } from '@sveltejs/kit';
@@ -68,7 +70,8 @@ export const PATCH: RequestHandler = async (event) => {
 			 WHERE channel_id = $1 AND user_id = current_user_id() AND status = 'active'`,
 			[id]
 		);
-		if (caller.rows.length === 0 || caller.rows[0].role !== 'admin') {
+		const isSelfRemove = action === 'remove' && userId === me.id;
+		if (!isSelfRemove && (caller.rows.length === 0 || caller.rows[0].role !== 'admin')) {
 			throw error(403, 'Crew admins only');
 		}
 		const target = await c.query(

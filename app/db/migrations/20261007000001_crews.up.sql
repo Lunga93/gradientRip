@@ -19,7 +19,9 @@ ALTER TABLE channel_members ALTER COLUMN joined_at SET NOT NULL;
 ALTER TABLE channel_members ALTER COLUMN joined_at SET DEFAULT now();
 
 -- channel_members.role: normalize-then-constrain (constraint AFTER update matters)
-UPDATE channel_members SET role = 'member' WHERE role NOT IN ('admin', 'member');
+-- Founders created rows with role 'owner' pre-migration; promote them to 'admin'
+-- (channels.created_by) so crews keep an admin, everything else → 'member'.
+UPDATE channel_members SET role = CASE WHEN user_id = (SELECT created_by FROM channels WHERE id = channel_members.channel_id) THEN 'admin' ELSE 'member' END WHERE role NOT IN ('admin', 'member');
 ALTER TABLE channel_members DROP CONSTRAINT IF EXISTS channel_members_role_check;
 ALTER TABLE channel_members ADD CONSTRAINT channel_members_role_check CHECK (role IN ('admin', 'member'));
 
