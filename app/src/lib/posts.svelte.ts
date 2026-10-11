@@ -78,6 +78,10 @@ export interface FeedPostEntry {
 	crew_name?: string | null;
 	kudos: number;
 	created_at: string;
+	// Author id (carried by the crew feed endpoint; absent on shared-feed
+	// rows). buildFeedCard maps it onto card.author so callers can compare
+	// against the signed-in user id for real authorship.
+	author_id?: string | null;
 	author_name?: string | null;
 	author_avatar?: string | null;
 	media?: PostCardMedia[] | null;
@@ -115,6 +119,13 @@ export function buildFeedCard(entry: FeedPostEntry): PostCardPost {
 		created_at: entry.created_at,
 		author_name: entry.author_name ?? null,
 		author_avatar: entry.author_avatar ?? null,
+		author: entry.author_id
+			? {
+					id: entry.author_id,
+					name: entry.author_name ?? null,
+					avatar: entry.author_avatar ?? null
+				}
+			: null,
 		media: entry.media ?? [],
 		ride
 	};

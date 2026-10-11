@@ -16,7 +16,7 @@
 	import PostCard from '$lib/components/PostCard.svelte';
 	import { channels, type Channel, type RosterMember } from '$lib/channels.svelte.js';
 	import { social } from '$lib/social.svelte.js';
-	import { buildFeedCard, type PostCardPost } from '$lib/posts.svelte.js';
+	import { buildFeedCard, type FeedPostEntry, type PostCardPost } from '$lib/posts.svelte.js';
 	import { compressPhoto, putObjectBytes } from '$lib/media.js';
 	import { relTime } from '$lib/ui/format.js';
 
@@ -41,11 +41,8 @@
 		rides: number;
 	}
 
-	interface FeedPostRow {
-		kind: string;
-		id: string;
-		crew_id?: string | null;
-	}
+	// Crew Posts tab pages the dedicated crew feed (limit 20, Show-more
+	// while a full page returns). The cursor is the last card's created_at.
 
 	type Tab = 'posts' | 'events' | 'routes' | 'members';
 
@@ -93,6 +90,10 @@
 	let cards = $state<PostCardPost[]>([]);
 	let postsLoading = $state(false);
 	let postsError = $state('');
+	let postsHasMore = $state(false);
+	let postsLoadingMore = $state(false);
+
+	const POSTS_PAGE = 20;
 
 	// Admin section state (lives in the Members tab).
 	let editName = $state('');
@@ -226,23 +227,45 @@
 	const loadPosts = async (): Promise<void> => {
 		postsLoading = true;
 		postsError = '';
+		postsHasMore = false;
 		try {
-			const res = await fetch('/api/feed');
+			const res = await fetch(
+				`/api/channels/${encodeURIComponent(id)}/feed?limit=${POSTS_PAGE}`
+			);
 			if (!res.ok) {
 				postsError = 'Could not load crew posts.';
 				return;
 			}
-			const data = (await res.json()) as { items: FeedPostRow[] };
-			const rows = (Array.isArray(data.items) ? data.items : []).filter(
-				(e) => e.kind === 'post' && e.crew_id === id
-			);
-			cards = rows.map((r) =>
-				buildFeedCard(r as unknown as Parameters<typeof buildFeedCard>[0])
-			);
+			const data = (await res.json()) as { items: FeedPostEntry[] };
+			const rows = Array.isArray(data.items) ? data.items : [];
+			cards = rows.map((r) => buildFeedCard(r));
+			postsHasMore = rows.length >= POSTS_PAGE;
 		} catch {
 			postsError = 'Could not load crew posts — check your connection.';
 		} finally {
 			postsLoading = false;
+		}
+	};
+
+	const loadMorePosts = async (): Promise<void> => {
+		if (postsLoadingMore || !postsHasMore || cards.length === 0) return;
+		postsLoadingMore = true;
+		try {
+			const before = cards[cards.length - 1]?.created_at ?? '';
+			const params = new URLSearchParams({ limit: String(POSTS_PAGE), before });
+			const res = await fetch(`/api/channels/${encodeURIComponent(id)}/feed?${params}`);
+			if (!res.ok) {
+				postsError = 'Could not load more crew posts.';
+				return;
+			}
+			const data = (await res.json()) as { items: FeedPostEntry[] };
+			const rows = Array.isArray(data.items) ? data.items : [];
+			cards = [...cards, ...rows.map((r) => buildFeedCard(r))];
+			postsHasMore = rows.length >= POSTS_PAGE;
+		} catch {
+			postsError = 'Could not load more crew posts — check your connection.';
+		} finally {
+			postsLoadingMore = false;
 		}
 	};
 
@@ -661,7 +684,7 @@
 				style="background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md);"
 			>
 				<span class="section-label">Crew posts · {cards.length}</span>
-				{#if detail.is_member}
+				{#if detail.is_member && cards.length > 0}
 					<div class="tab-primary">
 						<PrimaryButton
 							label="Post to crew"
@@ -714,11 +737,22 @@
 									</span>
 								{/snippet}
 								{#snippet body()}
-									<PostCard post={card} isAuthor={card.status !== 'live'} />
+									<PostCard post={card} isAuthor={!!myId && card.author?.id === myId} />
 								{/snippet}
 							</FeedItem>
 						{/each}
 					</div>
+					{#if postsHasMore}
+						<span class="show-more-row">
+							<SecondaryButton
+								label={postsLoadingMore ? '…' : 'Show more'}
+								ariaLabel="Show more crew posts"
+								title="Show more crew posts"
+								disabled={postsLoadingMore}
+								onclick={() => void loadMorePosts()}
+							/>
+						</span>
+					{/if}
 				{/if}
 			</div>
 		{:else if tab === 'events'}
@@ -1188,6 +1222,12 @@
 	.tab-primary {
 		display: flex;
 		margin: 0.25rem 0;
+	}
+
+	.show-more-row {
+		display: flex;
+		justify-content: center;
+		margin-top: 0.25rem;
 	}
 
 	.stack {

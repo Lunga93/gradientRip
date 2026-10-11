@@ -85,4 +85,25 @@ describe('buildFeedCard ride mapping', () => {
 		expect(card.crew_id).toBe('33333333-3333-4333-8333-333333333333');
 		expect(card.crew_name).toBe('Dawn Patrol');
 	});
+
+	it('maps author_id onto card.author for authorship checks', () => {
+		const card = buildFeedCard({
+			...base,
+			excerpt: 'Mine',
+			status: 'failed',
+			author_id: '44444444-4444-4444-8444-444444444444',
+			author_name: 'Lungy',
+			author_avatar: null
+		});
+		expect(card.author).toEqual({
+			id: '44444444-4444-4444-8444-444444444444',
+			name: 'Lungy',
+			avatar: null
+		});
+	});
+
+	it('leaves card.author null when author_id is absent (shared-feed rows)', () => {
+		const card = buildFeedCard({ ...base, excerpt: 'Just words' });
+		expect(card.author).toBeNull();
+	});
 });
