@@ -241,6 +241,53 @@ class ChannelsState {
 			return { ok: false, message };
 		}
 	}
+
+	async update(
+		id: string,
+		patch: { name?: string; about?: string | null; avatar_key?: string | null }
+	): Promise<{ ok: boolean; message: string }> {
+		this.lastError = '';
+		try {
+			const resp = await fetch(`/api/channels/${encodeURIComponent(id)}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(patch)
+			});
+			const data = (await resp.json().catch(() => ({}))) as { message?: string };
+			if (!resp.ok) {
+				const message = typeof data.message === 'string' ? data.message : 'Could not save the crew';
+				this.lastError = message;
+				return { ok: false, message };
+			}
+			await this.list();
+			return { ok: true, message: 'Crew updated' };
+		} catch {
+			const message = 'You appear to be offline';
+			this.lastError = message;
+			return { ok: false, message };
+		}
+	}
+
+	async remove(id: string): Promise<{ ok: boolean; message: string }> {
+		this.lastError = '';
+		try {
+			const resp = await fetch(`/api/channels/${encodeURIComponent(id)}`, {
+				method: 'DELETE'
+			});
+			const data = (await resp.json().catch(() => ({}))) as { message?: string };
+			if (!resp.ok) {
+				const message = typeof data.message === 'string' ? data.message : 'Could not delete the crew';
+				this.lastError = message;
+				return { ok: false, message };
+			}
+			await this.list();
+			return { ok: true, message: 'Crew deleted' };
+		} catch {
+			const message = 'You appear to be offline';
+			this.lastError = message;
+			return { ok: false, message };
+		}
+	}
 }
 
 export const channels = new ChannelsState();

@@ -1,26 +1,47 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 
+	// Link mode (explore tabs): every segment carries an href and renders an
+	// anchor. In-page tab mode (crew profile): segments carry a value instead
+	// and render buttons; the parent owns the tab state via onSelect. The two
+	// modes never mix within one control — a segment with an href is a link.
 	let {
 		segments,
-		current
+		current,
+		onSelect
 	}: {
-		segments: { label: string; href: '/explore/routes' | '/explore/crews' | '/explore/events' }[];
+		segments: (
+			| { label: string; href: '/explore/routes' | '/explore/crews' | '/explore/events' }
+			| { label: string; href?: undefined; value: string }
+		)[];
 		current: string;
+		onSelect?: (value: string) => void;
 	} = $props();
 </script>
 
 <nav class="segmented" aria-label="Sections">
-	{#each segments as segment (segment.href)}
-		{@const active = segment.href === current}
-		<a
-			href={resolve(segment.href)}
-			class="segment"
-			class:active
-			aria-current={active ? 'page' : undefined}
-		>
-			{segment.label}
-		</a>
+	{#each segments as segment (segment.label)}
+		{@const active = 'href' in segment && segment.href ? segment.href === current : segment.value === current}
+		{#if 'href' in segment && segment.href}
+			<a
+				href={resolve(segment.href)}
+				class="segment"
+				class:active
+				aria-current={active ? 'page' : undefined}
+			>
+				{segment.label}
+			</a>
+		{:else}
+			<button
+				type="button"
+				class="segment"
+				class:active
+				aria-pressed={active}
+				onclick={() => onSelect?.(segment.value)}
+			>
+				{segment.label}
+			</button>
+		{/if}
 	{/each}
 </nav>
 
@@ -47,6 +68,8 @@
 		font: var(--type-label);
 		letter-spacing: 0.02em;
 		color: var(--text-secondary);
+		background: none;
+		cursor: pointer;
 	}
 
 	.segment:focus-visible {
