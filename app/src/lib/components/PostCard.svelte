@@ -51,6 +51,14 @@
 		const ts = new Date(post.created_at).getTime();
 		return Number.isFinite(ts) ? relTime(ts) : '';
 	});
+	// Crew audience chip (Phase C Task 4): crew posts carry crew_id +
+	// crew_name from detail/feed (Task 3). Rendered only when both are
+	// present — never a dead link to an unnamed crew.
+	const crewName = $derived((post.crew_name ?? '').trim());
+	const crewHref = $derived(
+		post.visibility === 'crew' && post.crew_id ? `/crew/${post.crew_id}` as `/crew/${string}` : null
+	);
+	const showCrewChip = $derived(crewHref !== null && crewName.length > 0);
 
 	let kudosBusy = $state(false);
 	let kudosMsg = $state('');
@@ -167,6 +175,9 @@
 </script>
 
 <div class="post-card">
+	{#if showCrewChip && crewHref}
+		<a class="post-crew-chip" href={resolve(crewHref)}>in {crewName}</a>
+	{/if}
 	{#if detail}
 		<div class="post-author">
 			{#if authorAvatar}
@@ -452,6 +463,25 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.625rem;
+	}
+
+	.post-crew-chip {
+		display: inline-flex;
+		align-items: center;
+		align-self: flex-start;
+		min-height: 44px;
+		font: var(--type-body-strong);
+		color: var(--accent);
+		text-decoration: none;
+	}
+
+	.post-crew-chip:hover {
+		text-decoration: underline;
+	}
+
+	.post-crew-chip:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 
 	.post-author {

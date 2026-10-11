@@ -375,6 +375,48 @@ describe('PostCard author delete', () => {
 	});
 });
 
+describe('crew chip', () => {
+	it('links to the crew page', () => {
+		render(
+			PostCard,
+			{
+				props: {
+					post: basePost({
+						visibility: 'crew',
+						crew_id: '33333333-3333-4333-8333-333333333333',
+						crew_name: 'Dawn Patrol'
+					})
+				}
+			}
+		);
+		expect(screen.getByRole('link', { name: /in Dawn Patrol/ }).getAttribute('href')).toBe(
+			'/crew/33333333-3333-4333-8333-333333333333'
+		);
+	});
+
+	it('renders no chip for non-crew posts', () => {
+		const { container } = render(PostCard, { props: { post: basePost() } });
+		expect(container.querySelector('.post-crew-chip')).toBeNull();
+		expect(screen.queryByRole('link', { name: /in / })).toBeNull();
+	});
+
+	it('renders no chip when the crew name is missing', () => {
+		const { container } = render(
+			PostCard,
+			{
+				props: {
+					post: basePost({
+						visibility: 'crew',
+						crew_id: '33333333-3333-4333-8333-333333333333',
+						crew_name: null
+					})
+				}
+			}
+		);
+		expect(container.querySelector('.post-crew-chip')).toBeNull();
+	});
+});
+
 describe('posts helpers', () => {
 	it('threadComments nests by parent and lifts dangling replies to root', () => {
 		const flat: FeedComment[] = [

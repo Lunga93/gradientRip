@@ -71,4 +71,18 @@ describe('buildFeedCard ride mapping', () => {
 		const card = buildFeedCard({ ...base, excerpt: 'Just words' });
 		expect(card.ride).toBeNull();
 	});
+
+	it('carries crew audience fields onto the card for the chip', () => {
+		const card = buildFeedCard({
+			...base,
+			excerpt: 'Crew-only line',
+			status: 'live',
+			visibility: 'crew',
+			crew_id: '33333333-3333-4333-8333-333333333333',
+			crew_name: 'Dawn Patrol'
+		});
+		expect(card.visibility).toBe('crew');
+		expect(card.crew_id).toBe('33333333-3333-4333-8333-333333333333');
+		expect(card.crew_name).toBe('Dawn Patrol');
+	});
 });

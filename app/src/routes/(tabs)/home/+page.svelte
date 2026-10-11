@@ -37,6 +37,11 @@
 		excerpt?: string | null;
 		status?: string | null;
 		visibility?: string | null;
+		// Crew audience (null unless visibility is 'crew'): carried through
+		// buildFeedCard so PostCard can render the "in CrewName" chip
+		// (Phase C Task 4).
+		crew_id?: string | null;
+		crew_name?: string | null;
 		media?: { kind: string; url: string }[] | null;
 		ride?: PostCardRide | null;
 		// Memoized card object for PostCard (in-place kudos target). Not from

@@ -1,13 +1,16 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import ScreenHeader from '$lib/ui/ScreenHeader.svelte';
 	import PrimaryButton from '$lib/ui/PrimaryButton.svelte';
 	import SecondaryButton from '$lib/ui/SecondaryButton.svelte';
 	import ErrorNotice from '$lib/ui/ErrorNotice.svelte';
+	import Skeleton from '$lib/ui/Skeleton.svelte';
 	import AttachRidePicker, { type RidePick } from './AttachRidePicker.svelte';
 	import { ui } from '$lib/state/ui.svelte.js';
+	import { channels } from '$lib/channels.svelte.js';
 	import {
 		compressPhoto,
 		probeVideoDuration,
@@ -38,7 +41,12 @@
 	let photos = $state<PhotoItem[]>([]);
 	let video = $state<VideoItem | null>(null);
 	let ride = $state<RidePick | null>(null);
-	let visibility = $state<'public' | 'friends'>('public');
+	let visibility = $state<'public' | 'friends' | 'crew'>('public');
+	// Crew audience target (radio picker below). Kept when switching
+	// audiences so toggling back restores the pick; only submitted when
+	// visibility is crew.
+	let crewId = $state<string | null>(null);
+	let crewsLoading = $state(channels.channels.length === 0);
 
 	let mediaError = $state('');
 	let submitError = $state('');
@@ -55,7 +63,9 @@
 	const hasContent = $derived(
 		text.trim().length > 0 || photos.length > 0 || video !== null || ride !== null
 	);
-	const canPost = $derived(!offline && !busy && !probingVideo && hasContent);
+	// Crew posts need a picked crew; other audiences are always valid.
+	const audienceValid = $derived(visibility !== 'crew' || crewId !== null);
+	const canPost = $derived(!offline && !busy && !probingVideo && hasContent && audienceValid);
 
 	const readError = async (res: Response, fallback: string): Promise<string> => {
 		if (res.status === 401) return 'Sign in to post — your draft stays here.';
@@ -75,6 +85,28 @@
 	// Abandoned drafts must not leak object URLs.
 	onDestroy(() => {
 		revokeAll();
+	});
+
+	// Task 5 entry point: /compose?crew=<id> pre-selects the crew audience.
+	// Unknown ids (not mine) are ignored — the composer stays public.
+	const applyCrewPreselect = (): void => {
+		const wanted = page.url.searchParams.get('crew') ?? '';
+		if (wanted && channels.mine.some((c) => c.id === wanted)) {
+			visibility = 'crew';
+			crewId = wanted;
+		}
+	};
+
+	onMount(() => {
+		if (channels.channels.length === 0) {
+			void channels.list().then(() => {
+				crewsLoading = false;
+				applyCrewPreselect();
+			});
+		} else {
+			crewsLoading = false;
+			applyCrewPreselect();
+		}
 	});
 
 	const onPhotoFiles = (files: FileList | null): void => {
@@ -224,7 +256,8 @@
 					...(trimmed ? { body: trimmed } : {}),
 					media,
 					...(ride ? { ride: { kind: ride.kind, id: ride.id } } : {}),
-					visibility
+					visibility,
+					...(visibility === 'crew' && crewId ? { crew_id: crewId } : {})
 				})
 			});
 			if (!createRes.ok) throw new Error(await readError(createRes, 'Could not publish the post'));
@@ -369,8 +402,42 @@
 				ariaPressed={visibility === 'friends'}
 				onclick={() => (visibility = 'friends')}
 			/>
+			<SecondaryButton
+				label="Crew"
+				ariaLabel="Visible to crew only"
+				ariaPressed={visibility === 'crew'}
+				onclick={() => (visibility = 'crew')}
+			/>
 		</div>
 	</fieldset>
+
+	{#if visibility === 'crew'}
+		<fieldset class="crew-picker">
+			<legend class="crew-picker-title">Pick a crew</legend>
+			{#if crewsLoading}
+				<Skeleton lines={2} />
+			{:else if channels.mine.length === 0}
+				<p class="picker-empty">You're not in any crew yet — join or create one first.</p>
+			{:else}
+				<ul class="picker-list">
+					{#each channels.mine as c (c.id)}
+						<li>
+							<label class="picker-row">
+								<input
+									type="radio"
+									name="crew-pick"
+									value={c.id}
+									checked={crewId === c.id}
+									onchange={() => (crewId = c.id)}
+								/>
+								<span class="picker-label">{c.name}</span>
+							</label>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</fieldset>
+	{/if}
 
 	{#if submitError}
 		<ErrorNotice message={submitError} onRetry={() => void post()} />
@@ -387,7 +454,9 @@
 			? "You're offline — posting needs a connection"
 			: !hasContent
 				? 'Add text, media or a ride first'
-				: 'Publish post'}
+				: visibility === 'crew' && !crewId
+					? 'Pick a crew first'
+					: 'Publish post'}
 		disabled={!canPost}
 		onclick={() => void post()}
 	/>
@@ -509,6 +578,68 @@
 		display: flex;
 		gap: 0.5rem;
 		margin-top: 0.375rem;
+	}
+
+	.crew-picker {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin: 0;
+		padding: 0.75rem;
+		background: var(--surface-sunken);
+		border: 1px solid var(--line);
+		border-radius: var(--radius-md);
+	}
+
+	.crew-picker-title {
+		margin: 0;
+		padding: 0;
+		font: var(--type-body-strong);
+		color: var(--text-primary);
+	}
+
+	.picker-empty {
+		margin: 0;
+		font: var(--type-meta);
+		color: var(--text-secondary);
+	}
+
+	.picker-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		max-height: 12rem;
+		overflow-y: auto;
+	}
+
+	.picker-row {
+		display: flex;
+		align-items: center;
+		gap: 0.625rem;
+		min-height: 44px;
+		padding: 0.375rem 0.5rem;
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+	}
+
+	.picker-row:focus-within {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+
+	.picker-row input {
+		width: 20px;
+		height: 20px;
+		flex-shrink: 0;
+		accent-color: var(--accent);
+	}
+
+	.picker-label {
+		font: var(--type-body);
+		color: var(--text-primary);
 	}
 
 	.progress-copy {
