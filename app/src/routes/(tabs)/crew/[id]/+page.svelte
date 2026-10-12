@@ -42,7 +42,9 @@
 	}
 
 	// Crew Posts tab pages the dedicated crew feed (limit 20, Show-more
-	// while a full page returns). The cursor is the last card's created_at.
+	// while a full page returns). The cursor is the (created_at, id) tuple of
+	// the last card — the id tie-break keeps equal-timestamp rows straddling
+	// a page boundary (see the feed endpoint header).
 
 	type Tab = 'posts' | 'events' | 'routes' | 'members';
 
@@ -252,7 +254,8 @@
 		postsLoadingMore = true;
 		try {
 			const before = cards[cards.length - 1]?.created_at ?? '';
-			const params = new URLSearchParams({ limit: String(POSTS_PAGE), before });
+			const beforeId = cards[cards.length - 1]?.id ?? '';
+			const params = new URLSearchParams({ limit: String(POSTS_PAGE), before, beforeId });
 			const res = await fetch(`/api/channels/${encodeURIComponent(id)}/feed?${params}`);
 			if (!res.ok) {
 				postsError = 'Could not load more crew posts.';

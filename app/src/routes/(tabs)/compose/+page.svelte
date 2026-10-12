@@ -87,25 +87,38 @@
 		revokeAll();
 	});
 
-	// Task 5 entry point: /compose?crew=<id> pre-selects the crew audience.
-	// Unknown ids (not mine) are ignored — the composer stays public.
-	const applyCrewPreselect = (): void => {
+	// Crew preselect rule (Phase C final fix — same-route re-navigation):
+	// ?crew=<id> reflects a deliberate "Post to crew" tap, so when the param
+	// value CHANGES to an id in channels.mine it wins over a manually-picked
+	// crew — but ONLY visibility + crewId switch; text/photos/ride stay
+	// untouched. Absent/invalid/foreign params never clobber the form (an
+	// in-progress draft keeps its audience). lastAppliedCrewParam records the
+	// last param value seen so manual picks between navigations survive;
+	// same-value re-navigation is a deliberate no-op (protects the manual
+	// pick). While crewsLoading the list is incomplete (valid vs foreign
+	// indistinguishable), so defer without recording.
+	let lastAppliedCrewParam = $state<string | null>(null);
+
+	$effect(() => {
 		const wanted = page.url.searchParams.get('crew') ?? '';
-		if (wanted && channels.mine.some((c) => c.id === wanted)) {
+		const mine = channels.mine;
+		if (crewsLoading) return;
+		if (wanted === lastAppliedCrewParam) return;
+		lastAppliedCrewParam = wanted;
+		if (wanted && mine.some((c) => c.id === wanted)) {
 			visibility = 'crew';
 			crewId = wanted;
 		}
-	};
+		// else: absent/invalid/foreign — leave visibility/crewId untouched.
+	});
 
 	onMount(() => {
 		if (channels.channels.length === 0) {
 			void channels.list().then(() => {
 				crewsLoading = false;
-				applyCrewPreselect();
 			});
 		} else {
 			crewsLoading = false;
-			applyCrewPreselect();
 		}
 	});
 

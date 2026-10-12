@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/svelte';
+import { tick } from 'svelte';
 
 const mockGoto = vi.hoisted(() => vi.fn());
 vi.mock('$app/navigation', () => ({ goto: mockGoto }));
@@ -145,5 +146,53 @@ describe('composer audience trio', () => {
 		expect(
 			screen.getByRole('button', { name: 'Visible to crew only' }).getAttribute('aria-pressed')
 		).toBe('true');
+	});
+
+	it('ignores ?crew=not-mine — stays public, no radio checked (deferred Task 4 item)', async () => {
+		const seen: Seen[] = [];
+		mockFetch(crewsAB(), seen);
+		mockPage.url = new URL('http://localhost/compose?crew=not-mine');
+		render(ComposePage);
+		// Let the crew list resolve, then assert nothing was clobbered.
+		await vi.waitFor(() => {
+			expect(seen.some((s) => s.url.includes('/api/channels'))).toBe(true);
+		});
+		await tick();
+		expect(
+			screen.getByRole('button', { name: 'Visible to everyone' }).getAttribute('aria-pressed')
+		).toBe('true');
+		expect(
+			screen.getByRole('button', { name: 'Visible to crew only' }).getAttribute('aria-pressed')
+		).toBe('false');
+		expect(screen.queryByRole('group', { name: 'Pick a crew' })).toBeNull();
+		expect(screen.queryByRole('radio', { name: 'Dawn Patrol' })).toBeNull();
+	});
+
+	it('same-route re-navigation ?crew=A → ?crew=B switches audience, text preserved', async () => {
+		const seen: Seen[] = [];
+		mockFetch(crewsAB(), seen);
+		mockPage.url = new URL(`http://localhost/compose?crew=${CREW_A_ID}`);
+		render(ComposePage);
+		const radioA = (await screen.findByRole('radio', { name: 'Dawn Patrol' })) as HTMLInputElement;
+		expect(radioA.checked).toBe(true);
+		const box = screen.getByLabelText(/what's happening/i) as HTMLTextAreaElement;
+		await fireEvent.input(box, { target: { value: 'keep me across crews' } });
+		expect(box.value).toBe('keep me across crews');
+		// Same mounted component, new param (posting to A, back, Post to crew on B).
+		mockPage.url = new URL(`http://localhost/compose?crew=${CREW_B_ID}`);
+		// The mocked $app/state page object is not reactive; touching the
+		// real reactive dep (channels) re-runs the effect, which re-reads the
+		// URL — production re-runs on the URL itself. Browser proof covers it.
+		channels.channels = [...channels.channels];
+		await tick();
+		await tick();
+		const radioB = (await screen.findByRole('radio', { name: 'Night Owls' })) as HTMLInputElement;
+		expect(radioB.checked).toBe(true);
+		expect(
+			screen.getByRole('button', { name: 'Visible to crew only' }).getAttribute('aria-pressed')
+		).toBe('true');
+		expect((screen.getByLabelText(/what's happening/i) as HTMLTextAreaElement).value).toBe(
+			'keep me across crews'
+		);
 	});
 });

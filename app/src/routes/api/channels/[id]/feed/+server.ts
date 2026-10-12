@@ -2,8 +2,17 @@
 //
 // Crew posts outside the shared /api/feed 50-item window are invisible to a
 // client-side filter, so the crew Posts tab pages here instead: query params
-// `limit` (default 20, max 50) + `before` (created_at ISO cursor, optional).
-// Returns { items } with post entries in the EXACT shape GET /api/feed
+// `limit` (default 20, max 50) + `before` (created_at ISO cursor, optional)
+// + `beforeId` (post-id tie-break, optional). The cursor is the tuple
+// (created_at, id): rows satisfy (p.created_at, p.id) < (before, beforeId)
+// under ORDER BY created_at DESC, id DESC, so equal-timestamp rows straddling
+// a page boundary are neither skipped nor duplicated. `before` is required
+// for pages 2+; `beforeId` is optional for backward-compat with old clients
+// and defaults to 'ffffffff-ffff-ffff-ffff-ffffffffffff' (a valid UUID that
+// sorts after all real ids, so a before-only cursor re-includes same-timestamp
+// rows — duplicates are possible for old clients, but no row is ever
+// skipped). A `beforeId` without `before` is ignored (first page is
+// unbounded). Returns { items } with post entries in the EXACT shape GET /api/feed
 // returns for posts (same fields, same presigned-media handling, same
 // processing-author-only rule — the post-row mapping below is copied from
 // app/src/routes/api/feed/+server.ts, not re-derived), plus one additive
@@ -78,6 +87,10 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
+// Backward-compat default for a missing beforeId: the highest valid UUID
+// string, so (created_at, id) < (before, max) keeps every same-timestamp row
+// (duplicates possible for old before-only clients, never skips).
+const BEFORE_ID_MAX = 'ffffffff-ffff-ffff-ffff-ffffffffffff';
 
 export const GET: RequestHandler = async (event) => {
 	const me = await requireAuth(event);
@@ -85,6 +98,7 @@ export const GET: RequestHandler = async (event) => {
 	if (!UUID_RE.test(id)) throw error(400, 'Invalid channel id');
 	const rawLimit = event.url.searchParams.get('limit');
 	const rawBefore = event.url.searchParams.get('before');
+	const rawBeforeId = event.url.searchParams.get('beforeId');
 	let limit = DEFAULT_LIMIT;
 	if (rawLimit !== null) {
 		const parsed = Number.parseInt(rawLimit, 10);
@@ -96,6 +110,11 @@ export const GET: RequestHandler = async (event) => {
 		const ts = new Date(rawBefore).getTime();
 		if (!Number.isFinite(ts)) throw error(400, 'Invalid before cursor');
 		before = new Date(ts).toISOString();
+	}
+	let beforeId = BEFORE_ID_MAX;
+	if (rawBeforeId !== null && rawBeforeId.trim() !== '') {
+		if (!UUID_RE.test(rawBeforeId.trim())) throw error(400, 'Invalid beforeId cursor');
+		beforeId = rawBeforeId.trim();
 	}
 	const items = await withUser(me.id, async (c) => {
 		// Gate FIRST (mirrors the members endpoint): open → any signed-in
@@ -115,8 +134,10 @@ export const GET: RequestHandler = async (event) => {
 		const params: unknown[] = [id];
 		let cursor = '';
 		if (before !== null) {
-			params.push(before);
-			cursor = `AND p.created_at < $${params.length}`;
+			// Tuple tie-break: equal-timestamp rows page by id, so no row
+			// straddling a boundary is skipped or repeated.
+			params.push(before, beforeId);
+			cursor = `AND (p.created_at, p.id) < ($${params.length - 1}::timestamptz, $${params.length}::uuid)`;
 		}
 		params.push(limit);
 		const posts = await c.query(
@@ -131,7 +152,7 @@ export const GET: RequestHandler = async (event) => {
 			               OR (p.visibility = 'friends' AND is_friend(p.author))
 			               OR (visibility='crew' AND is_crew_member(crew_id))))
 			         OR p.author = current_user_id())
-			 ORDER BY p.created_at DESC LIMIT $${params.length}`,
+			 ORDER BY p.created_at DESC, p.id DESC LIMIT $${params.length}`,
 			params
 		);
 		const out: CrewFeedEntry[] = [];
