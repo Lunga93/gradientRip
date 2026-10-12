@@ -23,10 +23,11 @@
 	</div>
 {:else}
 	{#each domain.presets as p (p.id)}
-		<span class="badge badge-outline badge-lg gap-1 pr-1">
+		<span class="preset-chip">
 			<button
 				type="button"
-				class="flex min-w-0 cursor-pointer items-center gap-1.5"
+				class="flex min-w-0 cursor-pointer items-center gap-1.5 bg-transparent"
+				style="border: none; color: inherit;"
 				title="Use {p.label}"
 				aria-label="Use saved place {p.label}"
 				onclick={() => fillPreset(p.id)}
@@ -36,7 +37,8 @@
 			</button>
 			<button
 				type="button"
-				class="btn btn-ghost btn-xs btn-circle"
+				class="grid size-8 cursor-pointer place-items-center text-base-content/50 transition-colors hover:text-error"
+				style="background: transparent; border: none;"
 				title="Remove saved place"
 				aria-label="Remove saved place {p.label}"
 				onclick={(e) => removePreset(e, p.id)}

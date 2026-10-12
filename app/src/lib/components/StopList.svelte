@@ -46,6 +46,7 @@
 		const first = markers[0].getBoundingClientRect();
 		const last = markers[markers.length - 1].getBoundingClientRect();
 		railEl.style.display = '';
+		// Center the rail on the dots — measured, so dot-size changes can't drift it.
 		railEl.style.left = first.left - boxLeft + first.width / 2 + 'px';
 		const top = first.top - boxTop + first.height / 2 + 6;
 		const height = Math.max(0, last.top - boxTop + last.height / 2 - 6 - top);
@@ -98,8 +99,8 @@
 		{#each domain.stops as s, i (s.id)}
 			<div class="group relative flex items-center gap-2.5">
 				<span
-					class="marker badge badge-lg font-mono2 shrink-0"
-					style="background: {dotColor(i, domain.stops.length)}; color: #fff; border: none; box-shadow: 0 0 10px {dotColor(
+					class="marker stop-dot"
+					style="background: {dotColor(i, domain.stops.length)}; box-shadow: 0 0 10px {dotColor(
 						i,
 						domain.stops.length
 					)};"
@@ -107,7 +108,7 @@
 					{i === 0 ? 'A' : i === domain.stops.length - 1 ? 'B' : i}
 				</span>
 				<div class="relative min-w-0 flex-1">
-					<div class="border-base-300 bg-base-100 rounded-box border px-3 py-2">
+					<div class="stop-box px-3 py-2">
 						<div
 							class="font-mono2"
 							style="font-size: 0.75rem; letter-spacing: 0.1em; color: var(--text-tertiary); margin-bottom: 1px;"
@@ -147,7 +148,8 @@
 				</div>
 				<button
 					type="button"
-					class="btn btn-ghost btn-circle btn-sm -m-1.5 shrink-0"
+					class="grid size-11 -m-1.5 shrink-0 cursor-pointer place-items-center text-base-content/40 transition-colors hover:text-primary"
+					style="background: transparent; border: none;"
 					aria-label="Save this place"
 					title="Save this place"
 					onclick={() => savePreset(i)}
@@ -156,7 +158,8 @@
 				</button>
 				{#if i > 0 && i < domain.stops.length - 1}
 					<button
-						type="button"						class="btn btn-ghost btn-circle btn-sm -m-1.5 shrink-0 hover:text-error"
+						type="button"						class="grid size-11 -m-1.5 shrink-0 cursor-pointer place-items-center text-base-content/50 transition-opacity hover:text-error"
+						style="background: transparent; border: none;"
 						aria-label="Remove this stop"
 						title="Remove this stop"
 						onclick={() => removeStop(i)}
@@ -169,31 +172,27 @@
 	</div>
 
 	{#if session.acIdx !== null && (session.acResults.length > 0 || session.acActive === -1)}
-		<div class="card bg-base-100 absolute top-full right-0 left-0 z-30 mt-1.5 shadow-xl" id="acList" role="listbox" aria-label="Place suggestions">
+		<div class="ac-list" id="acList" role="listbox" aria-label="Place suggestions">
 			{#if session.acResults.length === 0}
-				<div class="text-base-content/60 px-4 py-3 text-sm">No matches nearby</div>
+				<div class="ac-empty">No matches nearby</div>
 			{:else}
-				<ul class="menu w-full p-1">
-					{#each session.acResults as r, i (r.lat + ',' + r.lon)}
-						<li>
-							<button
-								type="button"
-								id="ac-option-{i}"
-								class:menu-active={session.acActive === i}
-								role="option"
-								tabindex="-1"
-								aria-selected={session.acActive === i}
-								onmousedown={(e) => {
-									e.preventDefault();
-									pickResult(i);
-								}}
-							>
-								<Mark name="pin" cls="mt-0.5 shrink-0" />
-								<span class="min-w-0 flex-1">{r.label}</span>
-							</button>
-						</li>
-					{/each}
-				</ul>
+				{#each session.acResults as r, i (r.lat + ',' + r.lon)}
+					<div
+						id="ac-option-{i}"
+						class="ac-item"
+						class:active={session.acActive === i}
+						role="option"
+						tabindex="-1"
+						aria-selected={session.acActive === i}
+						onmousedown={(e) => {
+							e.preventDefault();
+							pickResult(i);
+						}}
+					>
+						<Mark name="pin" cls="mt-0.5 shrink-0" />
+						<span class="min-w-0 flex-1">{r.label}</span>
+					</div>
+				{/each}
 			{/if}
 		</div>
 	{/if}
