@@ -14,7 +14,7 @@
 	import StateBadge from '$lib/ui/StateBadge.svelte';
 	import FeedItem from '$lib/ui/FeedItem.svelte';
 	import PostCard from '$lib/components/PostCard.svelte';
-	import { channels, type Channel, type RosterMember } from '$lib/channels.svelte.js';
+	import { channels, composeCrewHref, type Channel, type RosterMember } from '$lib/channels.svelte.js';
 	import { social } from '$lib/social.svelte.js';
 	import { buildFeedCard, type FeedPostEntry, type PostCardPost } from '$lib/posts.svelte.js';
 	import { compressPhoto, putObjectBytes } from '$lib/media.js';
@@ -509,7 +509,23 @@
 	};
 
 	const postToCrew = (): void => {
-		void goto(resolve(`/compose?crew=${encodeURIComponent(id)}` as '/compose'));
+		// Query strings are not RouteIds: the base stays resolve()d and the
+		// crew param rides outside it, encoded by the unit-tested
+		// composeCrewHref helper (no as-cast on the route).
+		// eslint-disable-next-line svelte/no-navigation-without-resolve -- resolve()d base + encoded ?crew= query
+		void goto(composeCrewHref(resolve('/compose'), id));
+	};
+
+	// Signed-out cold-open invite: stash the full crew URL (path + ?invite=)
+	// before leaving for Google so the callback can bring the rider back.
+	// Narrow scope — plain sign-ins (no ?invite=) stash nothing.
+	const stashInviteTarget = (): void => {
+		if (!inviteParam) return;
+		try {
+			localStorage.setItem('post_login_target', window.location.pathname + window.location.search);
+		} catch {
+			/* storage blocked — login still works, just no return trip */
+		}
 	};
 
 	onMount(() => {
@@ -550,7 +566,14 @@
 				Google login unlocks channel membership — anonymous riding keeps working when
 				signed out.
 			</p>
-			<a href="/api/auth/google" rel="external" class="ui-btn ui-btn-primary">Continue with Google</a>
+			<a
+				href="/api/auth/google"
+				rel="external"
+				class="ui-btn ui-btn-primary"
+				onclick={stashInviteTarget}
+			>
+				Continue with Google
+			</a>
 		</div>
 	{:else if detailLoading}
 		<Skeleton lines={4} />

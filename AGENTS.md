@@ -14,7 +14,7 @@ One side may never gain a value without the other.
   two homes are a defect. Compare against the const, not a literal.
 - CI enforces it: `npm run lint` includes a check that every string literal
   inside a `CHECK (… IN (…))` in `app/db/migrations/*.up.sql` appears in a
-  same-named TS const (see `scripts/check-closed-sets.sh`; exact-name match,
+  same-named TS const (see `app/scripts/check-closed-sets.sh`; exact-name match,
   reviewer adjudicates renames).
 - `TEXT + CHECK` is the standard column shape. Do not introduce Postgres ENUMs
   (rigid under ALTER, poor fit for our migration flow) without explicit approval.

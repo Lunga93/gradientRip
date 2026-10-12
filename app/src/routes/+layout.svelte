@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import OnboardingWizard from '$lib/components/OnboardingWizard.svelte';
 	import LegalNote from '$lib/components/LegalNote.svelte';
 	import { ui } from '$lib/state/ui.svelte.js';
@@ -10,6 +11,28 @@
 	import { feed } from '$lib/feed.svelte.js';
 
 	let { children }: { children?: import('svelte').Snippet } = $props();
+
+	// Post-login return target stashed by the crew page's sign-in card
+	// (signed-out cold-open of /crew/<uuid>?invite=<token>). Strict shape —
+	// anything else is ignored, never navigated to.
+	const POST_LOGIN_TARGET_RE =
+		/^\/crew\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\?invite=[0-9a-f]{1,128}$/i;
+
+	const resumeInviteTarget = (): void => {
+		let target: string | null;
+		try {
+			target = localStorage.getItem('post_login_target');
+			localStorage.removeItem('post_login_target');
+		} catch {
+			return;
+		}
+		if (target && POST_LOGIN_TARGET_RE.test(target)) {
+			// Runtime return-trip URL: regex-validated same-origin crew path,
+			// not a static route, so resolve() cannot apply.
+			// eslint-disable-next-line svelte/no-navigation-without-resolve -- validated /crew/<uuid>?invite=<token> return trip
+			void goto(target);
+		}
+	};
 
 	const updateNet = (): void => {
 		ui.netOnline = navigator.onLine;
@@ -21,6 +44,7 @@
 		if (login === 'ok') {
 			ui.setStatus('Signed in — welcome back, rider.');
 			history.replaceState(null, '', stripParams(window.location.href, ['login', 'reason']));
+			resumeInviteTarget();
 		} else if (login === 'error') {
 			const reason = params.get('reason');
 			ui.setStatus(

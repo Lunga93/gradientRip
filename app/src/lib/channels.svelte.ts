@@ -23,6 +23,11 @@ export interface RosterMember {
 	joined_at: string;
 }
 
+// Post-to-crew entry: the composer route itself resolves cleanly and the
+// crew id rides as an encoded query param (never inside resolve()).
+export const composeCrewHref = (resolvedCompose: string, crewId: string): string =>
+	`${resolvedCompose}?crew=${encodeURIComponent(crewId)}`;
+
 class ChannelsState {
 	channels = $state<Channel[]>([]);
 	lastError = $state('');
