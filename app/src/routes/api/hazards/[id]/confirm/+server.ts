@@ -3,8 +3,8 @@
 // Signed-in only. One confirm per rider: the hazard_confirmations PK
 // (hazard_id, reporter) 409s repeats as 'Already confirmed' (reports copy:
 // 'Already reported'). A fresh confirm bumps confirmations and renews expiry
-// to LEAST(expires_at + 7d, created_at + 90d) (plan §5). The hazard read joins
-// the parent route (hidden = false) — confirmations carry no independent RLS,
+// from now: LEAST(GREATEST(expires_at, now()) + 7d, created_at + 90d), with capped:true when the 90d cap clamps the renewal.
+// The hazard read joins the parent route (hidden = false) — confirmations carry no independent RLS,
 // so every hazard access goes through the route (migration header).
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
@@ -35,15 +35,22 @@ export const POST: RequestHandler = async (event) => {
 			}
 			throw e;
 		}
+		// Renewal extends from now (expired hazards resurrect): the 90d cap
+		// clamps the +7d bump, and capped reports exactly that (same snapshot).
 		const { rows } = await c.query(
-			`UPDATE hazards SET confirmations = confirmations + 1,
-				expires_at = LEAST(expires_at + interval '7 days', created_at + interval '90 days')
-			 WHERE id = $1 RETURNING confirmations, expires_at`,
+			`WITH prev AS (SELECT expires_at AS e, created_at AS c FROM hazards WHERE id = $1)
+			 UPDATE hazards SET confirmations = confirmations + 1,
+				expires_at = (SELECT LEAST(GREATEST(p.e, now()) + interval '7 days', p.c + interval '90 days') FROM prev p)
+			 WHERE id = $1
+			 RETURNING confirmations, expires_at,
+				((SELECT GREATEST(p.e, now()) + interval '7 days' FROM prev p)
+				 > (SELECT p.c + interval '90 days' FROM prev p)) AS capped`,
 			[id]
 		);
 		return {
 			confirmations: Number(rows[0].confirmations) || 0,
-			expires_at: (rows[0].expires_at as Date).toISOString()
+			expires_at: (rows[0].expires_at as Date).toISOString(),
+			capped: rows[0].capped as boolean
 		};
 	});
 	return json({ id, ...data }, { headers: { 'Cache-Control': 'no-store' } });
