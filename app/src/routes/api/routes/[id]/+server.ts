@@ -23,6 +23,19 @@ export const GET: RequestHandler = async (event) => {
 	);
 	if (rows.length === 0) throw error(404, 'Route not found');
 	const row = rows[0];
+	// Open hazards only (expires_at > now()), parent-joined to the route —
+	// child tables carry no independent RLS, so every hazard read goes through
+	// public_routes (migration header). Anonymous callers reach here with no
+	// session (no requireAuth on this path) and see open-route hazards.
+	const { rows: hazardRows } = await getPool().query(
+		`SELECT h.id, h.kind, h.lat, h.lon, h.note, h.confirmations, h.expires_at, h.created_at,
+				u.display_name AS reporter_name
+		 FROM hazards h JOIN public_routes r ON r.id = h.route_id
+		 LEFT JOIN users u ON u.id = h.reporter
+		 WHERE h.route_id = $1 AND r.hidden = false AND h.expires_at > now()
+		 ORDER BY h.created_at DESC`,
+		[id]
+	);
 	const now = Date.now();
 	const ageDays = Math.max(0, (now - new Date(row.created_at).getTime()) / 86400000);
 	const rides = Number(row.rides) || 0;
@@ -52,7 +65,22 @@ export const GET: RequestHandler = async (event) => {
 			saves,
 			kudos,
 			score,
-			fit
+			fit,
+			hazards: hazardRows.map((h) => {
+				const created = new Date(h.created_at as Date | string).getTime();
+				return {
+					id: h.id as string,
+					kind: h.kind as string,
+					lat: (h.lat as number | null) ?? null,
+					lon: (h.lon as number | null) ?? null,
+					note: (h.note as string | null) ?? null,
+					confirmations: Number(h.confirmations) || 0,
+					reporter_name: (h.reporter_name as string | null) ?? null,
+					created_at: new Date(h.created_at as Date | string).toISOString(),
+					expires_at: new Date(h.expires_at as Date | string).toISOString(),
+					age_days: Math.max(0, (now - created) / 86400000)
+				};
+			})
 		},
 		{ headers: { 'Cache-Control': 'no-store' } }
 	);

@@ -8,6 +8,7 @@
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { getPool } from '$lib/server/db.js';
 import { routeScore, fitBadge } from '$lib/community/scoring.js';
+import { WORST_RANK, type HazardKind } from '$lib/hazards.js';
 import { parseSports } from '$lib/profiles/profile.js';
 
 const isFiniteNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -48,6 +49,33 @@ export const GET: RequestHandler = async (event) => {
 	);
 
 	const now = Date.now();
+	// Open-hazard badges: one parent-joined read (child tables carry no
+	// independent RLS — every hazard read goes through public_routes), then
+	// count + worst kind ranked in TS via WORST_RANK (no kind literals in SQL).
+	const kindsByRoute = new Map<string, string[]>();
+	if (rows.length > 0) {
+		const { rows: hz } = await getPool().query(
+			`SELECT h.route_id, h.kind FROM hazards h
+			 JOIN public_routes r ON r.id = h.route_id
+			 WHERE h.route_id = ANY($1::uuid[]) AND r.hidden = false AND h.expires_at > now()`,
+			[rows.map((row) => row.id as string)]
+		);
+		for (const r of hz) {
+			const key = r.route_id as string;
+			const list = kindsByRoute.get(key);
+			if (list) list.push(r.kind as string);
+			else kindsByRoute.set(key, [r.kind as string]);
+		}
+	}
+	const worstOf = (kinds: string[]): HazardKind | null => {
+		let worst: HazardKind | null = null;
+		for (const k of kinds) {
+			if (!(k in WORST_RANK)) continue;
+			const kind = k as HazardKind;
+			if (worst === null || WORST_RANK[kind] < WORST_RANK[worst]) worst = kind;
+		}
+		return worst;
+	};
 	const routes = rows
 		.map((row) => {
 			const ageDays = Math.max(0, (now - new Date(row.created_at).getTime()) / 86400000);
@@ -77,7 +105,9 @@ export const GET: RequestHandler = async (event) => {
 				saves,
 				kudos,
 				score,
-				fit
+				fit,
+				hazard_count: (kindsByRoute.get(row.id as string) ?? []).length,
+				worst_hazard_kind: worstOf(kindsByRoute.get(row.id as string) ?? [])
 			};
 		})
 		.sort((a, b) => b.score - a.score)
