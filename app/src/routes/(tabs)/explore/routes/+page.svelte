@@ -23,6 +23,8 @@
 		kudos: number;
 		score: number;
 		fit: 'fly' | 'ok' | 'caution' | 'stop' | null;
+		hazard_count: number;
+		worst_hazard_kind: string | null;
 	}
 
 	const SEGMENTS: { label: string; href: '/explore/routes' | '/explore/crews' | '/explore/events' }[] = [
@@ -95,6 +97,14 @@
 					<ListRow title={r.title} meta={routeMeta(r.sport, r.saves, r.rides)}>
 						{#snippet trailing()}
 							<span class="row-actions">
+								{#if r.hazard_count > 0}
+									<span
+										class="hazard-badge"
+										title="{r.hazard_count} open hazard{r.hazard_count === 1 ? '' : 's'} · worst: {r.worst_hazard_kind ?? 'unknown'}"
+									>
+										⚠ {r.hazard_count}{r.worst_hazard_kind ? ` · ${r.worst_hazard_kind}` : ''}
+									</span>
+								{/if}
 								<StateBadge label={fitLabel(r.fit)} tone={fitTone(r.fit)} />
 								<SecondaryButton
 									label="Open"
@@ -144,5 +154,20 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.375rem;
+	}
+
+	.hazard-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.375rem 0.625rem;
+		min-height: 44px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		white-space: nowrap;
+		color: #fbbf24;
+		background: color-mix(in srgb, #f59e0b 12%, transparent);
+		border: 1px solid color-mix(in srgb, #f59e0b 45%, transparent);
+		border-radius: var(--radius-sm);
 	}
 </style>

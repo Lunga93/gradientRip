@@ -4,6 +4,8 @@
 	import { domain } from '$lib/state/domain.svelte.js';
 	import { session } from '$lib/state/session.svelte.js';
 	import { profileSVG, MODE_ICONS } from '$lib/engine/index.js';
+	import { resample, RESAMPLE_STEP_M } from '$lib/util.js';
+	import { nearLine, WORST_RANK, hazardIcon, type HazardKind } from '$lib/hazards.js';
 	import { verdictColor, verdictLabel } from '$lib/verdictTheme.js';
 	import { startTracking, stopTracking } from '$lib/tracker.js';
 	import BattRing from '$lib/components/BattRing.svelte';
@@ -51,6 +53,84 @@
 	const goPlan = (): void => {
 		void goto(resolve('/map'));
 	};
+
+	// Planner hazard warning: the scored line is fresh (not a saved route), so
+	// the known pins come from open-route hazards on explore routes. Reads are
+	// anonymous-safe (Task 2 bundling has no requireAuth); the 200 m corridor
+	// check runs client-side over the resampled line vertices via nearLine.
+	// Advisory only — a failed check shows no strip, never blocks the results.
+	interface WarnPin {
+		key: string;
+		kind: string;
+		confirmations: number;
+	}
+
+	const HAZARD_CORRIDOR_M = 200;
+
+	let hazardWarnings = $state<WarnPin[]>([]);
+	let hazardReady = $state(false);
+
+	const hazardRank = (kind: string): number =>
+		(kind as HazardKind) in WORST_RANK ? WORST_RANK[kind as HazardKind] : 99;
+
+	$effect(() => {
+		const results = domain.results;
+		if (!results || results.line.length < 2) {
+			hazardWarnings = [];
+			hazardReady = false;
+			return;
+		}
+		let cancelled = false;
+		hazardWarnings = [];
+		hazardReady = false;
+		void (async () => {
+			try {
+				const vertices = resample(results.line, RESAMPLE_STEP_M);
+				const ex = await fetch('/api/routes/explore');
+				if (!ex.ok || cancelled) return;
+				const data = (await ex.json()) as {
+					routes: { id: string; hazard_count?: number }[];
+				};
+				const withHazards = (data.routes ?? [])
+					.filter((r) => (r.hazard_count ?? 0) > 0)
+					.slice(0, 10);
+				const found: WarnPin[] = [];
+				for (const r of withHazards) {
+					if (cancelled) return;
+					const dr = await fetch(`/api/routes/${encodeURIComponent(r.id)}`);
+					if (!dr.ok) continue;
+					const detail = (await dr.json()) as {
+						hazards?: {
+							id: string;
+							kind: string;
+							lat: number | null;
+							lon: number | null;
+							confirmations: number;
+						}[];
+					};
+					for (const h of detail.hazards ?? []) {
+						if (h.lat === null || h.lon === null) continue;
+						if (nearLine([h.lat, h.lon], vertices, HAZARD_CORRIDOR_M)) {
+							found.push({
+								key: `${r.id}:${h.id}`,
+								kind: h.kind,
+								confirmations: h.confirmations ?? 0
+							});
+						}
+					}
+				}
+				if (cancelled) return;
+				found.sort((a, b) => hazardRank(a.kind) - hazardRank(b.kind));
+				hazardWarnings = found;
+				hazardReady = true;
+			} catch {
+				if (!cancelled) hazardReady = true;
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	});
 </script>
 
 {#if domain.results}
@@ -74,6 +154,24 @@
 				{domain.results.verdict.text}
 			</p>
 			</div>
+
+			{#if hazardReady && hazardWarnings.length > 0}
+				<div class="px-6 pb-5">
+					<div
+						class="hazard-strip"
+						role="status"
+						aria-live="polite"
+						style="background: color-mix(in srgb, #f59e0b 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, #f59e0b 40%, transparent); border-radius: 8px;"
+					>
+						<strong class="hazard-strip-title">⚠ Hazards reported near this route</strong>
+						{#each hazardWarnings as w (w.key)}
+							<span class="hazard-strip-item"
+								>{hazardIcon(w.kind)} {w.kind} · {w.confirmations} confirm{w.confirmations === 1 ? '' : 's'}</span
+							>
+						{/each}
+					</div>
+				</div>
+			{/if}
 
 			{#if !session.planning}
 				<div class="grid grid-cols-2 gap-x-4 gap-y-4 px-6 pb-5">
@@ -219,3 +317,25 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	.hazard-strip {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		padding: 0.75rem;
+	}
+
+	.hazard-strip-title {
+		font-size: 0.8rem;
+		font-weight: 700;
+		color: #fbbf24;
+	}
+
+	.hazard-strip-item {
+		font-size: 0.8rem;
+		font-weight: 500;
+		color: var(--text-primary);
+		text-transform: capitalize;
+	}
+</style>
