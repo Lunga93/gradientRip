@@ -43,3 +43,6 @@ export const TRANSCODE_JOB_STATUSES = ['queued', 'processing', 'done', 'failed']
 // channel_members.role (20261007000001_crews; legacy 'owner' superseded —
 // see the waiver in scripts/check-closed-sets.sh)
 export const CHANNEL_MEMBER_ROLES = ['admin', 'member'] as const;
+// hazards.kind (20261011000001_safety; re-exported from $lib/hazards.js
+// alongside WORST_RANK for hazard code)
+export const HAZARD_KINDS = ['pothole', 'unsafe', 'closure', 'police', 'surface', 'other'] as const;
