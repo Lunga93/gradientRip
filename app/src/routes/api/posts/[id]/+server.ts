@@ -31,7 +31,7 @@ export const GET: RequestHandler = async (event) => {
 	const data = await withUser(me.id, async (c) => {
 		const { rows } = await c.query(
 			`SELECT p.id, p.author, p.body, p.visibility, p.crew_id, p.ride_kind, p.ride_trip_id,
-			        p.ride_route_id, p.status, p.kudos, p.created_at,
+			        p.ride_route_id, p.status, p.hidden, p.kudos, p.created_at,
 			        u.display_name AS author_name, u.avatar_url AS author_avatar,
 			        (SELECT ch.name FROM channels ch WHERE ch.id = p.crew_id) AS crew_name,
 			        EXISTS (SELECT 1 FROM post_kudos k WHERE k.post_id = p.id AND k.user_id = current_user_id()) AS kudosed,
@@ -42,6 +42,51 @@ export const GET: RequestHandler = async (event) => {
 		);
 		if (rows.length === 0) throw error(404, 'Post not found');
 		const post = rows[0];
+		// Moderation read rule (Phase D Task 4): a hidden post (3 distinct
+		// reporters) reads as missing for everyone except its author and the
+		// crew admins of its crew — same 404 copy so hidden posts don't leak
+		// existence. Authors keep full access (hidden banner + remedy); crew
+		// admins keep access so the dismiss button has somewhere to live.
+		const isAuthor = (post.author as string) === me.id;
+		let viewerCanDismiss = false;
+		if (post.visibility === 'crew' && (post.crew_id as string | null) !== null && !isAuthor) {
+			// Members-PATCH admin gate verbatim (see the dismiss endpoint
+			// header): active admin of the post's crew, else not privileged.
+			const admin = await c.query(
+				`SELECT role FROM channel_members
+				 WHERE channel_id = $1 AND user_id = current_user_id() AND status = 'active'`,
+				[post.crew_id]
+			);
+			viewerCanDismiss = admin.rows.length > 0 && admin.rows[0].role === 'admin';
+		}
+		if (post.hidden === true && !isAuthor && !viewerCanDismiss) {
+			throw error(404, 'Post not found');
+		}
+		// Report counts + reasons go ONLY to the author and crew admins —
+		// strangers (even on a still-visible reported post) learn nothing
+		// about its moderation state. Reporter identity is never exposed:
+		// selected for the DISTINCT count only, stripped before responding.
+		let moderation: {
+			report_count: number;
+			report_reasons: { id: string; reason: string; created_at: string }[];
+			viewer_can_dismiss: boolean;
+		} | null = null;
+		if (isAuthor || viewerCanDismiss) {
+			const { rows: reportRows } = await c.query(
+				`SELECT id, reporter, reason, created_at FROM reports
+				 WHERE target_kind = 'post' AND target_id = $1 ORDER BY created_at ASC`,
+				[id]
+			);
+			moderation = {
+				report_count: new Set(reportRows.map((r) => r.reporter as string)).size,
+				report_reasons: reportRows.map((r) => ({
+					id: r.id as string,
+					reason: r.reason as string,
+					created_at: (r.created_at as Date).toISOString()
+				})),
+				viewer_can_dismiss: viewerCanDismiss
+			};
+		}
 		const { rows: mediaRows } = await c.query(
 			`SELECT id, kind, s3_key, bytes FROM post_media WHERE post_id = $1 ORDER BY sort ASC`,
 			[id]
@@ -73,7 +118,7 @@ export const GET: RequestHandler = async (event) => {
 				ride = { kind: 'route', id: r.id as string, title: r.title as string, sport: r.sport as string };
 			}
 		}
-		return { post, mediaRows, ride };
+		return { post, mediaRows, ride, moderation };
 	});
 	const media = await Promise.all(
 		data.mediaRows.map(async (r) => ({
@@ -97,6 +142,10 @@ export const GET: RequestHandler = async (event) => {
 			crew_id: (p.crew_id as string | null) ?? null,
 			crew_name: (p.crew_name as string | null) ?? null,
 			status: p.status as string,
+			hidden: Boolean(p.hidden),
+			// Privileged-only moderation (author + crew admins): absent for
+			// strangers so moderation state never leaks to the audience.
+			...(data.moderation ?? {}),
 			ride: data.ride,
 			kudos: Number(p.kudos) || 0,
 			kudosed: Boolean(p.kudosed),

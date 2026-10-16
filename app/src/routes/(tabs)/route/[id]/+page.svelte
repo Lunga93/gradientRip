@@ -37,6 +37,7 @@
 		note: string | null;
 		confirmations: number;
 		reporter_name: string | null;
+		mine: boolean;
 		created_at: string;
 		expires_at: string;
 		age_days: number;
@@ -369,7 +370,7 @@
 				}}
 			/>
 			{#if picking}
-				<p class="hint">Tap the map to drop the hazard pin.</p>
+				<p class="hint">Tap the map, press Enter on the focused map to use its center, or type coordinates below.</p>
 			{/if}
 		</div>
 
@@ -502,12 +503,14 @@
 											title="Confirm {h.kind} is still there"
 											onclick={() => void confirmHazard(h.id)}
 										/>
-										<SecondaryButton
-											label={rowBusy === h.id ? '…' : 'Resolve'}
-											ariaLabel="Resolve {h.kind}"
-											title="Resolve {h.kind}"
-											onclick={() => void resolveHazard(h.id)}
-										/>
+										{#if me && h.mine}
+											<SecondaryButton
+												label={rowBusy === h.id ? '…' : 'Resolve'}
+												ariaLabel="Resolve {h.kind}"
+												title="Resolve {h.kind}"
+												onclick={() => void resolveHazard(h.id)}
+											/>
+										{/if}
 									</div>
 								{/if}
 							</div>

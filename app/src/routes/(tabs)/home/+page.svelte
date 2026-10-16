@@ -42,6 +42,11 @@
 		// (Phase C Task 4).
 		crew_id?: string | null;
 		crew_name?: string | null;
+		// Moderation (Phase D Task 4): hidden + the author's distinct-reporter
+		// count. The feed API sends nonzero values on the author's own rows
+		// only — strangers always read false/0 here.
+		hidden?: boolean | null;
+		report_count?: number | null;
 		media?: { kind: string; url: string }[] | null;
 		ride?: PostCardRide | null;
 		// Memoized card object for PostCard (in-place kudos target). Not from
@@ -63,8 +68,10 @@
 	// Minimal report affordance (Task 6): one inline reason form shared by all
 	// route cards — the SAME labels/copy/behaviour as the Report form inside
 	// PostCard. Routes had no report UI before; posts get theirs from PostCard.
-	// Event cards have none on purpose: POST /api/reports rejects event
-	// reports (no hide branch), so a button there would be fake UI.
+	// Event cards have none on purpose: home cards intentionally offer
+	// route-only reporting (event reports ARE accepted API-side with the same
+	// 3-reporter hide trigger — Phase D Task 4 — but no home flow files them,
+	// so a button here would be fake UI).
 	let reportingFor = $state<{ kind: 'route'; id: string } | null>(null);
 	let reportReason = $state('');
 	let reportBusy = $state(false);
@@ -93,6 +100,15 @@
 
 	const isOwnUnfinishedPost = (entry: HomeFeedEntry): boolean =>
 		entry.kind === 'post' && entry.status !== null && entry.status !== undefined && entry.status !== 'live';
+
+	// Moderation authorship (Phase D Task 4): the feed API sends a nonzero
+	// report_count / hidden ONLY on the author's own rows, so either flag
+	// proves authorship server-side — no client id comparison needed. Grants
+	// the author the PostCard report UI on live posts (unfinished posts are
+	// already covered above).
+	const isOwnModeratedPost = (entry: HomeFeedEntry): boolean =>
+		entry.kind === 'post' &&
+		(entry._card?.hidden === true || (entry._card?.report_count ?? 0) > 0);
 
 	const entryTime = (entry: HomeFeedEntry): string => {
 		const ts = new Date(entry.created_at).getTime();
@@ -395,7 +411,7 @@
 				{/snippet}
 				{#snippet body()}
 					{#if entry.kind === 'post' && entry._card}
-						<PostCard post={entry._card} isAuthor={isOwnUnfinishedPost(entry)} />
+						<PostCard post={entry._card} isAuthor={isOwnUnfinishedPost(entry) || isOwnModeratedPost(entry)} />
 					{:else if entry.kind === 'route'}
 						<p class="feed-meta">
 							{entry.sport ?? 'Route'} · ♥ {entry.saves} saves · {entry.rides} rides

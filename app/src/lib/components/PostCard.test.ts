@@ -417,6 +417,89 @@ describe('crew chip', () => {
 	});
 });
 
+describe('PostCard moderation', () => {
+	const modPost = (over: Partial<PostCardPost> = {}): PostCardPost =>
+		basePost({
+			hidden: false,
+			report_count: 2,
+			report_reasons: [
+				{ id: 'r1', reason: 'Spam link', created_at: '2026-10-07T08:00:00Z' },
+				{ id: 'r2', reason: 'Abuse', created_at: '2026-10-07T09:00:00Z' }
+			],
+			viewer_can_dismiss: false,
+			dismiss_report_id: null,
+			...over
+		});
+
+	it('shows the author the hidden state verbatim', () => {
+		render(PostCard, { props: { post: modPost({ hidden: true }), detail: true, isAuthor: true } });
+		expect(screen.getByText('Hidden after 3 reports — edit or delete')).toBeTruthy();
+	});
+
+	it('shows strangers no moderation UI at all', () => {
+		const { container } = render(PostCard, { props: { post: basePost() } });
+		expect(container.querySelector('.mod-hidden')).toBeNull();
+		expect(container.querySelector('.mod-reports')).toBeNull();
+	});
+
+	it('expands the author reason list on detail', async () => {
+		render(PostCard, { props: { post: modPost(), detail: true, isAuthor: true } });
+		await fireEvent.click(screen.getByRole('button', { name: 'Show the report list' }));
+		expect(screen.getByText('Spam link')).toBeTruthy();
+		expect(screen.getByText('Abuse')).toBeTruthy();
+	});
+
+	it('points feed cards at detail when reasons are absent', async () => {
+		render(PostCard, { props: { post: modPost({ report_reasons: [] }), isAuthor: true } });
+		await fireEvent.click(screen.getByRole('button', { name: 'Show the report list' }));
+		expect(screen.getByText('Open this post to review the reasons.')).toBeTruthy();
+		expect(screen.getByRole('link', { name: 'Open post' }).getAttribute('href')).toContain(POST_ID);
+	});
+
+	it('dismisses as crew admin and clears the hidden state', async () => {
+		const fetchFn = mockFetch((url, init) =>
+			String(url).includes('/dismiss') && init?.method === 'POST'
+				? resp(200, { ok: true, post_id: POST_ID })
+				: resp(404, {})
+		);
+		render(
+			PostCard,
+			{
+				props: {
+					post: modPost({ hidden: true, viewer_can_dismiss: true, dismiss_report_id: 'r1' }),
+					detail: true,
+					isAuthor: false
+				}
+			}
+		);
+		expect(screen.getByText('Hidden after 3 reports')).toBeTruthy();
+		await fireEvent.click(screen.getByRole('button', { name: 'Dismiss all reports on this post' }));
+		expect(await screen.findByText('Reports dismissed — the post is visible again.')).toBeTruthy();
+		expect(fetchFn).toHaveBeenCalledOnce();
+		expect(String(fetchFn.mock.calls[0][0])).toContain('/api/reports/r1/dismiss');
+		expect(screen.queryByText('Hidden after 3 reports')).toBeNull();
+	});
+
+	it('offers no dismiss button without a report id', () => {
+		render(
+			PostCard,
+			{
+				props: {
+					post: modPost({ viewer_can_dismiss: true, dismiss_report_id: null, report_reasons: [] }),
+					detail: true,
+					isAuthor: false
+				}
+			}
+		);
+		expect(screen.queryByRole('button', { name: /dismiss/i })).toBeNull();
+	});
+
+	it('offers no dismiss button to non-admin authors', () => {
+		render(PostCard, { props: { post: modPost(), detail: true, isAuthor: true } });
+		expect(screen.queryByRole('button', { name: /dismiss/i })).toBeNull();
+	});
+});
+
 describe('posts helpers', () => {
 	it('threadComments nests by parent and lifts dangling replies to root', () => {
 		const flat: FeedComment[] = [

@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { buildFeedCard } from './posts.svelte.js';
+import { describe, expect, it, vi, afterEach } from 'vitest';
+import { buildFeedCard, loadMyReports, dismissReports } from './posts.svelte.js';
 
 const base = {
 	id: '11111111-1111-4111-8111-111111111111',
@@ -105,5 +105,95 @@ describe('buildFeedCard ride mapping', () => {
 	it('leaves card.author null when author_id is absent (shared-feed rows)', () => {
 		const card = buildFeedCard({ ...base, excerpt: 'Just words' });
 		expect(card.author).toBeNull();
+	});
+});
+
+describe('buildFeedCard moderation passthrough', () => {
+	it('carries hidden + counts + dismiss wiring onto the card', () => {
+		const card = buildFeedCard({
+			...base,
+			excerpt: 'Crew night ride',
+			status: 'live',
+			visibility: 'crew',
+			hidden: true,
+			report_count: 3,
+			report_reasons: [{ id: 'r1', reason: 'Spam', created_at: '2026-10-07T08:00:00Z' }],
+			viewer_can_dismiss: true,
+			dismiss_report_id: 'r1'
+		});
+		expect(card.hidden).toBe(true);
+		expect(card.report_count).toBe(3);
+		expect(card.report_reasons).toEqual([
+			{ id: 'r1', reason: 'Spam', created_at: '2026-10-07T08:00:00Z' }
+		]);
+		expect(card.viewer_can_dismiss).toBe(true);
+		expect(card.dismiss_report_id).toBe('r1');
+	});
+
+	it('defaults moderation fields to null when absent', () => {
+		const card = buildFeedCard({ ...base, excerpt: 'Just words' });
+		expect(card.hidden).toBeNull();
+		expect(card.report_count).toBeNull();
+		expect(card.report_reasons).toBeNull();
+		expect(card.viewer_can_dismiss).toBeNull();
+		expect(card.dismiss_report_id).toBeNull();
+	});
+});
+
+describe('moderation fetch helpers', () => {
+	const realFetch = globalThis.fetch;
+
+	afterEach(() => {
+		globalThis.fetch = realFetch;
+		vi.restoreAllMocks();
+	});
+
+	const resp = (status: number, data: unknown): Response =>
+		({
+			ok: status >= 200 && status < 300,
+			status,
+			json: async () => data
+		}) as Response;
+
+	it('loadMyReports returns the grouped targets', async () => {
+		const seen: string[] = [];
+		globalThis.fetch = (async (u: unknown) => {
+			seen.push(String(u));
+			return resp(200, {
+				reports: [{ target_kind: 'post', target_id: 'p1', count: 2, hidden: false, reasons: [] }]
+			});
+		}) as unknown as typeof fetch;
+		const res = await loadMyReports();
+		expect(res.ok).toBe(true);
+		expect(seen).toEqual(['/api/reports/mine']);
+		expect(res.reports).toHaveLength(1);
+	});
+
+	it('loadMyReports reports 401 as signed-out', async () => {
+		globalThis.fetch = (async () => resp(401, {})) as unknown as typeof fetch;
+		const res = await loadMyReports();
+		expect(res.ok).toBe(false);
+		expect(res.message).toMatch(/sign in/i);
+	});
+
+	it('dismissReports POSTs to the report dismiss path', async () => {
+		const seen: { url: string; method: string }[] = [];
+		globalThis.fetch = (async (u: unknown, init?: { method?: string }) => {
+			seen.push({ url: String(u), method: init?.method ?? '' });
+			return resp(200, { ok: true, post_id: 'p1' });
+		}) as unknown as typeof fetch;
+		const res = await dismissReports('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+		expect(res.ok).toBe(true);
+		expect(seen).toEqual([
+			{ url: '/api/reports/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/dismiss', method: 'POST' }
+		]);
+	});
+
+	it('dismissReports surfaces server rejections honestly', async () => {
+		globalThis.fetch = (async () =>
+			resp(403, { message: 'Crew admins only' })) as unknown as typeof fetch;
+		const res = await dismissReports('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+		expect(res.ok).toBe(false);
+		expect(res.message).toBe('Crew admins only');
 	});
 });

@@ -39,6 +39,15 @@ export interface PostRideRoute {
 
 export type PostCardRide = PostRideTrip | PostRideRoute;
 
+// Moderation reason rows (Phase D Task 4): report id (the dismiss call's
+// [id]) + text + time. Reporter identity is never exposed to authors or
+// admins — the APIs strip it server-side.
+export interface PostReportReason {
+	id: string;
+	reason: string;
+	created_at: string;
+}
+
 // Superset covering both shapes that render a card: the /api/feed excerpt
 // rows (body = 140-char excerpt, ride attached by the feed query) and the
 // full /api/posts/[id] rows.
@@ -59,10 +68,23 @@ export interface PostCardPost {
 	author?: { id: string; name: string | null; avatar: string | null } | null;
 	media?: PostCardMedia[] | null;
 	ride?: PostCardRide | null;
+	// Moderation (Phase D Task 4): hidden flips true at 3 distinct
+	// reporters; report_count is the distinct-reporter count on
+	// author/admin rows (0 for strangers — no moderation state leaks);
+	// report_reasons carries the reason list on detail/admin rows;
+	// viewer_can_dismiss is true for crew admins on crew posts;
+	// dismiss_report_id is the earliest report id (the dismiss call's
+	// [id] — one call clears every report on the target).
+	hidden?: boolean | null;
+	report_count?: number | null;
+	report_reasons?: PostReportReason[] | null;
+	viewer_can_dismiss?: boolean | null;
+	dismiss_report_id?: string | null;
 }
 
 export interface PostDetail extends PostCardPost {
 	author: { id: string; name: string | null; avatar: string | null };
+	hidden: boolean;
 }
 
 // Minimal /api/feed post-row shape that maps onto a card. Pure input for
@@ -86,6 +108,12 @@ export interface FeedPostEntry {
 	author_avatar?: string | null;
 	media?: PostCardMedia[] | null;
 	ride?: PostCardRide | null;
+	// Moderation passthrough (Phase D Task 4) — cf. PostCardPost.
+	hidden?: boolean | null;
+	report_count?: number | null;
+	report_reasons?: PostReportReason[] | null;
+	viewer_can_dismiss?: boolean | null;
+	dismiss_report_id?: string | null;
 }
 
 // Feed excerpt rows mapped onto the card shape. Processing/failed posts
@@ -115,6 +143,11 @@ export function buildFeedCard(entry: FeedPostEntry): PostCardPost {
 		visibility: entry.visibility ?? null,
 		crew_id: entry.crew_id ?? null,
 		crew_name: entry.crew_name ?? null,
+		hidden: entry.hidden ?? null,
+		report_count: entry.report_count ?? null,
+		report_reasons: entry.report_reasons ?? null,
+		viewer_can_dismiss: entry.viewer_can_dismiss ?? null,
+		dismiss_report_id: entry.dismiss_report_id ?? null,
 		kudos: entry.kudos,
 		created_at: entry.created_at,
 		author_name: entry.author_name ?? null,
@@ -274,6 +307,51 @@ export async function reportPost(id: string, reason: string): Promise<{ ok: bool
 
 export async function reportRoute(id: string, reason: string): Promise<{ ok: boolean; message: string }> {
 	return feed.report('route', id, reason);
+}
+
+// Author-scoped report visibility (Phase D Task 4): reports filed on the
+// caller's own posts/routes, grouped per target with counts + reasons.
+export interface MyReportsTarget {
+	target_kind: 'post' | 'route';
+	target_id: string;
+	count: number;
+	hidden: boolean;
+	visibility: string | null;
+	crew_id: string | null;
+	label: string | null;
+	reasons: PostReportReason[];
+}
+
+export async function loadMyReports(): Promise<{
+	ok: boolean;
+	reports?: MyReportsTarget[];
+	message: string;
+}> {
+	try {
+		const res = await fetch('/api/reports/mine');
+		if (res.status === 401) return { ok: false, message: 'Sign in to see reports on your posts.' };
+		if (!res.ok) return { ok: false, message: await readMessage(res, 'Could not load reports') };
+		const data = (await res.json()) as { reports?: MyReportsTarget[] };
+		return { ok: true, reports: Array.isArray(data.reports) ? data.reports : [], message: '' };
+	} catch {
+		return { ok: false, message: 'Could not load reports — check your connection.' };
+	}
+}
+
+// Crew-admin dismiss (Phase D Task 4): one call clears every report on the
+// target, un-hides it, and writes the moderation_log audit row. reportId is
+// any report id on the target (detail rows and feed cards carry the earliest
+// as dismiss_report_id).
+export async function dismissReports(reportId: string): Promise<{ ok: boolean; message: string }> {
+	try {
+		const res = await fetch(`/api/reports/${encodeURIComponent(reportId)}/dismiss`, {
+			method: 'POST'
+		});
+		if (!res.ok) return { ok: false, message: await readMessage(res, 'Could not dismiss the reports') };
+		return { ok: true, message: 'Reports dismissed — the post is visible again.' };
+	} catch {
+		return { ok: false, message: 'Could not dismiss the reports — check your connection.' };
+	}
 }
 
 // Trip rides have no detail route/endpoint (GET /api/trips/[id] is

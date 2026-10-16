@@ -3,6 +3,7 @@
 // 404s with the same error shape as the event-detail GET.
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { getPool } from '$lib/server/db.js';
+import { getAuthUser } from '$lib/server/auth.js';
 import { routeScore, fitBadge } from '$lib/community/scoring.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -27,8 +28,13 @@ export const GET: RequestHandler = async (event) => {
 	// child tables carry no independent RLS, so every hazard read goes through
 	// public_routes (migration header). Anonymous callers reach here with no
 	// session (no requireAuth on this path) and see open-route hazards.
+	// getAuthUser is a non-throwing probe: anonymous stays null (mine always
+	// false), signed-in callers get a per-hazard mine flag. No new auth
+	// requirement on this anonymous-safe read path.
+	const me = await getAuthUser(event);
 	const { rows: hazardRows } = await getPool().query(
 		`SELECT h.id, h.kind, h.lat, h.lon, h.note, h.confirmations, h.expires_at, h.created_at,
+				h.reporter, r.author AS route_author,
 				u.display_name AS reporter_name
 		 FROM hazards h JOIN public_routes r ON r.id = h.route_id
 		 LEFT JOIN users u ON u.id = h.reporter
@@ -68,6 +74,11 @@ export const GET: RequestHandler = async (event) => {
 			fit,
 			hazards: hazardRows.map((h) => {
 				const created = new Date(h.created_at as Date | string).getTime();
+				// mine mirrors the resolve enforcer (reporter or route author);
+				// anonymous (me null) is always false — null-safe by construction.
+				const mine =
+					me !== null &&
+					((h.reporter as string) === me.id || (h.route_author as string) === me.id);
 				return {
 					id: h.id as string,
 					kind: h.kind as string,
@@ -76,6 +87,7 @@ export const GET: RequestHandler = async (event) => {
 					note: (h.note as string | null) ?? null,
 					confirmations: Number(h.confirmations) || 0,
 					reporter_name: (h.reporter_name as string | null) ?? null,
+					mine,
 					created_at: new Date(h.created_at as Date | string).toISOString(),
 					expires_at: new Date(h.expires_at as Date | string).toISOString(),
 					age_days: Math.max(0, (now - created) / 86400000)

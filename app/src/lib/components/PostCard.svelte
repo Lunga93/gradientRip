@@ -12,6 +12,7 @@
 		sharePost,
 		retryPost,
 		deletePost,
+		dismissReports,
 		submitPostComment,
 		openTripRide,
 		type PostCardPost,
@@ -77,6 +78,9 @@
 	let commentBusy = $state(false);
 	let commentMsg = $state('');
 	let tripMsg = $state('');
+	let showReports = $state(false);
+	let dismissBusy = $state(false);
+	let dismissMsg = $state('');
 
 	const src = $derived(quality === 'hd' && parts.hd ? parts.hd.url : (parts.sd?.url ?? ''));
 	const composerLen = $derived(composer.length);
@@ -94,6 +98,51 @@
 				? new Date(ride.ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
 				: null;
 		return ['Trip', km, date].filter((p): p is string => !!p).join(' · ');
+	};
+
+	// Moderation (Phase D Task 4): the server sends counts/reasons/hidden
+	// ONLY on author/admin rows (0/absent for strangers), so a nonzero count
+	// or a hidden flag in the feed already proves this card is mine — no
+	// client-side authorship inference beyond the isAuthor/canDismiss props.
+	// `dismissed` is card-local (a successful dismiss clears the section
+	// even when the passed post object is not a reactive proxy, e.g. under
+	// test — the post.* writes below keep the shared object consistent for
+	// proxied callers like the kudos flow does).
+	let dismissed = $state(false);
+	const isHidden = $derived(post.hidden === true && !dismissed);
+	const reportCount = $derived(dismissed ? 0 : typeof post.report_count === 'number' ? post.report_count : 0);
+	const reportReasons = $derived(dismissed ? [] : (post.report_reasons ?? []));
+	const canDismiss = $derived(post.viewer_can_dismiss === true);
+	// The dismiss call takes one report id and clears every report on the
+	// target: prefer the earliest id the row carries, else the first listed
+	// reason. No id → no dismiss button (an id-less dismiss cannot perform).
+	const dismissId = $derived(post.dismiss_report_id ?? reportReasons[0]?.id ?? null);
+	const showModSection = $derived(isAuthor || canDismiss);
+	const reportLabel = $derived(reportCount === 1 ? '1 report' : `${reportCount} reports`);
+
+	const onDismiss = async (): Promise<void> => {
+		if (dismissBusy || !dismissId) return;
+		dismissBusy = true;
+		dismissMsg = '';
+		const res = await dismissReports(dismissId);
+		dismissBusy = false;
+		dismissMsg = res.message;
+		if (res.ok) {
+			// Same in-place pattern as kudos: the card renders post.* fields
+			// directly, so clearing them updates feed + detail with no refetch
+			// for proxied callers; `dismissed` covers the rest.
+			dismissed = true;
+			post.hidden = false;
+			post.report_count = 0;
+			post.report_reasons = [];
+			post.dismiss_report_id = null;
+			showReports = false;
+		}
+	};
+
+	const reportTime = (createdAt: string): string => {
+		const ts = new Date(createdAt).getTime();
+		return Number.isFinite(ts) ? relTime(ts) : '';
 	};
 
 	const onKudos = async (): Promise<void> => {
@@ -175,6 +224,14 @@
 </script>
 
 <div class="post-card">
+	{#if isHidden && showModSection}
+		<!-- Hidden-post state (Phase D Task 4): the author sees the honest
+		     remedy copy; a crew admin sees the state without the author-only
+		     remedy wording (admins dismiss, they don't delete others' posts). -->
+		<p class="mod-hidden" role="alert">
+			{#if isAuthor}Hidden after 3 reports — edit or delete{:else}Hidden after 3 reports{/if}
+		</p>
+	{/if}
 	{#if showCrewChip && crewHref}
 		<a class="post-crew-chip" href={resolve(crewHref)}>in {crewName}</a>
 	{/if}
@@ -384,6 +441,66 @@
 	{/if}
 	{#if deleteMsg}
 		<p class="post-note" role="alert">{deleteMsg}</p>
+	{/if}
+
+	{#if showModSection && (reportCount > 0 || (isHidden && isAuthor))}
+		<!-- Author report view + crew-admin dismiss (Phase D Task 4). The
+		     author gets the count with the reason list and the Delete CTA in
+		     the actions row (detail) to remedy; crew admins get Dismiss,
+		     which clears every report and un-hides with an audit row. Feed
+		     cards carry counts but no reasons — the Open-post link leads to
+		     the full list on detail. Every button performs (no fake UI). -->
+		<section class="mod-reports" aria-label="Reports on this post">
+			{#if reportCount > 0}
+				<span class="mod-row">
+					<SecondaryButton
+						label={showReports ? 'Hide reports' : reportLabel}
+						ariaLabel={showReports ? 'Hide the report list' : 'Show the report list'}
+						ariaPressed={showReports}
+						onclick={() => {
+							showReports = !showReports;
+							dismissMsg = '';
+						}}
+					/>
+					{#if !detail}
+						<a class="post-more" href={resolve(postHref)}>Open post</a>
+					{/if}
+				</span>
+				{#if showReports}
+					{#if reportReasons.length > 0}
+						<ul class="mod-reason-list">
+							{#each reportReasons as r (r.id)}
+								<li class="mod-reason">
+									<span class="mod-reason-text">{r.reason}</span>
+									{#if reportTime(r.created_at)}
+										<span class="mod-reason-time">· {reportTime(r.created_at)}</span>
+									{/if}
+								</li>
+							{/each}
+						</ul>
+					{:else}
+						<p class="post-note" role="status">Open this post to review the reasons.</p>
+					{/if}
+				{/if}
+			{/if}
+			{#if canDismiss && reportCount > 0 && dismissId}
+				<span class="mod-row">
+					<SecondaryButton
+						label={dismissBusy ? '…' : 'Dismiss reports'}
+						ariaLabel="Dismiss all reports on this post"
+						title="Dismiss all reports on this post"
+						disabled={dismissBusy}
+						onclick={() => void onDismiss()}
+					/>
+				</span>
+			{/if}
+		</section>
+	{/if}
+	<!-- Dismiss feedback lives outside the section: a successful dismiss
+	     clears the counts that gate the section, and the confirmation must
+	     survive that unmount. -->
+	{#if dismissMsg}
+		<p class="post-note" role="status">{dismissMsg}</p>
 	{/if}
 
 	{#if detail}
@@ -674,6 +791,61 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.375rem;
+	}
+
+	.mod-hidden {
+		margin: 0;
+		padding: 0.625rem 0.75rem;
+		background: var(--surface-sunken);
+		border: 1px solid var(--line-strong);
+		border-radius: var(--radius-md);
+		font: var(--type-body-strong);
+		color: var(--text-primary);
+	}
+
+	.mod-reports {
+		display: flex;
+		flex-direction: column;
+		gap: 0.375rem;
+		padding: 0.625rem 0.75rem;
+		background: var(--surface-sunken);
+		border: 1px solid var(--line);
+		border-radius: var(--radius-md);
+	}
+
+	.mod-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.375rem;
+	}
+
+	.mod-reason-list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.mod-reason {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0.375rem;
+	}
+
+	.mod-reason-text {
+		font: var(--type-body);
+		color: var(--text-primary);
+		overflow-wrap: anywhere;
+	}
+
+	.mod-reason-time {
+		font: var(--type-meta);
+		color: var(--text-secondary);
+		flex-shrink: 0;
 	}
 
 	.thread {

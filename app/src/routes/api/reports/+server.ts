@@ -1,12 +1,9 @@
 // POST /api/reports { target_kind: 'route'|'event'|'post', target_id, reason } —
-// inserts a moderation report. The trg_reports_autohide trigger hides a
-// route once reports for it reach the threshold (3); no direct UPDATE here.
-// Event reports are rejected for now: there is no events.hidden column or
-// hide branch in the trigger, so accepting them would be a no-op. Post
-// reports are accepted and stored (UNIQUE per reporter), but likewise do NOT
-// auto-hide: posts have no hidden column, so the trigger has no post branch.
-// A post-moderation follow-up (hide/status threshold, Phase D scope) should
-// extend the trigger before claiming threshold behaviour for posts.
+// inserts a moderation report. The hide triggers (hide_route_on_reports from
+// social-v1, hide_post_on_reports + hide_event_on_reports from
+// 20261011000001_safety) hide the target once 3 DISTINCT reporters file for it
+// (UNIQUE(target_kind, target_id, reporter) makes a repeat report 409, so the
+// same user twice still counts once); no direct UPDATE here.
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser } from '$lib/server/db.js';
 import { requireAuth } from '$lib/server/auth.js';
@@ -22,12 +19,6 @@ export const POST: RequestHandler = async (event) => {
 	const reason = typeof body?.reason === 'string' ? body.reason.trim() : '';
 	if (!(KINDS as readonly string[]).includes(targetKind)) {
 		throw error(400, "target_kind must be 'route', 'event' or 'post'");
-	}
-	// No events.hidden column / trigger branch exists — accepting event
-	// reports would store rows that never action. Reject explicitly until
-	// the event-moderation follow-up lands.
-	if (targetKind === 'event') {
-		throw error(400, 'Event reports are not supported yet');
 	}
 	if (!UUID_RE.test(targetId)) throw error(400, 'Invalid target id');
 	if (!reason || reason.length > 500) throw error(400, 'reason must be 1-500 chars');

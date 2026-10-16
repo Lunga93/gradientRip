@@ -79,6 +79,14 @@ export interface CrewFeedEntry {
 	visibility: string;
 	crew_id: string | null;
 	crew_name: string | null;
+	// Moderation (Phase D Task 4): hidden + the author's/admin's
+	// distinct-reporter count; dismiss_report_id is the earliest report id
+	// (the dismiss call's [id] — it clears every report on the target);
+	// viewer_can_dismiss is true for crew admins on every row.
+	hidden: boolean;
+	report_count: number;
+	dismiss_report_id: string | null;
+	viewer_can_dismiss: boolean;
 	media: CrewFeedPostMedia[];
 	ride: CrewFeedPostRide | null;
 }
@@ -131,6 +139,13 @@ export const GET: RequestHandler = async (event) => {
 		}
 		// Crew-scoped post rows: the feed's post predicate plus the crew
 		// constraint (copied, not re-derived — cf. feed +server.ts).
+		// Moderation (Phase D Task 4): hidden posts are excluded for everyone
+		// except the author and the crew's active admins (admins keep access
+		// so reported crew posts stay dismissible from the crew feed).
+		// report_count / dismiss_report_id are visible to the author or a
+		// crew admin only (NULL/0 otherwise) — no moderation state leaks to
+		// plain members; viewer_can_dismiss is the same admin predicate as a
+		// constant column ($1 is this crew throughout).
 		const params: unknown[] = [id];
 		let cursor = '';
 		if (before !== null) {
@@ -142,7 +157,17 @@ export const GET: RequestHandler = async (event) => {
 		params.push(limit);
 		const posts = await c.query(
 			`SELECT p.id, p.author AS author_id, p.body, LEFT(p.body, 140) AS excerpt, p.visibility, p.status,
-			        p.kudos, p.created_at, p.crew_id, p.ride_kind, p.ride_trip_id, p.ride_route_id,
+			        p.hidden, p.kudos, p.created_at, p.crew_id, p.ride_kind, p.ride_trip_id, p.ride_route_id,
+			        (SELECT COUNT(DISTINCT r.reporter) FROM reports r
+			         WHERE r.target_kind = 'post' AND r.target_id = p.id
+			           AND (p.author = current_user_id()
+			                OR EXISTS (SELECT 1 FROM channel_members m WHERE m.channel_id = $1 AND m.user_id = current_user_id() AND m.status = 'active' AND m.role = 'admin')))::int AS report_count,
+			        (SELECT r.id FROM reports r
+			         WHERE r.target_kind = 'post' AND r.target_id = p.id
+			           AND (p.author = current_user_id()
+			                OR EXISTS (SELECT 1 FROM channel_members m WHERE m.channel_id = $1 AND m.user_id = current_user_id() AND m.status = 'active' AND m.role = 'admin'))
+			         ORDER BY r.created_at ASC LIMIT 1) AS dismiss_report_id,
+			        EXISTS (SELECT 1 FROM channel_members m WHERE m.channel_id = $1 AND m.user_id = current_user_id() AND m.status = 'active' AND m.role = 'admin') AS viewer_can_dismiss,
 			        u.display_name AS author_name, u.avatar_url AS author_avatar,
 			        (SELECT ch.name FROM channels ch WHERE ch.id = p.crew_id) AS crew_name
 			 FROM posts p LEFT JOIN users u ON u.id = p.author
@@ -152,6 +177,9 @@ export const GET: RequestHandler = async (event) => {
 			               OR (p.visibility = 'friends' AND is_friend(p.author))
 			               OR (visibility='crew' AND is_crew_member(crew_id))))
 			         OR p.author = current_user_id())
+			    AND (p.hidden = false
+			         OR p.author = current_user_id()
+			         OR EXISTS (SELECT 1 FROM channel_members m WHERE m.channel_id = $1 AND m.user_id = current_user_id() AND m.status = 'active' AND m.role = 'admin'))
 			 ORDER BY p.created_at DESC, p.id DESC LIMIT $${params.length}`,
 			params
 		);
@@ -257,6 +285,10 @@ export const GET: RequestHandler = async (event) => {
 				visibility: p.visibility as string,
 				crew_id: (p.crew_id as string | null) ?? null,
 				crew_name: (p.crew_name as string | null) ?? null,
+				hidden: Boolean(p.hidden),
+				report_count: Number(p.report_count) || 0,
+				dismiss_report_id: (p.dismiss_report_id as string | null) ?? null,
+				viewer_can_dismiss: Boolean(p.viewer_can_dismiss),
 				media: mediaByPost.get(p.id as string) ?? [],
 				ride: rideOf(p as Record<string, unknown>)
 			});

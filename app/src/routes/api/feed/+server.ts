@@ -66,6 +66,11 @@ export interface FeedEntry {
 	// + name so cards can render the "in CrewName" chip (Task 4).
 	crew_id: string | null;
 	crew_name: string | null;
+	// Moderation (Phase D Task 4, post entries only): hidden is true only on
+	// the author's own rows (others never receive hidden posts); report_count
+	// is the author's distinct-reporter count, 0 for everyone else.
+	hidden: boolean | null;
+	report_count: number | null;
 	media: FeedPostMedia[] | null;
 	// Attached ride for post entries only (null for route/event rows and
 	// posts without one). Field list mirrors GET /api/posts/[id]: trip →
@@ -108,6 +113,7 @@ export const GET: RequestHandler = async (event) => {
 			 FROM events e JOIN channels ch ON ch.id = e.channel_id
 			 LEFT JOIN users u ON u.id = e.created_by
 			 WHERE e.start_at >= now() - interval '1 day'
+			 AND (e.hidden = false OR e.created_by = current_user_id())
 			 AND (ch.visibility = 'open'
 			    OR EXISTS (SELECT 1 FROM channel_members m WHERE m.channel_id = e.channel_id AND m.user_id = current_user_id() AND m.status = 'active'))
 			 ORDER BY e.start_at ASC LIMIT 50`
@@ -133,6 +139,8 @@ export const GET: RequestHandler = async (event) => {
 				visibility: null,
 				crew_id: null,
 				crew_name: null,
+				hidden: null,
+				report_count: null,
 				media: null,
 				ride: null
 			})),
@@ -156,6 +164,8 @@ export const GET: RequestHandler = async (event) => {
 				visibility: null,
 				crew_id: null,
 				crew_name: null,
+				hidden: null,
+				report_count: null,
 				media: null,
 				ride: null
 			}))
@@ -168,17 +178,26 @@ export const GET: RequestHandler = async (event) => {
 		// card). Strangers never see friends-only, crew-only or unfinished
 		// rows — enforced here, in the same query that gates the presigned
 		// media URLs below.
+		// Moderation (Phase D Task 4): hidden posts (3 distinct reporters)
+		// are excluded for everyone except the author (author keeps access
+		// for the hidden banner + remedy). report_count is 0 for anyone but
+		// the author by construction of the subquery — no moderation state
+		// leaks to the audience.
 		const posts = await c.query(
 			`SELECT p.id, p.body, LEFT(p.body, 140) AS excerpt, p.visibility, p.status,
-			        p.kudos, p.created_at, p.crew_id, p.ride_kind, p.ride_trip_id, p.ride_route_id,
+			        p.hidden, p.kudos, p.created_at, p.crew_id, p.ride_kind, p.ride_trip_id, p.ride_route_id,
+			        (SELECT COUNT(DISTINCT r.reporter) FROM reports r
+			         WHERE r.target_kind = 'post' AND r.target_id = p.id
+			           AND p.author = current_user_id())::int AS report_count,
 			        u.display_name AS author_name, u.avatar_url AS author_avatar,
 			        (SELECT ch.name FROM channels ch WHERE ch.id = p.crew_id) AS crew_name
 			 FROM posts p LEFT JOIN users u ON u.id = p.author
-			 WHERE (p.status = 'live'
+			 WHERE ((p.status = 'live'
 			        AND (p.visibility = 'public'
 			             OR (p.visibility = 'friends' AND is_friend(p.author))
 			             OR (visibility='crew' AND is_crew_member(crew_id))))
-			    OR p.author = current_user_id()
+			    OR p.author = current_user_id())
+			   AND (p.hidden = false OR p.author = current_user_id())
 			 ORDER BY p.created_at DESC LIMIT 50`
 		);
 		if (posts.rows.length > 0) {
@@ -276,13 +295,15 @@ export const GET: RequestHandler = async (event) => {
 					channel: null,
 					author_name: (p.author_name as string | null) ?? null,
 					author_avatar: (p.author_avatar as string | null) ?? null,
-					excerpt,
-					status: p.status as string,
-					visibility: p.visibility as string,
-					crew_id: (p.crew_id as string | null) ?? null,
-					crew_name: (p.crew_name as string | null) ?? null,
-					media: mediaByPost.get(p.id as string) ?? [],
-					ride: rideOf(p as Record<string, unknown>)
+				excerpt,
+				status: p.status as string,
+				visibility: p.visibility as string,
+				crew_id: (p.crew_id as string | null) ?? null,
+				crew_name: (p.crew_name as string | null) ?? null,
+				hidden: Boolean(p.hidden),
+				report_count: Number(p.report_count) || 0,
+				media: mediaByPost.get(p.id as string) ?? [],
+				ride: rideOf(p as Record<string, unknown>)
 				});
 			}
 		}

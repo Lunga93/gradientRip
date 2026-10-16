@@ -3,7 +3,9 @@
 // point only); channel members and invite-link holders see the full route
 // line plus the attendee list. A valid ?invite= token returns the full route
 // + attendees regardless of auth; a mismatched token 404s so private events
-// don't leak. POST { regenerate_invite: true } revokes the
+// don't leak. Hidden events (3 distinct reporters, Phase D) 404 on invite
+// links and for non-creators on the authed path — the creator keeps access.
+// POST { regenerate_invite: true } revokes the
 // old link and issues a fresh invite_token (active channel members only).
 import { json, error, type RequestHandler } from '@sveltejs/kit';
 import { withUser, getPool } from '$lib/server/db.js';
@@ -25,7 +27,7 @@ export const GET: RequestHandler = async (event) => {
 				r.title AS route_title, r.line AS route_line
 			 FROM events e JOIN channels ch ON ch.id = e.channel_id
 			 LEFT JOIN public_routes r ON r.id = e.route_id AND r.hidden = false
-			 WHERE e.id = $1`,
+			 WHERE e.id = $1 AND e.hidden = false`,
 			[id]
 		);
 		if (rows.length === 0 || invite !== (rows[0].invite_token as string)) {
@@ -99,6 +101,7 @@ export const GET: RequestHandler = async (event) => {
 			 FROM events e JOIN channels ch ON ch.id = e.channel_id
 			 LEFT JOIN public_routes r ON r.id = e.route_id AND r.hidden = false
 			 WHERE e.id = $1
+			 AND (e.hidden = false OR e.created_by = current_user_id())
 			 AND (ch.visibility = 'open'
 			    OR EXISTS (SELECT 1 FROM channel_members m WHERE m.channel_id = e.channel_id AND m.user_id = current_user_id() AND m.status = 'active'))`,
 			[id]
